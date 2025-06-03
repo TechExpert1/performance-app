@@ -22,7 +22,6 @@ connectDB();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-console.log("object::");
 app.get("/", async (req, res) => {
   res.status(200).json({ message: "hello" });
 });
