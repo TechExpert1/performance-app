@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./config/db.js";
-
+import authRoutes from "./routes/auth.js";
 dotenv.config();
 
 const app = express();
@@ -22,8 +22,7 @@ connectDB();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.get("/", async (req, res) => {
-  res.status(200).json({ message: "hello" });
-});
+
+app.use("/auth", authRoutes);
 
 app.listen(PORT);
