@@ -1,0 +1,18 @@
+import express from "express";
+import {
+  forgotPassword,
+  login,
+  signup,
+  resetPassword,
+  verifyOtp,
+} from "../controllers/auth.js";
+import { multerUpload, uploadSingleToS3 } from "../helpers/s3Utils.js";
+const router = express.Router();
+
+router.post("/sign-up", multerUpload.single("image"), uploadSingleToS3, signup);
+router.post("/login", login);
+router.post("/forgot-password", forgotPassword);
+router.post("/otp-verification", verifyOtp);
+router.post("/reset-password", resetPassword);
+
+export default router;
