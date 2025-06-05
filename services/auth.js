@@ -99,7 +99,12 @@ export const handleForgotPassword = async (req) => {
       await sendResetOTPSMS(user.phoneNumber, otp);
     }
 
-    return { message: "OTP sent to your email", user };
+    return {
+      message: `OTP sent to your ${
+        req.query.verificationMethod === "email" ? "email" : "phone number"
+      }`,
+      user,
+    };
   } catch (error) {
     console.error("Forgot Password Error:", error);
     throw error;
@@ -167,8 +172,8 @@ export const sendResetOTPSMS = async (phoneNumber, otp) => {
   try {
     const message = await client.messages.create({
       body: `Your OTP code is: ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      from: "+15005550006", // magical numbers for testing
+      to: "+5571981265131",
     });
   } catch (error) {
     console.error("Error sending SMS:", error);
