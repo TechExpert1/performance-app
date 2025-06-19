@@ -9,7 +9,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
     return { message: "User information is missing from request." };
   }
   const data = {
-    user: req.user.id,
+    user: req.user.id,    
     media: {
       type: req.body["media.type"],
       url: req.imageUrl,
@@ -77,6 +77,8 @@ export const getAllReviews = async (req: Request) => {
     ...filters
   } = req.query as Record<string, string>;
 
+  const { sessionType } = req.query;
+
   const query: Record<string, any> = {};
 
   for (const key in filters) {
@@ -108,6 +110,18 @@ export const getAllReviews = async (req: Request) => {
     [sortBy]: sortOrder === "asc" ? 1 : -1,
   };
 
+  const matchResultStats =
+    sessionType === "Match Type"
+      ? await Review.aggregate([
+          { $match: query },
+          {
+            $group: {
+              _id: "$matchResult",
+              count: { $sum: 1 },
+            },
+          },
+        ])
+      : [];
   if (page && limit) {
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -122,6 +136,8 @@ export const getAllReviews = async (req: Request) => {
     return {
       message: "Reviews fetched with pagination",
       data,
+      matchResultStats:
+        sessionType === "Match Type" ? matchResultStats : undefined,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -139,5 +155,7 @@ export const getAllReviews = async (req: Request) => {
   return {
     message: "Reviews fetched successfully",
     data,
+    matchResultStats:
+      sessionType === "Match Type" ? matchResultStats : undefined,
   };
 };
