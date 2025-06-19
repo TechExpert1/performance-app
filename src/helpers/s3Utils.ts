@@ -79,7 +79,6 @@ export const uploadSingleToS3 = async (
     fs.unlinkSync(req.file.path);
 
     req.imageUrl = imageUrl;
-    console.log(req.imageUrl);
     next();
   } catch (err) {
     console.error("Upload Error:", err);

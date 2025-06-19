@@ -8,7 +8,8 @@ import sportsTypeRoutes from "./routes/sportsType.js";
 import skillLevelRoutes from "./routes/skillLevel.js";
 import trainingCalendarRoutes from "./routes/trainingCalander.js";
 import reviewRoutes from "./routes/review.js";
-import "./cronJobs/trainingCalander.js";
+import attendanceGoalRoutes from "./routes/attendanceGoal.js";
+// import "./cronJobs/trainingCalander.js";
 dotenv.config();
 
 const app = express();
@@ -34,5 +35,6 @@ app.use("/sports-types", sportsTypeRoutes);
 app.use("/skill-levels", skillLevelRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/training-calander", trainingCalendarRoutes);
+app.use("/attendance-goals", attendanceGoalRoutes);
 
 app.listen(PORT);

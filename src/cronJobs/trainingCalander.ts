@@ -46,8 +46,6 @@ cron.schedule("* * * * *", () => {
       training.recurrenceStatus = "in-active";
       await training.save();
     }
-
-    console.log(`Recurring trainings processed for ${today.toDateString()}`);
   };
 
   handleRecurringTrainingCalendars();
