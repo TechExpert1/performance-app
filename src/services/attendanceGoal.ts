@@ -245,3 +245,50 @@ export const getHomeStats = async (req: AuthenticatedRequest) => {
     throw new Error("Failed to fetch attendance goals summary");
   }
 };
+
+export const getAttendanceGoalsGroupedByType = async (
+  req: AuthenticatedRequest
+) => {
+  try {
+    const {
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      ...filters
+    } = req.query as Record<string, string>;
+
+    const query: Record<string, any> = {};
+
+    if (req.user && req.user.id) {
+      query.user = req.user.id;
+    }
+
+    for (const key in filters) {
+      if (filters[key]) {
+        query[key] = filters[key];
+      }
+    }
+
+    const sortOption: Record<string, SortOrder> = {
+      [sortBy]: sortOrder === "asc" ? 1 : -1,
+    };
+
+    const goals = await Attendance_Goal.find(query)
+      .populate("user")
+      .sort(sortOption);
+    const groupedGoals: Record<string, any[]> = {};
+    for (const goal of goals) {
+      const type = goal.type || "Unknown";
+      if (!groupedGoals[type]) {
+        groupedGoals[type] = [];
+      }
+      groupedGoals[type].push(goal);
+    }
+
+    return {
+      message: "Grouped attendance goals fetched successfully",
+      data: groupedGoals,
+    };
+  } catch (error) {
+    throw new Error("Failed to fetch grouped attendance goals");
+  }
+};
