@@ -5,7 +5,6 @@ import s3 from "../awsConfig.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { Request, Response, NextFunction } from "express";
 
-// Extend Express Request type
 declare global {
   namespace Express {
     interface Request {
@@ -14,16 +13,15 @@ declare global {
         | { [fieldname: string]: Express.Multer.File[] }
         | Express.Multer.File[];
       imageUrl?: string;
+      fileUrl?: string;
       imageUrls?: string[];
     }
   }
 }
 
-// Create temp folder
 const uploadPath = path.resolve("./temp-uploads");
 fs.mkdirSync(uploadPath, { recursive: true });
 
-// Multer config
 const storage = multer.diskStorage({
   destination: (
     req: Request,
@@ -42,13 +40,26 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) => {
-  if (file.mimetype.startsWith("image/")) cb(null, true);
-  else cb(new Error("Only image files allowed"));
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "video/mp4",
+    "video/quicktime",
+    "video/mpeg",
+    "video/webm",
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image or video files are allowed"));
+  }
 };
 
 export const multerUpload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
   fileFilter,
 });
 
@@ -59,7 +70,7 @@ export const uploadSingleToS3 = async (
 ): Promise<void> => {
   try {
     if (!req.file) {
-      req.imageUrl = undefined;
+      req.file = undefined;
       return next();
     }
 
@@ -75,10 +86,10 @@ export const uploadSingleToS3 = async (
 
     await s3.send(new PutObjectCommand(params));
 
-    const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+    const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
     fs.unlinkSync(req.file.path);
 
-    req.imageUrl = imageUrl;
+    req.fileUrl = fileUrl;
     next();
   } catch (err) {
     console.error("Upload Error:", err);
