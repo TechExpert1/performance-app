@@ -11,6 +11,7 @@ import reviewRoutes from "./routes/review.js";
 import attendanceGoalRoutes from "./routes/attendanceGoal.js";
 import challengeRoutes from "./routes/challenge.js";
 import userChallengeRoutes from "./routes/userChallenges.js";
+import customerSupportRoutes from "./routes/customerSupport.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -41,5 +42,6 @@ app.use("/training-calander", trainingCalendarRoutes);
 app.use("/attendance-goals", attendanceGoalRoutes);
 app.use("/challenges", challengeRoutes);
 app.use("/user-challenges", userChallengeRoutes);
+app.use("/customer-support", customerSupportRoutes);
 
 app.listen(PORT);
