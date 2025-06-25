@@ -1,7 +1,7 @@
 import multer, { FileFilterCallback } from "multer";
 import fs from "fs";
 import path from "path";
-import s3 from "../awsConfig.js";
+import s3 from "../config/awsConfig.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { Request, Response, NextFunction } from "express";
 
