@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./config/db.js";
@@ -12,6 +14,7 @@ import attendanceGoalRoutes from "./routes/attendanceGoal.js";
 import challengeRoutes from "./routes/challenge.js";
 import userChallengeRoutes from "./routes/userChallenges.js";
 import customerSupportRoutes from "./routes/customerSupport.js";
+import physicalPerformanceRoutes from "./routes/physicalPerformance.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -27,12 +30,24 @@ app.use(
     credentials: true,
   })
 );
+const apiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  message: {
+    error: "Too many requests, please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 connectDB();
 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+app.use(apiLimiter);
 
 app.use("/auth", authRoutes);
 app.use("/sports-types", sportsTypeRoutes);
@@ -43,5 +58,6 @@ app.use("/attendance-goals", attendanceGoalRoutes);
 app.use("/challenges", challengeRoutes);
 app.use("/user-challenges", userChallengeRoutes);
 app.use("/customer-support", customerSupportRoutes);
+app.use("/physical-performances", physicalPerformanceRoutes);
 
 app.listen(PORT);
