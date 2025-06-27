@@ -26,7 +26,7 @@ export const handleCustomerSupportEmail = async ({
 
         <!-- Header -->
         <div style="background-color: #2976BA; padding: 20px; text-align: center;">
-          <h1 style="margin: 0; color: #fff; font-size: 24px;">💪 Prymo </h1>
+          <h1 style="margin: 0; color: #fff; font-size: 24px;">💪 Prymo</h1>
           <p style="margin: 5px 0 0; color: #e0f7f4; font-size: 14px;">New Message via Contact Form</p>
         </div>
 
@@ -39,28 +39,28 @@ export const handleCustomerSupportEmail = async ({
 
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #2c3e50;">Name:</td>
-              <td style="padding: 8px 0; color: #555;">${name}</td>
+              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50; width: 120px;">Name:</td>
+              <td style="padding: 10px 0; color: #555;">${name}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #2c3e50;">Email:</td>
-              <td style="padding: 8px 0; color: #555;">${email}</td>
+              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Email:</td>
+              <td style="padding: 10px 0; color: #555;">${email}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #2c3e50;">Contact No:</td>
-              <td style="padding: 8px 0; color: #555;">${
+              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Contact No:</td>
+              <td style="padding: 10px 0; color: #555;">${
                 contact || "Not provided"
               }</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; font-weight: bold; color: #2c3e50;">Subject:</td>
-              <td style="padding: 8px 0; color: #555;">${subject}</td>
+              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50;">Subject:</td>
+              <td style="padding: 10px 0; color: #555;">${subject}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; vertical-align: top; font-weight: bold; color: #2c3e50;">Message:</td>
-              <td style="padding: 8px 0;">
-                <div style="padding: 12px; background-color: #ecf0f1; border-left: 4px solid #1abc9c; border-radius: 5px; color: #2c3e50;">
-                  ${message}
+              <td style="padding: 10px 0; font-weight: bold; color: #2c3e50; vertical-align: top;">Message:</td>
+              <td style="padding: 10px 0;">
+                <div style="padding: 15px; background-color: #f9f9f9; border: 1px solid #dcdcdc; border-radius: 8px; color: #2c3e50; font-size: 15px; line-height: 1.6;">
+                  ${message.replace(/\n/g, "<br/>")}
                 </div>
               </td>
             </tr>
@@ -69,7 +69,7 @@ export const handleCustomerSupportEmail = async ({
 
         <!-- Footer -->
         <div style="background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 13px; color: #888;">
-          <p style="margin: 0;">This message was submitted via the <strong>FitZone Gym</strong> contact form.</p>
+          <p style="margin: 0;">This message was submitted via the <strong>Prymo</strong> contact form.</p>
           <p style="margin: 0;">Train Smart. Live Strong. 🏆</p>
         </div>
       </div>
