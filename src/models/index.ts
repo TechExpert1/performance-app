@@ -4,3 +4,5 @@ import "./Challenge_Category_Type.js";
 import "./User_Challenge.js";
 import "./Physical_Performance.js";
 import "./Physical_Performance_Set.js";
+import "./System_Challenge.js";
+import "./System_Challenge_Type.js";
