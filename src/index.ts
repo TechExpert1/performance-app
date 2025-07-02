@@ -17,6 +17,7 @@ import userChallengeRoutes from "./routes/userChallenges.js";
 import customerSupportRoutes from "./routes/customerSupport.js";
 import physicalPerformanceRoutes from "./routes/physicalPerformance.js";
 import systemUserChallengeRoutes from "./routes/systemUserChallenge.js";
+import landingPageRoutes from "./routes/landingPage.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -61,6 +62,7 @@ app.use("/challenges", challengeRoutes);
 app.use("/system-challenge-types", systemChallengeTypeRoutes);
 app.use("/user-challenges", userChallengeRoutes);
 app.use("/customer-support", customerSupportRoutes);
+app.use("/landing-page", landingPageRoutes);
 app.use("/physical-performances", physicalPerformanceRoutes);
 app.use("/system-user-challenges", systemUserChallengeRoutes);
 
