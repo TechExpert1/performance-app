@@ -40,21 +40,8 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) => {
-  const allowedMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/jpg",
-    "video/mp4",
-    "video/quicktime",
-    "video/mpeg",
-    "video/webm",
-  ];
-
-  if (allowedMimeTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image or video files are allowed"));
-  }
+  // Accept all file types
+  cb(null, true);
 };
 
 export const multerUpload = multer({
