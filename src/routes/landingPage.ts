@@ -7,6 +7,7 @@ router.post(
   "/submit-career-form",
   multerUpload.single("file"),
   uploadSingleToS3,
-  landingPageController.submit
+  landingPageController.careerForm
 );
+router.post("/early-access-form", landingPageController.earlyAccessForm);
 export default router;
