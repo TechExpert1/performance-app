@@ -9,5 +9,6 @@ router.post(
   uploadSingleToS3,
   landingPageController.careerForm
 );
+router.get("/career-forms", landingPageController.indexCareerForm);
 router.post("/early-access-form", landingPageController.earlyAccessForm);
 export default router;
