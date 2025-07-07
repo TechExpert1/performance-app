@@ -7,8 +7,9 @@ const attendanceGoalSchema = new Schema<AttendanceGoalDocument>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: String },
-    status: { type: String },
     name: { type: String },
+    month: { type: String },
+    noOfSessions: { type: Number },
     endDate: { type: Date },
   },
   { timestamps: true }

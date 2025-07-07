@@ -6,7 +6,6 @@ import {
   getAttendanceGoalById,
   getAllAttendanceGoals,
   getHomeStats,
-  getAttendanceGoalsGroupedByType,
 } from "../services/attendanceGoal.js";
 
 export const attendanceGoalController = {
@@ -67,17 +66,6 @@ export const attendanceGoalController = {
   homeStats: async (req: Request, res: Response) => {
     try {
       const result = await getHomeStats(req);
-      res.status(200).json(result);
-    } catch (err) {
-      res.status(422).json({
-        error: err instanceof Error ? err.message : "Unknown error",
-      });
-    }
-  },
-
-  attendanceGoalsGroupedByType: async (req: Request, res: Response) => {
-    try {
-      const result = await getAttendanceGoalsGroupedByType(req);
       res.status(200).json(result);
     } catch (err) {
       res.status(422).json({
