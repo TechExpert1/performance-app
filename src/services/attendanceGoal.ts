@@ -147,148 +147,68 @@ export const getHomeStats = async (req: AuthenticatedRequest) => {
     }
 
     const userId = req.user.id;
+    const year = req.query.year;
 
-    // Fetch all attendance goals for this user
-    const allGoals = await Attendance_Goal.find({ user: userId });
-
-    // 1. TRAINING GOALS – Monthly % of completed goals
-    const trainingGoals = allGoals.filter(
-      (goal) => goal.type === "Training Goal"
-    );
-
-    const trainingByMonth: Record<
-      string,
-      { total: number; completed: number }
-    > = {};
-
-    for (const goal of trainingGoals) {
-      if (!goal.endDate) continue;
-
-      const month = dayjs(goal.endDate).format("MMMM");
-
-      if (!trainingByMonth[month]) {
-        trainingByMonth[month] = { total: 0, completed: 0 };
-      }
-
-      trainingByMonth[month].total += 1;
-      if (goal.status === "completed") {
-        trainingByMonth[month].completed += 1;
-      }
+    if (!year) {
+      return { message: "Year is required in query params" };
     }
 
-    const trainingGoalSummary = Object.entries(trainingByMonth).map(
-      ([month, stats]) => ({
-        month,
-        percentage: stats.total
-          ? Math.round((stats.completed / stats.total) * 100)
-          : 0,
-      })
-    );
+    const allTrainingGoals = await Attendance_Goal.find({
+      user: userId,
+      type: "Training Goal",
+      createdAt: {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`),
+      },
+    });
 
-    // 2. EVENT GOAL – Strictly get latest created Event goal by _id
-    const latestEvent = await Attendance_Goal.findOne({
+    const trainingGoalSummary: Record<string, number> = {};
+
+    for (const goal of allTrainingGoals) {
+      if (!goal.month || !goal.noOfSessions) continue;
+      const month =
+        goal.month.charAt(0).toUpperCase() + goal.month.slice(1).toLowerCase();
+
+      trainingGoalSummary[month] =
+        (trainingGoalSummary[month] || 0) + Number(goal.noOfSessions);
+    }
+
+    const allEventGoals = await Attendance_Goal.find({
       user: userId,
       type: "Event",
       endDate: { $exists: true },
-    })
-      .sort({ _id: -1 }) // ObjectId has creation time to millisecond precision
-      .lean();
+    }).lean();
 
-    let eventGoalSummary = {};
-    if (latestEvent) {
-      const objectId = latestEvent._id as mongoose.Types.ObjectId;
-      const createdAt = latestEvent.createdAt
-        ? dayjs(latestEvent.createdAt)
-        : dayjs(objectId.getTimestamp());
+    const now = dayjs();
 
-      const endDate = dayjs(latestEvent.endDate);
-      const now = dayjs();
+    const eventGoalsWithExtras = allEventGoals.map((event) => {
+      const createdAt = event.createdAt
+        ? dayjs(event.createdAt)
+        : dayjs((event._id as mongoose.Types.ObjectId).getTimestamp());
+      const endDate = dayjs(event.endDate);
 
       const totalDuration = endDate.diff(createdAt, "day");
       const daysPassed = now.diff(createdAt, "day");
       const daysLeft = endDate.diff(now, "day");
 
-      let percentage = 0;
-      if (latestEvent.status === "completed") {
-        percentage = 200;
-      } else if (totalDuration > 0) {
-        percentage = Math.min(
-          Math.round((daysPassed / totalDuration) * 100),
-          100
-        );
-      }
+      const percentage =
+        totalDuration > 0
+          ? Math.min(Math.round((daysPassed / totalDuration) * 100), 100)
+          : 0;
 
-      eventGoalSummary = {
-        title: latestEvent.name,
-        startDate: createdAt.toDate(),
-        endDate: endDate.toDate(),
-        percentage,
-        status: latestEvent.status,
+      return {
+        ...event,
         daysLeft,
+        percentage,
       };
-    }
-
-    // 3. PERSONAL GOALS – Return raw list
-    const personalGoals = allGoals.filter(
-      (goal) => goal.type === "Personal Goal"
-    );
+    });
 
     return {
-      message: "Attendance goals summary fetched",
-      data: {
-        trainingGoals: trainingGoalSummary,
-        eventGoal: eventGoalSummary,
-        personalGoals,
-      },
+      "Training Goal": trainingGoalSummary,
+      Event: eventGoalsWithExtras,
     };
   } catch (error) {
+    console.error("Failed to fetch attendance goals summary", error);
     throw new Error("Failed to fetch attendance goals summary");
-  }
-};
-
-export const getAttendanceGoalsGroupedByType = async (
-  req: AuthenticatedRequest
-) => {
-  try {
-    const {
-      sortBy = "createdAt",
-      sortOrder = "desc",
-      ...filters
-    } = req.query as Record<string, string>;
-
-    const query: Record<string, any> = {};
-
-    if (req.user && req.user.id) {
-      query.user = req.user.id;
-    }
-
-    for (const key in filters) {
-      if (filters[key]) {
-        query[key] = filters[key];
-      }
-    }
-
-    const sortOption: Record<string, SortOrder> = {
-      [sortBy]: sortOrder === "asc" ? 1 : -1,
-    };
-
-    const goals = await Attendance_Goal.find(query)
-      .populate("user")
-      .sort(sortOption);
-    const groupedGoals: Record<string, any[]> = {};
-    for (const goal of goals) {
-      const type = goal.type || "Unknown";
-      if (!groupedGoals[type]) {
-        groupedGoals[type] = [];
-      }
-      groupedGoals[type].push(goal);
-    }
-
-    return {
-      message: "Grouped attendance goals fetched successfully",
-      data: groupedGoals,
-    };
-  } catch (error) {
-    throw new Error("Failed to fetch grouped attendance goals");
   }
 };
