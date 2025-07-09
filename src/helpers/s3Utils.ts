@@ -14,7 +14,9 @@ declare global {
         | Express.Multer.File[];
       imageUrl?: string;
       fileUrl?: string;
-      imageUrls?: string[];
+      // imageUrls?: string[];
+      fileUrls?: string[];
+      imageUrls?: { [fieldname: string]: string[] };
     }
   }
 }
@@ -80,6 +82,101 @@ export const uploadSingleToS3 = async (
     next();
   } catch (err) {
     console.error("Upload Error:", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Upload failed",
+    });
+  }
+};
+export const uploadMultipleToS3 = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      req.fileUrls = [];
+      return next();
+    }
+
+    const fileUrls: string[] = [];
+
+    for (const file of files) {
+      const fileContent = fs.readFileSync(file.path);
+      const fileName = `uploads/${Date.now()}-${file.originalname}`;
+
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME!,
+        Key: fileName,
+        Body: fileContent,
+        ContentType: file.mimetype,
+      };
+
+      await s3.send(new PutObjectCommand(params));
+
+      const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+      fileUrls.push(fileUrl);
+
+      fs.unlinkSync(file.path);
+    }
+
+    req.fileUrls = fileUrls;
+    next();
+  } catch (err) {
+    console.error("Multiple Upload Error:", err);
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Upload failed",
+    });
+  }
+};
+export const newMulterUpload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter,
+}).any();
+export const newUploadMultipleToS3 = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+
+    if (!files || files.length === 0) {
+      req.imageUrls = {};
+      return next();
+    }
+
+    const imageUrls: { [fieldname: string]: string[] } = {};
+
+    for (const file of files) {
+      const fileContent = fs.readFileSync(file.path);
+      const fileName = `uploads/${Date.now()}-${file.originalname}`;
+
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME!,
+        Key: fileName,
+        Body: fileContent,
+        ContentType: file.mimetype,
+      };
+
+      await s3.send(new PutObjectCommand(params));
+
+      const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+
+      if (!imageUrls[file.fieldname]) {
+        imageUrls[file.fieldname] = [];
+      }
+      imageUrls[file.fieldname].push(fileUrl);
+
+      fs.unlinkSync(file.path);
+    }
+
+    req.imageUrls = imageUrls;
+    next();
+  } catch (err) {
+    console.error("Dynamic Upload Error:", err);
     res.status(500).json({
       error: err instanceof Error ? err.message : "Upload failed",
     });
