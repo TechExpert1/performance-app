@@ -4,6 +4,7 @@ import User, { UserDocument } from "../models/User.js";
 import { transporter } from "../utils/nodeMailer.js";
 import { client } from "../utils/twillioSms.js";
 import Athlete_User from "../models/Athlete_User.js";
+import Gym_Owner_Profile from "../models/Gym_Owner_User.js";
 import { Request } from "express";
 
 interface LoginResult {
@@ -16,7 +17,6 @@ interface GenericResult {
   user_id?: string;
 }
 
-// Signup Handler
 export const handleSignup = async (req: Request): Promise<GenericResult> => {
   try {
     const { role } = req.query;
@@ -29,13 +29,15 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     const athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
       : null;
+    const gymOwnerDetails = req.body.gymOwner_details
+      ? JSON.parse(req.body.gymOwner_details)
+      : null;
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     userData.password = hashedPassword;
     userData.role = role;
-
-    if ((req as any).imageUrl) {
-      userData.profileImage = (req as any).imageUrl;
+    if ((req as any).imageUrls?.profile) {
+      userData.profileImage = (req as any).imageUrls.profile[0];
     }
 
     const newUser = (await User.create(userData)) as UserDocument;
@@ -49,11 +51,22 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
         userId: newUser._id,
         ...athleteDetails,
       });
+    } else if (role === "gymOwner") {
+      if (!gymOwnerDetails) {
+        return { message: "Gym Owner details are required for role gymOwner" };
+      }
+
+      await Gym_Owner_Profile.create({
+        userId: newUser._id,
+        ...gymOwnerDetails,
+        proofOfBusiness: req.imageUrls?.proofOfBusiness || [],
+        gymImages: req.imageUrls?.gymImages || [],
+        personalIdentification: req.imageUrls?.personalIdentification || [],
+      });
     }
 
     return {
       message: "User registered successfully",
-      // userId: newUser._id.toString(),
       user: newUser,
     };
   } catch (error) {

@@ -1,21 +1,32 @@
 import { Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { AuthenticatedRequest } from "./user";
+
 export const gymOwnerAuth = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): void => {
-  if (!req.user) {
-    res.status(401).json({ message: "Unauthorized: No user found in request" });
-    return;
-  }
+  try {
+    const token = req.headers.token as string;
 
-  if (req.user.role !== "gymOwner") {
-    res
-      .status(403)
-      .json({ message: "Forbidden: Access allowed only for gym owners" });
-    return;
-  }
+    if (!token) {
+      res.status(401).json({ message: "Unauthorized: No token provided" });
+      return;
+    }
 
-  next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    req.user = decoded as AuthenticatedRequest["user"];
+
+    if (!req.user || req.user.role !== "gymOwner") {
+      res.status(403).json({
+        message: "Forbidden: Only gym owners can access this resource",
+      });
+      return;
+    }
+
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
+  }
 };
