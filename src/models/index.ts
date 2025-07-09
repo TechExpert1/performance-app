@@ -6,3 +6,6 @@ import "./Physical_Performance.js";
 import "./Physical_Performance_Set.js";
 import "./System_Challenge.js";
 import "./System_Challenge_Type.js";
+import "./Community_Member.js";
+import "./Community_Post.js";
+import "./Gym_Owner_User.js";
