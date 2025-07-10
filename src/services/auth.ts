@@ -124,7 +124,7 @@ export const handleForgotPassword = async (
     if (verificationMethod === "email") {
       await sendResetOTP(email, otp);
     } else {
-      await sendResetOTPSMS(user.phoneNumber, otp);
+      if (user?.phoneNumber) await sendResetOTPSMS(user.phoneNumber, otp);
     }
 
     return {
