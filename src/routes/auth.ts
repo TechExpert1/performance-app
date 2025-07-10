@@ -10,13 +10,13 @@ import {
   multerUpload,
   uploadSingleToS3,
   newMulterUpload,
-  newUploadMultipleToS3,
+  uploadMultipleToS3,
 } from "../helpers/s3Utils.js";
 
 const router = express.Router();
 
 // Routes
-router.post("/sign-up", newMulterUpload, newUploadMultipleToS3, signup);
+router.post("/sign-up", newMulterUpload, uploadMultipleToS3, signup);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/otp-verification", verifyOtp);

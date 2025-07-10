@@ -81,18 +81,6 @@ export const getChallengeById = async (req: Request) => {
   }
 };
 
-// export const getAllChallenges = async (
-//   req: Request
-// ): Promise<ServiceResponse<ChallengeDocument>> => {
-//   const challenges = await Challenge.find()
-//     .populate("category")
-//     .populate("type");
-
-//   return {
-//     message: "Challenges fetched successfully",
-//     data: challenges,
-//   };
-// };
 export const getAllChallenges = async (req: Request) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
