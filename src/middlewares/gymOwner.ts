@@ -17,7 +17,6 @@ export const gymOwnerAuth = (
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
     req.user = decoded as AuthenticatedRequest["user"];
-
     if (!req.user || req.user.role !== "gymOwner") {
       res.status(403).json({
         message: "Forbidden: Only gym owners can access this resource",
