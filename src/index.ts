@@ -37,8 +37,8 @@ app.use(
   })
 );
 const apiLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 20,
+  windowMs: 20 * 60 * 1000,
+  max: 200,
   message: {
     error: "Too many requests, please try again later.",
   },
