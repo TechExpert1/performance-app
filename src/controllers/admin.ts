@@ -280,13 +280,13 @@ export const getNoOfAllTypesOfUsers = async (req: Request, res: Response) => {
       return;
     }
     const generalUsers = await User.find({
-      type: "athlete",
+      role: "athlete",
     }).select("createdAt");
     const trainingProviders = await User.find({
-      type: "coach",
+      role: "coach",
     }).select("createdAt");
     const hostAgencies = await User.find({
-      type: "gymOwner",
+      role: "gymOwner",
     }).select("createdAt");
     const noOfGeneralUsers = generalUsers.length;
     const noOfTrainingProviders = trainingProviders.length;
