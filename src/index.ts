@@ -20,6 +20,7 @@ import systemUserChallengeRoutes from "./routes/systemUserChallenge.js";
 import landingPageRoutes from "./routes/landingPage.js";
 import communityRoutes from "./routes/community.js";
 import coachRoutes from "./routes/coach.js";
+import adminRoutes from "./routes/admin.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -69,5 +70,5 @@ app.use("/landing-page", landingPageRoutes);
 app.use("/physical-performances", physicalPerformanceRoutes);
 app.use("/system-user-challenges", systemUserChallengeRoutes);
 app.use("/coaches", coachRoutes);
-
+app.use("/api/admin", adminRoutes);
 app.listen(PORT);
