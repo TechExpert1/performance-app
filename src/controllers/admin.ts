@@ -168,7 +168,7 @@ export const searchGeneralUsersByEmail = async (
       email: { $regex: reg },
       name: { $regex: reg2 },
     })
-      .select("name email profileImage createdAt")
+      .select("name email profileImage role createdAt")
       .sort({ createdAt: -1 });
     res.status(200).json({ generalUsers });
   } catch (error) {
@@ -323,7 +323,7 @@ export const getGeneralUsers = async (req: Request, res: Response) => {
     const generalUsers = await User.find({
       role: { $ne: "superAdmin" },
     })
-      .select("name email profileImage createdAt")
+      .select("name email role profileImage createdAt")
       .sort({ createdAt: -1 });
     res.status(200).json({ generalUsers });
   } catch (error) {
