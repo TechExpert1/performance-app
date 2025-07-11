@@ -6,9 +6,8 @@ export const submitcareerForm = async (req: Request) => {
   try {
     const data = {
       ...req.body,
-      ...(req.fileUrl && { resume: req.fileUrl }),
+      ...(req.fileUrls?.resume?.[0] && { resume: req.fileUrls.resume[0] }),
     };
-
     const htmlContent = `
       <div style="max-width: 500px; margin: auto; padding: 20px; font-family: Arial, sans-serif; background-color: #f9f9f9; border-radius: 8px; border: 1px solid #ddd;">
         <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">📄 Career Form Submission</h2>
