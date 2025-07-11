@@ -9,8 +9,8 @@ import {
   LoginAdmin,
   searchGeneralUsersByEmail,
   uploadImageAdmin,
-} from "../controllers/admin";
-import { verifyAdminToken as verifyToken } from "../middlewares/admin";
+} from "../controllers/admin.js";
+import { verifyAdminToken as verifyToken } from "../middlewares/admin.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 const router = Router();
 // auth
