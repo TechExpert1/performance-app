@@ -15,11 +15,8 @@ export const createChallenge = async (
     return { message: "User information is missing from request." };
   }
   const data = {
-    user: req.user.id,
-    media: {
-      type: req.body["media.type"],
-      url: req.imageUrl,
-    },
+    createdBy: req.user.id,
+    mediaUrl: req.fileUrls?.mediaUrl[0],
     ...req.body,
   };
   const challenge = await Challenge.create(data);
@@ -30,9 +27,18 @@ export const createChallenge = async (
 };
 
 export const updateChallenge = async (
-  req: Request
+  req: AuthenticatedRequest
 ): Promise<ServiceResponse<ChallengeDocument>> => {
-  const updated = await Challenge.findByIdAndUpdate(req.params.id, req.body, {
+  let data = req.body;
+
+  if (req.fileUrls?.mediaUrl?.[0]) {
+    data = {
+      ...data,
+      mediaUrl: req.fileUrls.mediaUrl[0],
+    };
+  }
+
+  const updated = await Challenge.findByIdAndUpdate(req.params.id, data, {
     new: true,
   });
 
@@ -56,7 +62,9 @@ export const removeChallenge = async (
 export const getChallengeById = async (req: Request) => {
   try {
     const found = await Challenge.findById(req.params.id)
-      .populate("category")
+      .populate("createdBy")
+      .populate("exercise")
+      .populate("format")
       .populate("type");
 
     if (!found) {
@@ -91,7 +99,9 @@ export const getAllChallenges = async (req: Request) => {
   const total = await Challenge.countDocuments();
 
   const challenges = await Challenge.find()
-    .populate("category")
+    .populate("createdBy")
+    .populate("exercise")
+    .populate("format")
     .populate("type")
     .skip(skip)
     .limit(limit)
