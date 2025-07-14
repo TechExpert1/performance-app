@@ -3,16 +3,18 @@ import { Types } from "mongoose";
 export interface IChallenge {
   name: string;
   gym: string;
+  time: string;
+  distance: string;
+  mediaUrl: string;
   frequency: string;
-  category: Types.ObjectId;
+  createdBy: Types.ObjectId;
   type: Types.ObjectId;
+  exercise: Types.ObjectId;
+  format: Types.ObjectId;
   rules: string[];
   startDate: Date;
   endDate: Date;
-  media: {
-    type: "photo" | "video";
-    url: string;
-  };
+  requiredVideo: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
