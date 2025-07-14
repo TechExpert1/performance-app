@@ -1,12 +1,9 @@
 import User from "../models/User.js";
-// import OtpReset from "../models/OtpReset";
+ import OtpReset from "../models/Reset_Otp.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { transporter } from "../utils/nodeMailer";
+import { transporter } from "../utils/nodeMailer.js";
 import { Request, Response } from "express";
-import { RootFilterQuery } from "mongoose";
-import { IUser } from "../interfaces/user.interface";
-// import { accountMail } from "../utils/sendEmail";
 export const LoginAdmin = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
@@ -74,77 +71,80 @@ export const adminSignup = async (req: Request, res: Response) => {
     return;
   }
 };
-// export const sendOtpAdmin = async (req: Request, res: Response) => {
-//   const otp = Math.floor(1000 + Math.random() * 9000);
-//   const { email } = req.body;
-//   try {
-//     const user = await User.findOne({
-//       email: email.toLowerCase(),
-//       isAdmin: true,
-//       type: "ad-min",
-//     });
-//     if (!user) {
-//       res
-//         .status(400)
-//         .json({ message: "No such admin exists with this email!" });
-//       return;
-//     }
-//     const newOtp = new OtpReset({
-//       otp: otp,
-//       userId: user._id,
-//     });
-//     await newOtp.save();
-//     accountMail(email, "Confirm Password Reset", otp.toString(), user.name);
-//     res.status(200).json({ message: "Otp sent to your email!" });
-//   } catch (error) {
-//         if(error instanceof Error){
-//         res.status(500).json({message:"Error uploading image : " + error?.message});
-//     }
-//   return;
-//   }
-// };
-// export const verifyOTPAndResetPassAdmin = async (
-//   req: Request,
-//   res: Response
-// ) => {
-//   const { email, sentOtp, password, confirm_password } = req.body;
-//   try {
-//     const user = await User.findOne({
-//       email: email.toLowerCase(),
-//       isAdmin: true,
-//       type: "ad-min",
-//     });
-//     if (!user) {
-//       res
-//         .status(400)
-//         .json({ message: "No such admin exists with this email!" });
-//       return;
-//     }
-//     const otp = await OtpReset.findOne({
-//       userId: user._id,
-//       otp: sentOtp,
-//     });
-//     if (!otp) {
-//       res.status(400).json({ message: "Incorrect Otp!" });
-//       return;
-//     }
-//     await otp.deleteOne();
-//     if (password !== confirm_password) {
-//       res.status(400).json({ message: "Passwords do not match!" });
-//       return;
-//     }
-//     user.password = await bcrypt.hash(password, 12);
-//     await user.save();
-//     res.status(200).json({
-//       message: "Otp verified and new password is updated successfully!",
-//     });
-//   } catch (error) {
-//         if(error instanceof Error){
-//         res.status(500).json({message:"Error uploading image : " + error?.message});
-//     }
-//   return;
-//   }
-// };
+export const sendOtpAdmin = async (req: Request, res: Response) => {
+  const otp = Math.floor(1000 + Math.random() * 9000);
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      role : "superAdmin"
+    });
+    if (!user) {
+      res
+        .status(400)
+        .json({ message: "No such admin exists with this email!" });
+      return;
+    }
+    const newOtp = new OtpReset({
+      otp: otp,
+      userId: user._id,
+    });
+    await newOtp.save();
+     await transporter.sendMail({
+      sender : process.env.EMAIL_USER,
+      to : email,
+      subject : "Password Reset OTP",
+      text : `Prymo Admin: Your OTP is ${otp}`
+     })
+    res.status(200).json({ message: "Otp sent to your email!" });
+  } catch (error) {
+        if(error instanceof Error){
+        res.status(500).json({message:"Error uploading image : " + error?.message});
+    }
+  return;
+  }
+};
+export const verifyOTPAndResetPassAdmin = async (
+  req: Request,
+  res: Response
+) => {
+  const { email, sentOtp, password, confirm_password } = req.body;
+  try {
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      role : "superAdmin"
+    });
+    if (!user) {
+      res
+        .status(400)
+        .json({ message: "No such admin exists with this email!" });
+      return;
+    }
+    const otp = await OtpReset.findOne({
+      userId: user._id,
+      otp: sentOtp,
+    });
+    if (!otp) {
+      res.status(400).json({ message: "Incorrect Otp!" });
+      return;
+    }
+    await otp.deleteOne();
+    if (password !== confirm_password) {
+      res.status(400).json({ message: "Passwords do not match!" });
+      return;
+    }
+    user.password = await bcrypt.hash(password, 12);
+    await user.save();
+    res.status(200).json({
+      message: "Otp verified and new password is updated successfully!",
+    });
+  } catch (error) {
+        if(error instanceof Error){
+        res.status(500).json({message:"Error uploading image : " + error?.message});
+    }
+  return;
+  }
+};
 export const searchGeneralUsersByEmail = async (
   req: Request,
   res: Response
