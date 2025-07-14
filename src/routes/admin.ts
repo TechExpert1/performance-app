@@ -8,7 +8,9 @@ import {
   getSingleUserDetails,
   LoginAdmin,
   searchGeneralUsersByEmail,
+  sendOtpAdmin,
   uploadImageAdmin,
+  verifyOTPAndResetPassAdmin,
 } from "../controllers/admin.js";
 import { verifyAdminToken as verifyToken } from "../middlewares/admin.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
@@ -17,8 +19,8 @@ const router = Router();
 router.post("/login", LoginAdmin);
 router.post("/signup", adminSignup);
 // forget pass
-// router.post("/otp/send" , sendOtpAdmin);
-// router.post("/otp/verify-and-reset" , verifyOTPAndResetPassAdmin);
+router.post("/otp/send" , sendOtpAdmin);
+router.post("/otp/verify-and-reset" , verifyOTPAndResetPassAdmin);
 // homepage
 router.get("/dashboard/home", verifyToken, getNoOfAllTypesOfUsers);
 // all user types flows in admin
