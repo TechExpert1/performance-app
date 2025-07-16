@@ -16,6 +16,7 @@ const userSchema = new Schema<UserDocument>(
     resetOTP: { type: String },
     token: { type: String },
     nationality: { type: String },
+    gym: { type: String },
     dob: { type: Date },
     role: {
       type: String,

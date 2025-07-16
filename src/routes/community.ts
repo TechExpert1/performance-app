@@ -26,7 +26,7 @@ router.patch(
   communityController.update
 );
 router.delete("/:id", gymOwnerAuth, communityController.remove);
-router.get("/:id", communityController.getById);
+router.get("/:id/requests", gymOwnerAuth, communityController.getRequests);
 router.get("/:id/members", communityController.getMembers);
 router.get("/", communityController.getAll);
 
@@ -44,5 +44,11 @@ router.get(
   "/:communityId/member-request",
   userAuth,
   communityMemberController.join
+);
+
+router.get(
+  "/:communityId/status-update/:requestId",
+  gymOwnerAuth,
+  communityMemberController.updateMemberStatus
 );
 export default router;

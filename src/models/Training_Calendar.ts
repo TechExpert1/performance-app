@@ -7,24 +7,24 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    trainingName: { type: String, required: true },
+    coaches: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    trainingName: { type: String },
     sport: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport",
-      required: true,
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category",
-      required: true,
     },
     skill: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category_Skill",
-      required: true,
     },
     trainingScope: { type: String, enum: ["self", "gym"], default: "self" },
-    date: { type: Date, required: true },
+    date: { type: Date },
+    startTime: { type: String },
+    finishTime: { type: String },
     recurrence: { type: String, enum: ["weekly", "monthly"], default: null },
     recurrenceEndDate: { type: Date },
     recurrenceStatus: {
