@@ -98,6 +98,67 @@ export const getSportById = async (
   }
 };
 
+// service/sportService.ts or similar
+
+export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
+  const result = await Sport.aggregate([
+    {
+      $lookup: {
+        from: "sport_categories",
+        localField: "_id",
+        foreignField: "sport",
+        as: "categories",
+      },
+    },
+    {
+      $unwind: {
+        path: "$categories",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "sport_category_skills",
+        localField: "categories._id",
+        foreignField: "category",
+        as: "categories.skills",
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        sportsType: { $first: "$sportsType" },
+        skillLevelSet: { $first: "$skillLevelSet" },
+        createdAt: { $first: "$createdAt" },
+        updatedAt: { $first: "$updatedAt" },
+        categories: {
+          $push: "$categories",
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        sportsType: 1,
+        skillLevelSet: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        categories: {
+          $filter: {
+            input: "$categories",
+            as: "cat",
+            cond: { $ne: ["$$cat", null] },
+          },
+        },
+      },
+    },
+  ]);
+
+  return result;
+};
+
 // Get all sports with optional filters, pagination, and sorting
 export const getAllSports = async (
   req: Request
