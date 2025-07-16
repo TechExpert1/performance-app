@@ -13,12 +13,10 @@ const sportSchema = new Schema<SportDocument>(
     sportsType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Type",
-      required: true,
     },
     skillLevelSet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Skill_Level_Set",
-      required: true,
     },
   },
   { timestamps: true }
