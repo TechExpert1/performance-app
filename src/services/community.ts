@@ -78,6 +78,22 @@ export const getCommunityById = async (req: AuthenticatedRequest) => {
   };
 };
 
+export const handleGetRequests = async (req: AuthenticatedRequest) => {
+  const communityId = req.params.id;
+
+  const found = await Community.findById(communityId);
+  if (!found) throw new Error("Community not found");
+  if (found.createdBy.toString() !== req.user?.id) {
+    throw new Error("Unauthorized to get requests for this community");
+  }
+  const requests = await Community_Member.find({
+    community: communityId,
+    status: "pending",
+  }).populate("user");
+
+  return { requests };
+};
+
 export const getActiveMembersOfCommunity = async (req: Request) => {
   const communityId = req.params.id;
 

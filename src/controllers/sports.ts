@@ -5,6 +5,7 @@ import {
   removeSport,
   getSportById,
   getAllSports,
+  getAllSportsWithCategoriesAndSkills,
 } from "../services/sports.js";
 
 const create = async (req: Request, res: Response): Promise<void> => {
@@ -58,6 +59,21 @@ const getById = async (req: Request, res: Response): Promise<void> => {
     }
   }
 };
+const getSportsDrowpdown = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await getAllSportsWithCategoriesAndSkills(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
 
 const getAll = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -78,4 +94,5 @@ export const sportsController = {
   remove,
   getById,
   getAll,
+  getSportsDrowpdown,
 };

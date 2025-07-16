@@ -50,6 +50,7 @@ export const getTrainingCalendarById = async (req: Request) => {
   const entry = await TrainingCalendar.findById(id).populate([
     "user",
     "attendees",
+    "coaches",
     "sport",
     "category",
     "skill",

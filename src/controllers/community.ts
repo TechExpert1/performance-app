@@ -6,6 +6,7 @@ import {
   getCommunityById,
   getAllCommunities,
   getActiveMembersOfCommunity,
+  handleGetRequests,
 } from "../services/community.js";
 
 export const communityController = {
@@ -45,6 +46,17 @@ export const communityController = {
   getById: async (req: Request, res: Response) => {
     try {
       const result = await getCommunityById(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getRequests: async (req: Request, res: Response) => {
+    try {
+      const result = await handleGetRequests(req);
       res.status(200).json(result);
     } catch (err) {
       res
