@@ -1,9 +1,22 @@
 import User from "../models/User.js";
- import OtpReset from "../models/Reset_Otp.js";
+import OtpReset from "../models/Reset_Otp.js";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { transporter } from "../utils/nodeMailer.js";
 import { Request, Response } from "express";
+import AthleteProfile from "../models/Athlete_User.js";
+import AttendanceGoal from "../models/Attendance_Goal.js";
+import Challenge from "../models/Challenge.js";
+import Community from "../models/Community.js";
+import CommunityMember from "../models/Community_Member.js";
+import CommunityPost from "../models/Community_Post.js";
+import GymOwnerProfile from "../models/Gym_Owner_User.js";
+import PhysicalPerformance from "../models/Physical_Performance.js";
+import Review from "../models/Review.js";
+import SystemUserChallenge from "../models/System_User_Challenge.js";
+import TrainingCalendar from "../models/Training_Calendar.js";
+import UserChallenge from "../models/User_Challenge.js";
 export const LoginAdmin = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
@@ -77,7 +90,7 @@ export const sendOtpAdmin = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({
       email: email.toLowerCase(),
-      role : "superAdmin"
+      role: "superAdmin",
     });
     if (!user) {
       res
@@ -90,18 +103,20 @@ export const sendOtpAdmin = async (req: Request, res: Response) => {
       userId: user._id,
     });
     await newOtp.save();
-     await transporter.sendMail({
-      sender : process.env.EMAIL_USER,
-      to : email,
-      subject : "Password Reset OTP",
-      text : `Prymo Admin: Your OTP is ${otp}`
-     })
+    await transporter.sendMail({
+      sender: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Prymo Admin: Your OTP is ${otp}`,
+    });
     res.status(200).json({ message: "Otp sent to your email!" });
   } catch (error) {
-        if(error instanceof Error){
-        res.status(500).json({message:"Error uploading image : " + error?.message});
+    if (error instanceof Error) {
+      res
+        .status(500)
+        .json({ message: "Error uploading image : " + error?.message });
     }
-  return;
+    return;
   }
 };
 export const verifyOTPAndResetPassAdmin = async (
@@ -112,7 +127,7 @@ export const verifyOTPAndResetPassAdmin = async (
   try {
     const user = await User.findOne({
       email: email.toLowerCase(),
-      role : "superAdmin"
+      role: "superAdmin",
     });
     if (!user) {
       res
@@ -139,10 +154,12 @@ export const verifyOTPAndResetPassAdmin = async (
       message: "Otp verified and new password is updated successfully!",
     });
   } catch (error) {
-        if(error instanceof Error){
-        res.status(500).json({message:"Error uploading image : " + error?.message});
+    if (error instanceof Error) {
+      res
+        .status(500)
+        .json({ message: "Error uploading image : " + error?.message });
     }
-  return;
+    return;
   }
 };
 export const searchGeneralUsersByEmail = async (
@@ -209,39 +226,72 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
     return;
   }
 };
-export const deleteAUser = async (req: Request, res: Response) => {
+export const deleteAUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const session = await mongoose.startSession();
   try {
     const { userId } = req.params;
     const adminId = req?.admin?._id;
+
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists!" });
       return;
     }
+
     if (admin.role !== "superAdmin") {
       res.status(401).json({ message: "Unauthorized to access this resource" });
       return;
     }
+
     const user = await User.findById(userId);
     if (!user) {
       res.status(400).json({ message: "No such user exists!" });
       return;
     }
-    if (admin.role !== "superAdmin") {
-      res.status(401).json({ message: "Unauthorized to access this resource" });
-      return;
-    }
-    await user.save();
-    res.status(200).json({ message: "User deleted successfully!" });
+
+    session.startTransaction();
+
+    await Promise.all([
+      AthleteProfile.deleteOne({ userId }).session(session),
+      AttendanceGoal.deleteMany({ user: userId }).session(session),
+      Challenge.deleteMany({ createdBy: userId }).session(session),
+      Community.deleteMany({ createdBy: userId }).session(session),
+      CommunityMember.deleteMany({ user: userId }).session(session),
+      CommunityPost.deleteMany({ createdBy: userId }).session(session),
+      GymOwnerProfile.deleteOne({ userId }).session(session),
+      PhysicalPerformance.deleteMany({ user: userId }).session(session),
+      Review.deleteMany({
+        $or: [{ user: userId }, { opponent: userId }],
+      }).session(session),
+      SystemUserChallenge.deleteMany({ user: userId }).session(session),
+      TrainingCalendar.deleteMany({
+        $or: [{ user: userId }, { attendees: userId }, { coaches: userId }],
+      }).session(session),
+      UserChallenge.deleteMany({ user: userId }).session(session),
+    ]);
+
+    await User.findByIdAndDelete(userId).session(session);
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res
+      .status(200)
+      .json({ message: "User and related data deleted successfully!" });
   } catch (error) {
-    if (error instanceof Error) {
-      res
-        .status(500)
-        .json({ message: "Error uploading image : " + error?.message });
-    }
-    return;
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error deleting user:", error);
+    res.status(500).json({
+      message: "Error deleting user and related data",
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 };
+
 export const getAdmins = async (req: Request, res: Response) => {
   try {
     const adminId = req?.admin?._id;
