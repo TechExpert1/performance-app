@@ -4,7 +4,7 @@ import User, { UserDocument } from "../models/User.js";
 import { transporter } from "../utils/nodeMailer.js";
 import { client } from "../utils/twillioSms.js";
 import Athlete_User from "../models/Athlete_User.js";
-import Gym_Owner_Profile from "../models/Gym_Owner_User.js";
+import Gym from "../models/Gym.js";
 import { Request } from "express";
 
 interface LoginResult {
@@ -29,17 +29,16 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     const athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
       : null;
-    const gymOwnerDetails = req.body.gymOwner_details
-      ? JSON.parse(req.body.gymOwner_details)
+    const gymDetails = req.body.gym_details
+      ? JSON.parse(req.body.gym_details)
       : null;
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     userData.password = hashedPassword;
     userData.role = role;
-    if ((req as any).imageUrls?.profile) {
-      userData.profileImage = (req as any).imageUrls.profile[0];
+    if (req.fileUrls?.profile[0]) {
+      userData.profileImage = req.fileUrls?.profile[0];
     }
-
     const newUser = (await User.create(userData)) as UserDocument;
 
     if (role === "athlete") {
@@ -52,16 +51,16 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
         ...athleteDetails,
       });
     } else if (role === "gymOwner") {
-      if (!gymOwnerDetails) {
+      if (!gymDetails) {
         return { message: "Gym Owner details are required for role gymOwner" };
       }
 
-      await Gym_Owner_Profile.create({
-        userId: newUser._id,
-        ...gymOwnerDetails,
-        proofOfBusiness: req.imageUrls?.proofOfBusiness || [],
-        gymImages: req.imageUrls?.gymImages || [],
-        personalIdentification: req.imageUrls?.personalIdentification || [],
+      await Gym.create({
+        owner: newUser._id,
+        ...gymDetails,
+        proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
+        gymImages: req.fileUrls?.gymImages || [],
+        personalIdentification: req.fileUrls?.personalIdentification || [],
       });
     }
 
