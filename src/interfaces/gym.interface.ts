@@ -1,10 +1,10 @@
 import { Types } from "mongoose";
 
-export interface IGymOwnerProfile {
-  userId: Types.ObjectId;
-  gymName: string;
-  gymAddress: string;
-  gymRegistration: string;
+export interface IGym {
+  owner: Types.ObjectId;
+  name: string;
+  address: string;
+  registration: string;
   cnic: string;
   sport: Types.ObjectId;
   proofOfBusiness?: string[];

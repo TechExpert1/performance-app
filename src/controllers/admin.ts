@@ -11,7 +11,7 @@ import Challenge from "../models/Challenge.js";
 import Community from "../models/Community.js";
 import CommunityMember from "../models/Community_Member.js";
 import CommunityPost from "../models/Community_Post.js";
-import GymOwnerProfile from "../models/Gym_Owner_User.js";
+import Gym from "../models/Gym.js";
 import PhysicalPerformance from "../models/Physical_Performance.js";
 import Review from "../models/Review.js";
 import SystemUserChallenge from "../models/System_User_Challenge.js";
@@ -261,7 +261,7 @@ export const deleteAUser = async (
       Community.deleteMany({ createdBy: userId }).session(session),
       CommunityMember.deleteMany({ user: userId }).session(session),
       CommunityPost.deleteMany({ createdBy: userId }).session(session),
-      GymOwnerProfile.deleteOne({ userId }).session(session),
+      Gym.deleteOne({ userId }).session(session),
       PhysicalPerformance.deleteMany({ user: userId }).session(session),
       Review.deleteMany({
         $or: [{ user: userId }, { opponent: userId }],
