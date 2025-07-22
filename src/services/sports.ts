@@ -186,7 +186,7 @@ export const getAllSports = async (
     if (page && limit) {
       const skip = (Number(page) - 1) * Number(limit);
       const data = await Sport.find(filters)
-        .populate("sportsType")
+        .populate("sportsType skillLevelSet")
         .sort(sortOption)
         .skip(skip)
         .limit(Number(limit));
@@ -211,6 +211,40 @@ export const getAllSports = async (
 
     return {
       message: "Sports fetched successfully",
+      data,
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const sportsWithSkillLevel = async (
+  req: Request
+): Promise<ServiceResponse<SportDocument>> => {
+  const {
+    sortBy = "createdAt",
+    sortOrder = "asc",
+    ...rawFilters
+  } = req.query as Record<string, string>;
+
+  const { sportsTypesId } = req.params;
+  const filters: Record<string, any> = { sportsType: sportsTypesId };
+
+  Object.entries(rawFilters).forEach(([key, value]) => {
+    filters[key] = { $regex: value, $options: "i" };
+  });
+
+  const sortOption: Record<string, SortOrder> = {
+    [sortBy]: sortOrder === "asc" ? 1 : -1,
+  };
+
+  try {
+    const data = await Sport.find(filters)
+      .populate("sportsType skillLevelSet")
+      .sort(sortOption);
+
+    return {
+      message: "Sports fetched with skillLevel",
       data,
     };
   } catch (error) {

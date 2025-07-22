@@ -10,3 +10,5 @@ import "./Community_Member.js";
 import "./Community_Post.js";
 import "./Gym.js";
 import "./Challenge_Category_Type_Format.js";
+import "./Subscription_Plan.js";
+import "./User_Subscription.js";
