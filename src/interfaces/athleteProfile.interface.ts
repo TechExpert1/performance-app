@@ -4,8 +4,8 @@ export interface IAthleteProfile {
   userId: Types.ObjectId;
   height: number;
   weight: number;
-  sports: string;
-  skillLevel: string;
+  sports: Types.ObjectId;
+  skillLevel: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
