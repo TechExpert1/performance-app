@@ -24,7 +24,6 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     if (!role || typeof role !== "string") {
       return { message: "Role query parameter is required" };
     }
-
     const userData = JSON.parse(req.body.user);
     const athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
@@ -36,8 +35,11 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     userData.password = hashedPassword;
     userData.role = role;
-    if (req.fileUrls?.profile[0]) {
-      userData.profileImage = req.fileUrls?.profile[0];
+    if (
+      Array.isArray(req.fileUrls?.profile) &&
+      req.fileUrls.profile.length > 0
+    ) {
+      userData.profileImage = req.fileUrls.profile[0];
     }
     const newUser = (await User.create(userData)) as UserDocument;
 
