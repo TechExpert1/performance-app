@@ -10,6 +10,9 @@ const sportSchema = new Schema<SportDocument>(
       required: true,
       trim: true,
     },
+    image: {
+      type: String,
+    },
     sportsType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Type",

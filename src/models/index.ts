@@ -12,3 +12,5 @@ import "./Gym.js";
 import "./Challenge_Category_Type_Format.js";
 import "./Subscription_Plan.js";
 import "./User_Subscription.js";
+import "./Gym_Member.js";
+import "./Member_Awaiting.js";

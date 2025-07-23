@@ -6,6 +6,7 @@ import { client } from "../utils/twillioSms.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
 import { Request } from "express";
+import Member_Awaiting from "../models/Member_Awaiting.js";
 
 interface LoginResult {
   user: UserDocument;
@@ -15,6 +16,8 @@ interface GenericResult {
   message: string;
   user?: UserDocument;
   user_id?: string;
+  code?: string;
+  verification?: boolean;
 }
 
 export const handleSignup = async (req: Request): Promise<GenericResult> => {
@@ -65,10 +68,13 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
         personalIdentification: req.fileUrls?.personalIdentification || [],
       });
     }
-
+    const record = await Member_Awaiting.findOne({
+      email: newUser.email,
+    });
     return {
       message: "User registered successfully",
       user: newUser,
+      code: record ? record.code : "Not a gym/club memebr",
     };
   } catch (error) {
     console.error("Signup error:", error);
@@ -220,6 +226,18 @@ export const sendResetOTPSMS = async (
     });
   } catch (error) {
     console.error("Error sending SMS:", error);
+    throw error;
+  }
+};
+
+export const handleVerifyCode = async (req: Request): Promise<boolean> => {
+  try {
+    const { email, code } = req.body;
+
+    const record = await Member_Awaiting.findOne({ email, code });
+    return !!record; // returns true if record exists, otherwise false
+  } catch (error) {
+    console.error("Verify Code Error:", error);
     throw error;
   }
 };
