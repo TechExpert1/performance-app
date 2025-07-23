@@ -5,13 +5,9 @@ import {
   signup,
   resetPassword,
   verifyOtp,
+  verifyCode,
 } from "../controllers/auth.js";
-import {
-  multerUpload,
-  uploadSingleToS3,
-  newMulterUpload,
-  uploadMultipleToS3,
-} from "../helpers/s3Utils.js";
+import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 
 const router = express.Router();
 
@@ -21,5 +17,6 @@ router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/otp-verification", verifyOtp);
 router.post("/reset-password", resetPassword);
+router.post("/verify-code", verifyCode);
 
 export default router;
