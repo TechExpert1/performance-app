@@ -5,7 +5,7 @@ import { SortOrder } from "mongoose";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek.js";
 import { monthMap } from "../utils/commonConst.js";
-
+import SportCategorySkill from "../models/Sport_Category_Skill.js";
 dayjs.extend(isoWeek);
 
 export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
@@ -77,14 +77,129 @@ export const getAllTrainingCalendars = async (req: Request) => {
     sortOrder = "desc",
     month,
     year,
+    stats,
     ...filters
   } = req.query as Record<string, string>;
 
   const query: Record<string, any> = {};
+
+  // Apply dynamic filters
+  for (const key in filters) {
+    if (filters[key]) {
+      query[key] = filters[key];
+    }
+  }
+
   const sortOption: Record<string, SortOrder> = {
     [sortBy]: sortOrder === "asc" ? 1 : -1,
   };
 
+  const isStats = stats === "true";
+
+  if (isStats) {
+    const now = dayjs();
+    const startDate = now.startOf("month").toDate();
+    const endDate = now.endOf("month").toDate();
+    query.date = { $gte: startDate, $lte: endDate };
+
+    const allTrainings = await TrainingCalendar.find(query)
+      .populate(["user", "attendees", "sport", "category", "skill"])
+      .sort(sortOption);
+
+    // Group by current month
+    const currentMonth: Record<string, any[]> = {};
+    const daysInMonth = now.daysInMonth();
+    for (let i = 1; i <= daysInMonth; i++) {
+      currentMonth[i.toString()] = [];
+    }
+    for (const training of allTrainings) {
+      const day = dayjs(training.date).date().toString();
+      currentMonth[day].push(training);
+    }
+
+    // Group by current ISO week
+    const weekStart = now.startOf("isoWeek").startOf("day");
+    const weekEnd = now.endOf("isoWeek").endOf("day");
+
+    const currentWeekTrainings = allTrainings.filter(
+      (t) =>
+        dayjs(t.date).isAfter(weekStart.subtract(1, "ms")) &&
+        dayjs(t.date).isBefore(weekEnd.add(1, "ms"))
+    );
+
+    const currentWeek: Record<string, any[]> = {};
+    for (let i = 0; i < 7; i++) {
+      const date = weekStart.add(i, "day");
+      currentWeek[date.date().toString()] = [];
+    }
+    for (const training of currentWeekTrainings) {
+      const day = dayjs(training.date).date().toString();
+      currentWeek[day].push(training);
+    }
+
+    // === Skill percentage calculations ===
+    const getSkillPercentages = (trainings: any[]) => {
+      const total = trainings.length;
+      const counts: Record<string, number> = {};
+
+      for (const training of trainings) {
+        const skillId = training.skill?._id?.toString() || "Unknown";
+        counts[skillId] = (counts[skillId] || 0) + 1;
+      }
+
+      const percentages: Record<string, number> = {};
+      for (const skillId in counts) {
+        percentages[skillId] = parseFloat(
+          ((counts[skillId] / total) * 100).toFixed(2)
+        );
+      }
+
+      return percentages;
+    };
+
+    const monthlySkillPercentages = getSkillPercentages(allTrainings);
+    const weeklySkillPercentages = getSkillPercentages(currentWeekTrainings);
+
+    // 🆕 Fetch all skills for the given sport
+    const allSkillsForSport = req.query.category
+      ? await SportCategorySkill.find({ category: req.query.category }).lean()
+      : [];
+
+    const skillNameMap: Record<string, string> = {};
+    for (const skill of allSkillsForSport) {
+      skillNameMap[skill._id.toString()] = skill.name;
+    }
+    skillNameMap["Unknown"] = "Unknown";
+
+    const formatPercentages = (data: Record<string, number>) => {
+      const result: Record<string, number> = {};
+
+      for (const skill of allSkillsForSport) {
+        const id = skill._id.toString();
+        result[skill.name] = data[id] ?? 0; // Default to 0%
+      }
+
+      if (data["Unknown"]) {
+        result["Unknown"] = data["Unknown"];
+      }
+
+      return result;
+    };
+
+    return {
+      message: "Grouped training calendar (month & week)",
+      data: {
+        currentMonth,
+        currentWeek,
+        skillPercentages: {
+          monthly: formatPercentages(monthlySkillPercentages),
+          weekly: formatPercentages(weeklySkillPercentages),
+        },
+      },
+    };
+  }
+
+  // Regular flow with pagination and optional filters
   let startDate: Date | undefined, endDate: Date | undefined;
   if (month && year) {
     const monthIndex = monthMap[month.toLowerCase()];
@@ -101,12 +216,6 @@ export const getAllTrainingCalendars = async (req: Request) => {
         .endOf("month")
         .toDate();
       query.date = { $gte: startDate, $lte: endDate };
-    }
-  }
-
-  for (const key in filters) {
-    if (filters[key]) {
-      query[key] = filters[key];
     }
   }
 
@@ -131,48 +240,9 @@ export const getAllTrainingCalendars = async (req: Request) => {
     };
   }
 
-  const allTrainings = await dataQuery;
-
-  const groupedByDate: Record<string, any[]> = {};
-  if (startDate && endDate) {
-    const daysInMonth = dayjs(endDate).date();
-    for (let i = 1; i <= daysInMonth; i++) {
-      groupedByDate[i.toString()] = [];
-    }
-
-    for (const training of allTrainings) {
-      const day = dayjs(training.date).date();
-      groupedByDate[day.toString()].push(training);
-    }
-  }
-
-  const weekStart = dayjs().startOf("isoWeek").toDate();
-  const weekEnd = dayjs().endOf("isoWeek").toDate();
-
-  const currentWeekTrainings = allTrainings.filter(
-    (item) => item.date >= weekStart && item.date <= weekEnd
-  );
-
-  const currentWeek: Record<string, any[]> = {};
-  for (let i = 0; i < 7; i++) {
-    const date = dayjs(weekStart).add(i, "day");
-    currentWeek[date.date().toString()] = [];
-  }
-
-  for (const training of currentWeekTrainings) {
-    const day = dayjs(training.date).date();
-    const key = day.toString();
-    if (!currentWeek[key]) {
-      currentWeek[key] = [];
-    }
-    currentWeek[key].push(training);
-  }
-
+  const allData = await dataQuery;
   return {
-    message: "Monthly grouped training calendar fetched with current week",
-    data: {
-      groupedByDate,
-      currentWeek,
-    },
+    message: "All training calendars fetched",
+    data: allData,
   };
 };
