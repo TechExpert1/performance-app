@@ -1,4 +1,3 @@
-import { UserSubscriptionController } from "./controllers/userSubscription";
 import express from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -7,6 +6,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import profileRoutes from "./routes/profile.js";
 import sportsTypeRoutes from "./routes/sportsType.js";
 import skillLevelRoutes from "./routes/skillLevel.js";
 import trainingCalendarRoutes from "./routes/trainingCalander.js";
@@ -25,12 +25,16 @@ import adminRoutes from "./routes/admin.js";
 import dropdownRoutes from "./routes/dropdown.js";
 import chatRoutes from "./routes/chat.js";
 import userSubscriptionRoutes from "./routes/userSubscription.js";
+import { createRecurringSession, webhook } from "./config/stripe.js";
+import { userAuth } from "./middlewares/user.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
 
 const app = express();
-
+import Stripe from "stripe";
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+app.post("/webhook", express.raw({ type: "application/json" }), webhook);
 app.use(bodyParser.json());
 app.use(
   cors({
@@ -60,6 +64,7 @@ app.use(helmet());
 app.use(apiLimiter);
 
 app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes);
 app.use("/sports-types", sportsTypeRoutes);
 app.use("/skill-levels", skillLevelRoutes);
 app.use("/reviews", reviewRoutes);
@@ -78,4 +83,5 @@ app.use("/api/admin", adminRoutes);
 app.use("/dropdowns", dropdownRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
+app.post("/create-checkout-session", userAuth, createRecurringSession);
 app.listen(PORT);
