@@ -5,6 +5,7 @@ import {
   handleForgotPassword,
   handleVerifyOtp,
   handleResetPassword,
+  handleVerifyCode,
 } from "../services/auth.js";
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
@@ -68,6 +69,21 @@ export const resetPassword = async (
 ): Promise<void> => {
   try {
     const result = await handleResetPassword(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
+export const verifyCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await handleVerifyCode(req);
     res.status(200).json(result);
   } catch (err) {
     if (err instanceof Error) {

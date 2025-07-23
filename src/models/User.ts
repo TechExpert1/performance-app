@@ -6,7 +6,7 @@ export type UserDocument = IUser & Document;
 const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     phoneNumber: { type: String },
     gender: {
