@@ -7,6 +7,7 @@ export interface ITrainingCalendar {
   trainingName?: string;
   sport?: Types.ObjectId;
   category?: Types.ObjectId;
+  gym?: Types.ObjectId;
   skill?: Types.ObjectId;
   trainingScope?: string;
   date: Date;
