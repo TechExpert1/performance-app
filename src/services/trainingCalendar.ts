@@ -134,6 +134,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
     const monthlyTrainings = await TrainingCalendar.find({
       gym: gymId,
       date: { $gte: startDate, $lte: endDate },
+      ...filters,
     }).select("_id");
 
     const trainingIds = monthlyTrainings.map((t) => t._id);
