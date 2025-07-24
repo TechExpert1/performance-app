@@ -5,6 +5,7 @@ import {
   getAllTrainingCalendars,
   getTrainingCalendarById,
   deleteTrainingCalendar,
+  getUserMonthlyTrainingCount,
 } from "../services/trainingCalendar.js";
 
 export const trainingCalendarController = {
@@ -44,6 +45,17 @@ export const trainingCalendarController = {
   getAll: async (req: Request, res: Response) => {
     try {
       const result = await getAllTrainingCalendars(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getMonthlyCount: async (req: Request, res: Response) => {
+    try {
+      const result = await getUserMonthlyTrainingCount(req);
       res.status(200).json(result);
     } catch (err) {
       res

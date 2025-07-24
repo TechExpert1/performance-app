@@ -3,13 +3,14 @@ import Review from "../models/Review.js";
 import { SortOrder } from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import dayjs from "dayjs";
-import { monthMap } from "../utils/commonConst.js";
+import isoWeek from "dayjs/plugin/isoWeek.js";
+dayjs.extend(isoWeek);
 export const createReview = async (req: AuthenticatedRequest) => {
   if (!req.user) {
     return { message: "User information is missing from request." };
   }
   const data = {
-    user: req.user.id,    
+    user: req.user.id,
     media: {
       type: req.body["media.type"],
       url: req.imageUrl,
@@ -72,12 +73,11 @@ export const getAllReviews = async (req: Request) => {
     limit,
     sortBy = "createdAt",
     sortOrder = "desc",
+    stats,
     month,
     year,
     ...filters
   } = req.query as Record<string, string>;
-
-  const { sessionType } = req.query;
 
   const query: Record<string, any> = {};
 
@@ -87,41 +87,94 @@ export const getAllReviews = async (req: Request) => {
     }
   }
 
-  if (month && year) {
-    const monthIndex = monthMap[month.toLowerCase()];
-    const numericYear = Number(year);
-
-    if (monthIndex !== undefined && !isNaN(numericYear)) {
-      const startDate = dayjs()
-        .year(numericYear)
-        .month(monthIndex)
-        .startOf("month")
-        .toDate();
-      const endDate = dayjs()
-        .year(numericYear)
-        .month(monthIndex)
-        .endOf("month")
-        .toDate();
-      query.createdAt = { $gte: startDate, $lte: endDate };
-    }
-  }
-
   const sortOption: Record<string, SortOrder> = {
     [sortBy]: sortOrder === "asc" ? 1 : -1,
   };
 
-  const matchResultStats =
-    sessionType === "Match Type"
-      ? await Review.aggregate([
-          { $match: query },
-          {
-            $group: {
-              _id: "$matchResult",
-              count: { $sum: 1 },
-            },
-          },
-        ])
-      : [];
+  if (stats === "true") {
+    const now = dayjs();
+
+    const startOfMonth = now.startOf("month");
+    const endOfMonth = now.endOf("month");
+    const startOfWeek = now.startOf("isoWeek");
+    const endOfWeek = now.endOf("isoWeek");
+
+    const [monthReviews, weekReviews] = await Promise.all([
+      Review.find({
+        ...query,
+        createdAt: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
+      }).populate(["sport", "category", "skill"]),
+      Review.find({
+        ...query,
+        createdAt: { $gte: startOfWeek.toDate(), $lte: endOfWeek.toDate() },
+      }).populate(["sport", "category", "skill"]),
+    ]);
+
+    const groupedMonth: Record<string, any[]> = {};
+    for (
+      let d = startOfMonth.clone();
+      d.isBefore(endOfMonth) || d.isSame(endOfMonth);
+      d = d.add(1, "day")
+    ) {
+      const dateStr = d.format("YYYY-MM-DD");
+      groupedMonth[dateStr] = [];
+    }
+    for (const review of monthReviews) {
+      const dateStr = dayjs(review.createdAt).format("YYYY-MM-DD");
+      if (groupedMonth[dateStr]) {
+        groupedMonth[dateStr].push(review);
+      }
+    }
+
+    const groupedWeek: Record<string, any[]> = {};
+    for (
+      let d = startOfWeek.clone();
+      d.isBefore(endOfWeek) || d.isSame(endOfWeek);
+      d = d.add(1, "day")
+    ) {
+      const dateStr = d.format("YYYY-MM-DD");
+      groupedWeek[dateStr] = [];
+    }
+    for (const review of weekReviews) {
+      const dateStr = dayjs(review.createdAt).format("YYYY-MM-DD");
+      if (groupedWeek[dateStr]) {
+        groupedWeek[dateStr].push(review);
+      }
+    }
+
+    // ADDITION: Group matchResults if sessionType is 'Match Type'
+    let matchResultStats: Record<string, number> = {};
+    if (filters.sessionType === "Match Type") {
+      const allMatchReviews = await Review.find({
+        ...query,
+        sessionType: "Match Type",
+      });
+
+      matchResultStats = allMatchReviews.reduce((acc, review) => {
+        const result = review.matchResult || "Unknown";
+        acc[result] = (acc[result] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+    }
+
+    return {
+      message: "Grouped review stats fetched successfully",
+      stats: {
+        currentMonth: groupedMonth,
+        currentWeek: groupedWeek,
+        ...(filters.sessionType === "Match Type" && {
+          matchResultStats,
+        }),
+      },
+    };
+  }
+
+  if (month && year) {
+    const start = dayjs(`${year}-${month}-01`).startOf("month").toDate();
+    const end = dayjs(`${year}-${month}-01`).endOf("month").toDate();
+    query.createdAt = { $gte: start, $lte: end };
+  }
+
   if (page && limit) {
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -136,8 +189,6 @@ export const getAllReviews = async (req: Request) => {
     return {
       message: "Reviews fetched with pagination",
       data,
-      matchResultStats:
-        sessionType === "Match Type" ? matchResultStats : undefined,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -147,7 +198,6 @@ export const getAllReviews = async (req: Request) => {
     };
   }
 
-  // Without pagination
   const data = await Review.find(query)
     .populate(["sport", "category", "skill"])
     .sort(sortOption);
@@ -155,7 +205,5 @@ export const getAllReviews = async (req: Request) => {
   return {
     message: "Reviews fetched successfully",
     data,
-    matchResultStats:
-      sessionType === "Match Type" ? matchResultStats : undefined,
   };
 };
