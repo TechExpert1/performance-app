@@ -1,11 +1,14 @@
 import { Request } from "express";
 import TrainingCalendar from "../models/Training_Calendar.js";
+import Training_Member from "../models/Training_Member.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { SortOrder } from "mongoose";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek.js";
+import isBetween from "dayjs/plugin/isBetween.js";
 import { monthMap } from "../utils/commonConst.js";
 import SportCategorySkill from "../models/Sport_Category_Skill.js";
+import GymMember from "../models/Gym_Member.js";
 dayjs.extend(isoWeek);
 
 export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
@@ -78,6 +81,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
     month,
     year,
     stats,
+    user,
     ...filters
   } = req.query as Record<string, string>;
 
@@ -97,16 +101,61 @@ export const getAllTrainingCalendars = async (req: Request) => {
   const isStats = stats === "true";
 
   if (isStats) {
+    const { user } = req.query;
+
+    if (!user) {
+      return {
+        message: "Missing 'userId' in query",
+        data: null,
+      };
+    }
+
+    // Step 1: Get the gym of the user
+    const gymMember = await GymMember.findOne({
+      user,
+      status: "active",
+    });
+
+    if (!gymMember) {
+      return {
+        message: "No active gym membership found for this user",
+        data: null,
+      };
+    }
+
+    const gymId = gymMember.gym;
+
+    // Step 2: Filter by current month
     const now = dayjs();
     const startDate = now.startOf("month").toDate();
     const endDate = now.endOf("month").toDate();
-    query.date = { $gte: startDate, $lte: endDate };
 
-    const allTrainings = await TrainingCalendar.find(query)
+    // Step 3: Find all trainings in this gym within the month
+    const monthlyTrainings = await TrainingCalendar.find({
+      gym: gymId,
+      date: { $gte: startDate, $lte: endDate },
+    }).select("_id");
+
+    const trainingIds = monthlyTrainings.map((t) => t._id);
+
+    // Step 4: Find training IDs where this user attended
+    const attendedTrainings = await Training_Member.find({
+      user,
+      training: { $in: trainingIds },
+    }).select("training");
+
+    const attendedTrainingIds = attendedTrainings.map((t) =>
+      t.training.toString()
+    );
+
+    // Step 5: Fetch full training documents
+    const allTrainings = await TrainingCalendar.find({
+      _id: { $in: attendedTrainingIds },
+    })
       .populate(["user", "attendees", "sport", "category", "skill"])
       .sort(sortOption);
 
-    // Group by current month
+    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
     for (let i = 1; i <= daysInMonth; i++) {
@@ -117,15 +166,16 @@ export const getAllTrainingCalendars = async (req: Request) => {
       currentMonth[day].push(training);
     }
 
-    // Group by current ISO week
+    // Step 7: Group by current ISO week
     const weekStart = now.startOf("isoWeek").startOf("day");
     const weekEnd = now.endOf("isoWeek").endOf("day");
+    const weekStartDate = weekStart.toDate();
+    const weekEndDate = weekEnd.toDate();
 
-    const currentWeekTrainings = allTrainings.filter(
-      (t) =>
-        dayjs(t.date).isAfter(weekStart.subtract(1, "ms")) &&
-        dayjs(t.date).isBefore(weekEnd.add(1, "ms"))
-    );
+    const currentWeekTrainings = allTrainings.filter((t) => {
+      const trainingDate = new Date(t.date);
+      return trainingDate >= weekStartDate && trainingDate <= weekEndDate;
+    });
 
     const currentWeek: Record<string, any[]> = {};
     for (let i = 0; i < 7; i++) {
@@ -137,7 +187,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
       currentWeek[day].push(training);
     }
 
-    // === Skill percentage calculations ===
+    // === Skill percentage calculation ===
     const getSkillPercentages = (trainings: any[]) => {
       const total = trainings.length;
       const counts: Record<string, number> = {};
@@ -160,7 +210,6 @@ export const getAllTrainingCalendars = async (req: Request) => {
     const monthlySkillPercentages = getSkillPercentages(allTrainings);
     const weeklySkillPercentages = getSkillPercentages(currentWeekTrainings);
 
-    // 🆕 Fetch all skills for the given sport
     const allSkillsForSport = req.query.category
       ? await SportCategorySkill.find({ category: req.query.category }).lean()
       : [];
@@ -176,7 +225,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
 
       for (const skill of allSkillsForSport) {
         const id = skill._id.toString();
-        result[skill.name] = data[id] ?? 0; // Default to 0%
+        result[skill.name] = data[id] ?? 0;
       }
 
       if (data["Unknown"]) {
@@ -185,9 +234,8 @@ export const getAllTrainingCalendars = async (req: Request) => {
 
       return result;
     };
-
     return {
-      message: "Grouped training calendar (month & week)",
+      message: "User's grouped training calendar (month & week)",
       data: {
         currentMonth,
         currentWeek,
@@ -199,7 +247,6 @@ export const getAllTrainingCalendars = async (req: Request) => {
     };
   }
 
-  // Regular flow with pagination and optional filters
   let startDate: Date | undefined, endDate: Date | undefined;
   if (month && year) {
     const monthIndex = monthMap[month.toLowerCase()];
@@ -244,5 +291,75 @@ export const getAllTrainingCalendars = async (req: Request) => {
   return {
     message: "All training calendars fetched",
     data: allData,
+  };
+};
+
+export const getUserMonthlyTrainingCount = async (req: Request) => {
+  const { userId, month, year } = req.query as Record<string, string>;
+
+  if (!userId) {
+    return {
+      message: "Missing 'userId' in query",
+      data: null,
+    };
+  }
+
+  const monthIndex = monthMap[month?.toLowerCase() || ""]; // e.g., "july" => 6
+  const numericYear = parseInt(year || "");
+
+  if (monthIndex === undefined || isNaN(numericYear)) {
+    return {
+      message: "Invalid or missing 'month' or 'year' in query",
+      data: null,
+    };
+  }
+
+  const gymMember = await GymMember.findOne({
+    user: userId,
+    status: "active",
+  });
+
+  if (!gymMember) {
+    return {
+      message: "No active gym membership found for this user",
+      data: null,
+    };
+  }
+
+  const gymId = gymMember.gym;
+
+  const startOfMonth = dayjs()
+    .set("year", numericYear)
+    .set("month", monthIndex)
+    .startOf("month")
+    .toDate();
+
+  const endOfMonth = dayjs()
+    .set("year", numericYear)
+    .set("month", monthIndex)
+    .endOf("month")
+    .toDate();
+
+  // Step 1: Get trainings for the gym in the given month
+  const trainings = await TrainingCalendar.find({
+    gym: gymId,
+    date: { $gte: startOfMonth, $lte: endOfMonth },
+  }).select("_id");
+
+  const trainingIds = trainings.map((t) => t._id);
+
+  // Step 2: Count how many trainings this user attended from training_members
+  const trainingCount = await Training_Member.countDocuments({
+    user: userId,
+    training: { $in: trainingIds },
+  });
+
+  return {
+    message: "Monthly training count fetched",
+    data: {
+      count: trainingCount,
+      month,
+      year: numericYear,
+    },
   };
 };
