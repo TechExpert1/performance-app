@@ -130,6 +130,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         name: { $first: "$name" },
         sportsType: { $first: "$sportsType" },
         skillLevelSet: { $first: "$skillLevelSet" },
+        image: { $first: "$image" },
         createdAt: { $first: "$createdAt" },
         updatedAt: { $first: "$updatedAt" },
         categories: {
@@ -141,6 +142,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
       $project: {
         _id: 1,
         name: 1,
+        image: 1,
         sportsType: 1,
         skillLevelSet: 1,
         createdAt: 1,

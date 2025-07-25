@@ -11,10 +11,7 @@ export interface IReview {
   tagFriend?: Types.ObjectId;
   opponent?: Types.ObjectId;
   clubOrTeam?: string;
-  media?: {
-    type: "photo" | "video";
-    url: string;
-  };
+  media?: [string];
   coachFeedback?: {
     coach: Types.ObjectId;
     rating: number;
