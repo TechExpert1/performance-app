@@ -24,6 +24,7 @@ const userSchema = new Schema<UserDocument>(
     },
     profileImage: { type: String },
     referralSource: { type: String },
+    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     gym: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gym",
