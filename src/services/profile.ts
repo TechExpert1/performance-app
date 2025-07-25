@@ -100,7 +100,6 @@ export const updateProfileImage = async (req: AuthenticatedRequest) => {
   if (!(req as any).fileUrls?.profile?.[0]) {
     throw new Error("Profile image not provided");
   }
-  console.log(req?.fileUrls?.icons);
   const profileImage = (req as any).fileUrls.profile[0];
 
   const updatedUser = await User.findByIdAndUpdate(

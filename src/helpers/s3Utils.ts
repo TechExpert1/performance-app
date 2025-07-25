@@ -62,7 +62,6 @@ export const uploadSingleToS3 = async (
       req.file = undefined;
       return next();
     }
-    console.log("object 1");
     const fileContent = fs.readFileSync(req.file.path);
     const fileName = `uploads/${Date.now()}-${req.file.originalname}`;
 
