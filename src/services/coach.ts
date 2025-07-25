@@ -1,6 +1,7 @@
 import { Request } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import { SortOrder } from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 export const createCoach = async (req: AuthenticatedRequest) => {
   try {
@@ -101,33 +102,62 @@ export const getCoachById = async (req: Request) => {
   }
 };
 
-// Get All Coaches with Pagination and Sorting
 export const getAllCoachs = async (req: Request) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
-    const sortBy = (req.query.sortBy as string) || "createdAt";
-    const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
+    const {
+      page,
+      limit,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      ...filters
+    } = req.query as Record<string, string>;
 
-    const filter: any = { role: "coach" };
-
-    const total = await User.countDocuments(filter);
-
-    const coaches = await User.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ [sortBy]: sortOrder });
-
-    return {
-      data: coaches,
-      pagination: {
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        totalResults: total,
-      },
+    const query: Record<string, any> = {
+      role: "coach",
     };
+
+    // Apply dynamic filters if any
+    for (const key in filters) {
+      if (filters[key]) {
+        query[key] = filters[key];
+      }
+    }
+
+    const sortOptions: Record<string, SortOrder> = {
+      [sortBy]: sortOrder === "asc" ? 1 : -1,
+    };
+
+    let coaches, total;
+
+    // If pagination is requested
+    if (page || limit) {
+      const pageNum = Number(page) || 1;
+      const limitNum = Number(limit) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      [coaches, total] = await Promise.all([
+        User.find(query).sort(sortOptions).skip(skip).limit(limitNum),
+        User.countDocuments(query),
+      ]);
+
+      return {
+        data: coaches,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalResults: total,
+        },
+      };
+    } else {
+      // Return all coaches without pagination
+      coaches = await User.find(query).sort(sortOptions);
+
+      return {
+        data: coaches,
+        pagination: null, // optional
+      };
+    }
   } catch (error) {
     console.error("Error in getAllCoachs:", error);
     throw error;

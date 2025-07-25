@@ -12,8 +12,8 @@ export interface IUser {
   role: "superAdmin" | "gymOwner" | "coach" | "athlete";
   profileImage?: string;
   referralSource?: string;
-  gym?: string;
-  gymOwner?: Types.ObjectId; // for coach
+  friends?: [Types.ObjectId];
+  gym?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -11,10 +11,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
   }
   const data = {
     user: req.user.id,
-    media: {
-      type: req.body["media.type"],
-      url: req.imageUrl,
-    },
+    media: req.fileUrls?.media || [],
     ...req.body,
   };
   const review = await Review.create(data);
@@ -24,19 +21,17 @@ export const createReview = async (req: AuthenticatedRequest) => {
 export const updateReview = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
 
-  const updateData: any = {};
+  let updateData: any = {};
 
-  if (req.body["media.type"] && req.imageUrl) {
-    updateData.media = {
-      type: req.body["media.type"],
-      url: req.imageUrl,
-    };
+  if (req.fileUrls?.media && req.fileUrls?.media.length > 0) {
+    console.log(req.fileUrls?.media.length);
+    updateData.media = req.fileUrls?.media;
   }
 
-  const { media, "media.type": mediaType, ...rest } = req.body;
-
-  Object.assign(updateData, rest);
-
+  updateData = {
+    ...updateData,
+    ...req.body,
+  };
   const updatedReview = await Review.findByIdAndUpdate(id, updateData, {
     new: true,
   });
@@ -50,10 +45,15 @@ export const updateReview = async (req: AuthenticatedRequest) => {
 export const getReviewById = async (req: Request) => {
   const { id } = req.params;
   const review = await Review.findById(id).populate([
-    "sport",
-    "category",
-    "skill",
+    { path: "user" },
+    { path: "sport" },
+    { path: "category" },
+    { path: "skill" },
+    { path: "opponent" },
+    { path: "coachFeedback.coach" },
+    { path: "peerFeedback.friend" },
   ]);
+
   if (!review) throw new Error("Review not found");
   return review;
 };

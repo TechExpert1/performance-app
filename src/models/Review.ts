@@ -17,13 +17,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     matchResult: { type: String },
     opponent: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     clubOrTeam: { type: String },
-    media: {
-      type: {
-        type: String,
-        enum: ["photo", "video"],
-      },
-      url: { type: String },
-    },
+    media: [{ type: String }],
     coachFeedback: {
       coach: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       rating: { type: Number, min: 1, max: 10 },
