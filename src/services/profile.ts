@@ -6,7 +6,7 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
 // Get Profile
 export const getProfile = async (req: Request) => {
-  const user = await User.findById(req.params.id).populate("gym");
+  const user = await User.findById(req.params.id).populate("gym friends");
   if (!user) throw new Error("User not found");
 
   // Initialize linked data
