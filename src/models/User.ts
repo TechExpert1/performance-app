@@ -16,7 +16,6 @@ const userSchema = new Schema<UserDocument>(
     resetOTP: { type: String },
     token: { type: String },
     nationality: { type: String },
-    gym: { type: String },
     dob: { type: Date },
     role: {
       type: String,
@@ -25,9 +24,9 @@ const userSchema = new Schema<UserDocument>(
     },
     profileImage: { type: String },
     referralSource: { type: String },
-    gymOwner: {
+    gym: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Gym",
     }, // for coach
   },
   { timestamps: true }

@@ -10,6 +10,7 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 export const ProfileController = {
   get: async (req: AuthenticatedRequest, res: Response) => {
     try {
+      console.log("object");
       const result = await getProfile(req);
       res.status(200).json(result);
     } catch (err) {

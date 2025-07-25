@@ -14,7 +14,7 @@ const athleteProfileSchema: Schema<AthleteProfileDocument> = new Schema(
     height: { type: Number, required: true },
     weight: { type: Number, required: true },
     sports: { type: Schema.Types.ObjectId, ref: "Sport" },
-    skillLevel: { type: Schema.Types.ObjectId, ref: "Skill_Level_Set" },
+    skillLevel: { type: String },
   },
   { timestamps: true }
 );

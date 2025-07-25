@@ -3,10 +3,10 @@ import User from "../models/User.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
-
+import { Request } from "express";
 // Get Profile
-export const getProfile = async (req: AuthenticatedRequest) => {
-  const user = await User.findById(req.params.id);
+export const getProfile = async (req: Request) => {
+  const user = await User.findById(req.params.id).populate("gym");
   if (!user) throw new Error("User not found");
 
   // Initialize linked data
@@ -15,23 +15,21 @@ export const getProfile = async (req: AuthenticatedRequest) => {
 
   // Check if user is an athlete
   if (user.role === "athlete") {
-    linkedProfile = await Athlete_User.findOne({ userId: user._id })
+    linkedProfile = await Athlete_User.findOne({ userId: req.params.id })
       .populate("skillLevel sports")
       .lean();
-    linkedProfileName = "profile"; // Change key name to "profile" for athletes
+    linkedProfileName = "profile";
   }
-  // Check if user is a gym owner
   if (user.role === "gymOwner") {
-    linkedProfile = await Gym.findOne({ owner: user._id })
+    linkedProfile = await Gym.findOne({ owner: req.params.id })
       .populate("sport")
       .lean();
-    linkedProfileName = "gymDetails"; // Change key name to "gymDetails" for gym owners
+    linkedProfileName = "gymDetails";
   }
 
-  // Dynamically set the response
   const response = {
     user,
-    [linkedProfileName]: linkedProfile, // Dynamically assign the correct field name
+    [linkedProfileName]: linkedProfile,
   };
 
   return response;
