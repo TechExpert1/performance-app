@@ -24,7 +24,6 @@ export const updateReview = async (req: AuthenticatedRequest) => {
   let updateData: any = {};
 
   if (req.fileUrls?.media && req.fileUrls?.media.length > 0) {
-    console.log(req.fileUrls?.media.length);
     updateData.media = req.fileUrls?.media;
   }
 
