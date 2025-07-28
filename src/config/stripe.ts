@@ -78,7 +78,7 @@ export const createRecurringSession = async (
       plan: planId,
       startDate: now,
       isActive: true,
-      stripeSubscriptionId: "pending",
+      lastPaymentStatus: "pending",
     })) as unknown as { _id: Types.ObjectId };
 
     const customer = await stripe.customers.create({
@@ -113,48 +113,6 @@ export const createRecurringSession = async (
   }
 };
 
-// export const webhook = async (req: Request, res: Response): Promise<void> => {
-//   const sig = req.headers["stripe-signature"] as string;
-//   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-//   let event: Stripe.Event;
-
-//   try {
-//     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-
-//     if (
-//       event.type === "invoice.payment_succeeded" ||
-//       event.type === "invoice.payment_failed"
-//     ) {
-//       const invoice = event.data.object as Stripe.Invoice;
-//       const customerId = invoice.customer as string;
-
-//       const customer = await stripe.customers.retrieve(customerId);
-//       const metaData = (customer as any).metadata;
-
-//       if (!metaData?.subscriptionId) {
-//         console.warn("Subscription ID not found in customer metadata");
-//         res.status(200).send("No action taken");
-//         return;
-//       }
-
-//       await User_Subscription.findByIdAndUpdate(
-//         metaData.subscriptionId,
-//         {
-//           lastPaymentStatus:
-//             event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
-//           lastPaymentDate: new Date(invoice.created * 1000),
-//           invoiceId: invoice.id,
-//         },
-//         { new: true }
-//       );
-//     }
-
-//     res.status(200).send("Webhook event processed");
-//   } catch (err: any) {
-//     console.error("Webhook error:", err.message);
-//     res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-// };
 export const webhook = async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers["stripe-signature"] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
