@@ -72,7 +72,7 @@ export const createRecurringSession = async (
       isActive: true,
       paymentStatus: "pending",
     })) as { _id: Types.ObjectId };
-
+    console.log(subscription._id.toString());
     // Create Stripe session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -118,8 +118,6 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
 
       const customer = await stripe.customers.retrieve(customerId);
       const metaData = (customer as any).metadata;
-      console.log("sebuicriotion id ::::: ", metaData?.subscriptionId);
-      console.log("metaData ::::: ", metaData);
       await User_Subscription.findByIdAndUpdate(metaData?.subscriptionId, {
         lastPaymentStatus:
           event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
@@ -127,7 +125,7 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
         invoiceId: invoice.id,
       });
     }
-
+    console.log("sebuicriotion id ::::: ");
     res.status(200).send("Webhook event processed");
   } catch (err: any) {
     console.error("Webhook error:", err.message);
