@@ -14,14 +14,21 @@ export const createRecurringSession = async (
 ): Promise<void> => {
   try {
     const { planId } = req.body;
-
     const plan = await Subscription_Plan.findById(planId);
+
     if (!plan) {
       res.status(404).json({ message: "Plan not found" });
       return;
     }
 
-    // Ensure stripePriceId exists and is recurring
+    // ✅ Validate interval
+    const validIntervals = ["day", "week", "month", "year"];
+    const planInterval = plan.interval;
+    if (!validIntervals.includes(planInterval)) {
+      res.status(400).json({ message: "Invalid plan interval" });
+      return;
+    }
+
     let stripePriceId = plan.stripePriceId;
 
     if (!stripePriceId) {
@@ -33,7 +40,9 @@ export const createRecurringSession = async (
         unit_amount: (plan.price ?? 0) * 100,
         currency: "usd",
         product: product.id,
-        recurring: { interval: "month" }, // Ensure it's recurring
+        recurring: {
+          interval: planInterval as Stripe.Price.Recurring.Interval,
+        },
       });
 
       stripePriceId = price.id;
@@ -41,13 +50,14 @@ export const createRecurringSession = async (
       await plan.save();
     } else {
       const price = await stripe.prices.retrieve(stripePriceId);
-      if (!price.recurring) {
-        // Create a new recurring price if existing is not valid
+      if (!price.recurring || price.recurring.interval !== planInterval) {
         const newPrice = await stripe.prices.create({
           unit_amount: (plan.price ?? 0) * 100,
           currency: "usd",
           product: price.product.toString(),
-          recurring: { interval: "month" },
+          recurring: {
+            interval: planInterval as Stripe.Price.Recurring.Interval,
+          },
         });
 
         stripePriceId = newPrice.id;
@@ -55,6 +65,7 @@ export const createRecurringSession = async (
         await plan.save();
       }
     }
+
     const now = new Date();
     const end = new Date(now);
     end.setDate(now.getDate() + plan.durationInDays);
@@ -71,9 +82,17 @@ export const createRecurringSession = async (
       endDate: end,
       isActive: true,
       paymentStatus: "pending",
-    })) as { _id: Types.ObjectId };
-    console.log(subscription._id.toString());
-    // Create Stripe session
+    })) as unknown as { _id: Types.ObjectId };
+
+    const customer = await stripe.customers.create({
+      email: req.user?.email || "",
+      metadata: {
+        userId: req.user?.id.toString() || "",
+        subscriptionId: subscription._id.toString(),
+        planId: planId.toString(),
+      },
+    });
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -83,17 +102,13 @@ export const createRecurringSession = async (
           quantity: 1,
         },
       ],
-      customer_email: req.user?.email,
+      customer: customer.id,
       success_url:
         process.env.STRIPE_SUCCESS_REDIRECT || "https://example.com/success",
       cancel_url:
         process.env.STRIPE_FAILURE_REDIRECT || "https://example.com/cancel",
-      metadata: {
-        userId: req.user?.id || "",
-        planId: planId.toString(),
-        subscriptionId: subscription._id.toString(),
-      },
     });
+
     res.json({ sessionUrl: session.url });
   } catch (error: any) {
     console.error("Stripe recurring session error:", error.message);
@@ -105,7 +120,7 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers["stripe-signature"] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
-  console.log("entered ::::::");
+
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
 
@@ -118,8 +133,15 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
 
       const customer = await stripe.customers.retrieve(customerId);
       const metaData = (customer as any).metadata;
-      const data = await User_Subscription.findByIdAndUpdate(
-        metaData?.subscriptionId,
+
+      if (!metaData?.subscriptionId) {
+        console.warn("Subscription ID not found in customer metadata");
+        res.status(200).send("No action taken");
+        return;
+      }
+
+      await User_Subscription.findByIdAndUpdate(
+        metaData.subscriptionId,
         {
           lastPaymentStatus:
             event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
@@ -128,8 +150,12 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
         },
         { new: true }
       );
-      console.log("sebuicriotion id ::::: ", metaData?.subscriptionId);
+      console.log(
+        "Webhook processed for subscriptionId:",
+        metaData.subscriptionId
+      );
     }
+
     res.status(200).send("Webhook event processed");
   } catch (err: any) {
     console.error("Webhook error:", err.message);
