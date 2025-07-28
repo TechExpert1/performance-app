@@ -94,7 +94,6 @@ export const createRecurringSession = async (
         subscriptionId: subscription._id.toString(),
       },
     });
-
     res.json({ sessionUrl: session.url });
   } catch (error: any) {
     console.error("Stripe recurring session error:", error.message);
@@ -119,7 +118,8 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
 
       const customer = await stripe.customers.retrieve(customerId);
       const metaData = (customer as any).metadata;
-
+      console.log("sebuicriotion id ::::: ", metaData?.subscriptionId);
+      console.log("metaData ::::: ", metaData);
       await User_Subscription.findByIdAndUpdate(metaData?.subscriptionId, {
         lastPaymentStatus:
           event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
