@@ -67,8 +67,6 @@ export const createRecurringSession = async (
     }
 
     const now = new Date();
-    const end = new Date(now);
-    end.setDate(now.getDate() + plan.durationInDays);
 
     await User_Subscription.updateMany(
       { user: req.user?.id, isActive: true },
@@ -79,9 +77,8 @@ export const createRecurringSession = async (
       user: req.user?.id,
       plan: planId,
       startDate: now,
-      endDate: end,
       isActive: true,
-      paymentStatus: "pending",
+      stripeSubscriptionId: "pending",
     })) as unknown as { _id: Types.ObjectId };
 
     const customer = await stripe.customers.create({
@@ -116,6 +113,48 @@ export const createRecurringSession = async (
   }
 };
 
+// export const webhook = async (req: Request, res: Response): Promise<void> => {
+//   const sig = req.headers["stripe-signature"] as string;
+//   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+//   let event: Stripe.Event;
+
+//   try {
+//     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+
+//     if (
+//       event.type === "invoice.payment_succeeded" ||
+//       event.type === "invoice.payment_failed"
+//     ) {
+//       const invoice = event.data.object as Stripe.Invoice;
+//       const customerId = invoice.customer as string;
+
+//       const customer = await stripe.customers.retrieve(customerId);
+//       const metaData = (customer as any).metadata;
+
+//       if (!metaData?.subscriptionId) {
+//         console.warn("Subscription ID not found in customer metadata");
+//         res.status(200).send("No action taken");
+//         return;
+//       }
+
+//       await User_Subscription.findByIdAndUpdate(
+//         metaData.subscriptionId,
+//         {
+//           lastPaymentStatus:
+//             event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
+//           lastPaymentDate: new Date(invoice.created * 1000),
+//           invoiceId: invoice.id,
+//         },
+//         { new: true }
+//       );
+//     }
+
+//     res.status(200).send("Webhook event processed");
+//   } catch (err: any) {
+//     console.error("Webhook error:", err.message);
+//     res.status(400).send(`Webhook Error: ${err.message}`);
+//   }
+// };
 export const webhook = async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers["stripe-signature"] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -124,41 +163,57 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
 
+    const relevantEvents = [
+      "checkout.session.completed",
+      "invoice.payment_succeeded",
+      "invoice.payment_failed",
+    ];
+
+    if (!relevantEvents.includes(event.type)) {
+      res.status(200).send("Processed");
+      return;
+    }
+
+    let customerId: string;
+    let metadata: any;
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      customerId = session.customer as string;
+
+      const customer = await stripe.customers.retrieve(customerId);
+      metadata = (customer as any).metadata;
+
+      if (metadata?.subscriptionId && session.subscription) {
+        await User_Subscription.findByIdAndUpdate(metadata.subscriptionId, {
+          stripeSubscriptionId: session.subscription,
+        });
+      }
+    }
+
     if (
       event.type === "invoice.payment_succeeded" ||
       event.type === "invoice.payment_failed"
     ) {
       const invoice = event.data.object as Stripe.Invoice;
-      const customerId = invoice.customer as string;
+      customerId = invoice.customer as string;
 
       const customer = await stripe.customers.retrieve(customerId);
-      const metaData = (customer as any).metadata;
+      metadata = (customer as any).metadata;
 
-      if (!metaData?.subscriptionId) {
-        console.warn("Subscription ID not found in customer metadata");
-        res.status(200).send("No action taken");
-        return;
-      }
-
-      await User_Subscription.findByIdAndUpdate(
-        metaData.subscriptionId,
-        {
+      if (metadata?.subscriptionId) {
+        await User_Subscription.findByIdAndUpdate(metadata.subscriptionId, {
           lastPaymentStatus:
             event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
           lastPaymentDate: new Date(invoice.created * 1000),
           invoiceId: invoice.id,
-        },
-        { new: true }
-      );
-      console.log(
-        "Webhook processed for subscriptionId:",
-        metaData.subscriptionId
-      );
+        });
+      }
     }
 
-    res.status(200).send("Webhook event processed");
+    res.status(200).send("Processed");
   } catch (err: any) {
-    console.error("Webhook error:", err.message);
+    console.error("Stripe webhook error:", err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 };
