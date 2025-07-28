@@ -105,7 +105,7 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers["stripe-signature"] as string;
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
-
+  console.log("entered ::::::");
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
 
@@ -118,14 +118,18 @@ export const webhook = async (req: Request, res: Response): Promise<void> => {
 
       const customer = await stripe.customers.retrieve(customerId);
       const metaData = (customer as any).metadata;
-      await User_Subscription.findByIdAndUpdate(metaData?.subscriptionId, {
-        lastPaymentStatus:
-          event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
-        lastPaymentDate: new Date(invoice.created * 1000),
-        invoiceId: invoice.id,
-      });
+      const data = await User_Subscription.findByIdAndUpdate(
+        metaData?.subscriptionId,
+        {
+          lastPaymentStatus:
+            event.type === "invoice.payment_succeeded" ? "succeeded" : "failed",
+          lastPaymentDate: new Date(invoice.created * 1000),
+          invoiceId: invoice.id,
+        },
+        { new: true }
+      );
+      console.log("sebuicriotion id ::::: ", metaData?.subscriptionId);
     }
-    console.log("sebuicriotion id ::::: ");
     res.status(200).send("Webhook event processed");
   } catch (err: any) {
     console.error("Webhook error:", err.message);
