@@ -15,3 +15,4 @@ import "./User_Subscription.js";
 import "./Gym_Member.js";
 import "./Member_Awaiting.js";
 import "./Training_Member.js";
+import "./Skill_Set.js";

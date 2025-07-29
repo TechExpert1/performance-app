@@ -1,7 +1,7 @@
 import { Request } from "express";
 import mongoose, { SortOrder } from "mongoose";
 import Sport, { SportDocument } from "../models/Sports.js";
-
+import { SkillSetLevel } from "../models/Skill_Set.js";
 interface ServiceResponse<T> {
   message: string;
   sport?: T;
@@ -222,7 +222,7 @@ export const getAllSports = async (
 
 export const sportsWithSkillLevel = async (
   req: Request
-): Promise<ServiceResponse<SportDocument>> => {
+): Promise<ServiceResponse<any>> => {
   const {
     sortBy = "createdAt",
     sortOrder = "asc",
@@ -230,7 +230,10 @@ export const sportsWithSkillLevel = async (
   } = req.query as Record<string, string>;
 
   const { sportsTypesId } = req.params;
-  const filters: Record<string, any> = { sportsType: sportsTypesId };
+
+  const filters: Record<string, any> = {
+    sportsType: sportsTypesId,
+  };
 
   Object.entries(rawFilters).forEach(([key, value]) => {
     filters[key] = { $regex: value, $options: "i" };
@@ -241,13 +244,25 @@ export const sportsWithSkillLevel = async (
   };
 
   try {
-    const data = await Sport.find(filters)
-      .populate("sportsType skillLevelSet")
-      .sort(sortOption);
+    const sports = await Sport.find(filters)
+      .populate("sportsType")
+      .sort(sortOption)
+      .lean();
+    const enhancedSports = await Promise.all(
+      sports.map(async (sport) => {
+        const skillLevels = await SkillSetLevel.find({
+          skillSet: sport.skillSet,
+        }).lean();
+        return {
+          ...sport,
+          skillLevels,
+        };
+      })
+    );
 
     return {
-      message: "Sports fetched with skillLevel",
-      data,
+      message: "Sports fetched with skill levels",
+      data: enhancedSports,
     };
   } catch (error) {
     throw error;

@@ -4,7 +4,7 @@ export interface ISport {
   name: string;
   image: string;
   sportsType: Types.ObjectId;
-  skillLevelSet: Types.ObjectId;
+  skillSet: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
