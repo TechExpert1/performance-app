@@ -6,7 +6,7 @@ export interface IGym {
   address: string;
   registration: string;
   cnic: string;
-  sport: Types.ObjectId;
+  sport: Types.ObjectId[];
   proofOfBusiness?: string[];
   gymImages?: string[];
   personalIdentification?: string[];
