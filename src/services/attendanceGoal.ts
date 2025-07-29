@@ -140,13 +140,13 @@ export const getAllAttendanceGoals = async (req: AuthenticatedRequest) => {
   }
 };
 
-export const getHomeStats = async (req: AuthenticatedRequest) => {
+export const getHomeStats = async (req: Request) => {
   try {
-    if (!req.user) {
-      return { message: "User not authenticated" };
+    if (!req.query.user) {
+      return { message: "Enter user id in query params" };
     }
 
-    const userId = req.user.id;
+    const userId = req.query.user;
     const year = req.query.year;
 
     if (!year) {
@@ -162,15 +162,28 @@ export const getHomeStats = async (req: AuthenticatedRequest) => {
       },
     });
 
-    const trainingGoalSummary: Record<string, number> = {};
+    const monthlySessionCounts: Record<string, number> = {};
 
     for (const goal of allTrainingGoals) {
       if (!goal.month || !goal.noOfSessions) continue;
       const month =
         goal.month.charAt(0).toUpperCase() + goal.month.slice(1).toLowerCase();
 
+      monthlySessionCounts[month] =
+        (monthlySessionCounts[month] || 0) + Number(goal.noOfSessions);
+    }
+
+    const totalSessions = Object.values(monthlySessionCounts).reduce(
+      (acc, val) => acc + val,
+      0
+    );
+
+    const trainingGoalSummary: Record<string, number> = {};
+
+    for (const month in monthlySessionCounts) {
+      const count = monthlySessionCounts[month];
       trainingGoalSummary[month] =
-        (trainingGoalSummary[month] || 0) + Number(goal.noOfSessions);
+        totalSessions > 0 ? Math.round((count / totalSessions) * 100) : 0;
     }
 
     const allEventGoals = await Attendance_Goal.find({
