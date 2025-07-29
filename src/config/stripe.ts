@@ -83,6 +83,7 @@ export const createRecurringSession = async (
 
     const customer = await stripe.customers.create({
       email: req.user?.email || "",
+      name: req.user?.name || "",
       metadata: {
         userId: req.user?.id.toString() || "",
         subscriptionId: subscription._id.toString(),

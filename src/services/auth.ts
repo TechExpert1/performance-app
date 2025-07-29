@@ -39,10 +39,15 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     userData.password = hashedPassword;
     userData.role = role;
     if (
-      Array.isArray(req.fileUrls?.profile) &&
+      req.fileUrls &&
+      Array.isArray(req.fileUrls.profile) &&
       req.fileUrls.profile.length > 0
     ) {
       userData.profileImage = req.fileUrls.profile[0];
+    }
+    const existingUser = await User.findOne({ email: userData.email });
+    if (existingUser) {
+      return { message: "User with this email already exists" };
     }
     const newUser = (await User.create(userData)) as UserDocument;
 
@@ -120,7 +125,16 @@ export const handleForgotPassword = async (
   try {
     const { email } = req.body;
     const verificationMethod = req.query.verificationMethod;
+    if (verificationMethod == "email") {
+      if (!email) {
+        return { message: "Email is required." };
+      }
 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return { message: "Email is not valid." };
+      }
+    }
     const user = await User.findOne({ email });
     if (!user) return { message: "User not found" };
 
@@ -177,7 +191,9 @@ export const handleResetPassword = async (
 ): Promise<GenericResult> => {
   try {
     const { user_id, newPassword } = req.body;
-
+    if (!newPassword || newPassword.trim() === "") {
+      return { message: "Password cannot be empty." };
+    }
     const user = await User.findById(user_id);
     if (!user) throw new Error("User not found");
 

@@ -3,12 +3,13 @@ import { CoachController } from "../controllers/coach.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 import { gymOwnerAuth } from "../middlewares/gymOwner.js";
 const router = express.Router();
-
+import { validateCoach } from "../validations/coach.js";
 router.post(
   "/",
   gymOwnerAuth,
   newMulterUpload,
   uploadMultipleToS3,
+  validateCoach,
   CoachController.create
 );
 router.patch(
