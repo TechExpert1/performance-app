@@ -29,6 +29,7 @@ export const getAllChallengeCategories = async (req: Request) => {
         $project: {
           _id: 1,
           name: 1,
+          image: 1,
           types: {
             _id: 1,
             name: 1,
