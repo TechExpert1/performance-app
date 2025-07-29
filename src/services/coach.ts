@@ -11,8 +11,12 @@ export const createCoach = async (req: AuthenticatedRequest) => {
     const data = {
       gymOwner: req.user.id,
       ...req.body,
-      profileImage: (req as any).fileUrls.profile[0],
+      profileImage: (req as any).fileUrls?.profile?.[0] || "",
     };
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return { message: "User with this email already exists" };
+    }
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     data.password = hashedPassword;
     const coach = await User.create(data);
