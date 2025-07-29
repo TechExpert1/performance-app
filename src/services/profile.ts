@@ -16,13 +16,25 @@ export const getProfile = async (req: Request) => {
   // Check if user is an athlete
   if (user.role === "athlete") {
     linkedProfile = await Athlete_User.findOne({ userId: req.params.id })
-      .populate("skillLevel sports")
+      .populate({
+        path: "sportsAndSkillLevels.sport",
+        model: "Sport",
+      })
+      .populate({
+        path: "sportsAndSkillLevels.skillSetLevel",
+        model: "Skill_Set_Level",
+      })
       .lean();
     linkedProfileName = "profile";
   }
   if (user.role === "gymOwner") {
     linkedProfile = await Gym.findOne({ owner: req.params.id })
-      .populate("sport")
+      .populate({
+        path: "sport",
+        populate: {
+          path: "skillSet",
+        },
+      })
       .lean();
     linkedProfileName = "gymDetails";
   }
