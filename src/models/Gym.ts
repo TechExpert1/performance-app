@@ -12,7 +12,7 @@ const GymSchema = new Schema<GymDocument>(
     address: { type: String, required: true },
     registration: { type: String, required: true },
     cnic: { type: String, required: true },
-    sport: { type: Schema.Types.ObjectId, ref: "Sport", required: true },
+    sport: [{ type: Schema.Types.ObjectId, ref: "Sport" }],
     proofOfBusiness: [{ type: String }],
     gymImages: [{ type: String }],
     personalIdentification: [{ type: String }],
