@@ -48,12 +48,34 @@ export const getProfile = async (req: Request) => {
 };
 
 export const updateProfile = async (req: AuthenticatedRequest) => {
-  if (!req.user) throw new Error("User not authenticated");
+  if (!req.user || !req.user.id || !req.user.role) {
+    throw new Error("User not authenticated");
+  }
 
-  const userId = req.params.id;
-
-  // Destructure the user and athlete_details from the request body
+  const userId: string = req.params.id;
   const { user: userData = {}, athlete_details = {} } = req.body;
+
+  const targetUser = await User.findById(userId);
+  if (!targetUser) {
+    throw new Error("User not found");
+  }
+
+  const requesterId: string = req.user.id;
+  const requesterRole: string = req.user.role;
+
+  const isSelf = requesterId === userId;
+  const isSuperAdmin = requesterRole === "superAdmin";
+  const isCreator = targetUser.createdBy?.toString() === requesterId;
+  const isSalesRepAndCreator =
+    requesterRole === "salesRep" &&
+    targetUser.createdBy?.toString() === requesterId;
+
+  const isAuthorized =
+    isSuperAdmin || isSelf || isCreator || isSalesRepAndCreator;
+
+  if (!isAuthorized) {
+    throw new Error("Unauthorized to update this profile");
+  }
 
   // Handle password hashing if included
   if (userData.password) {
@@ -77,7 +99,7 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
     Object.keys(athlete_details).length > 0
   ) {
     updatedAthlete = await Athlete_User.findOneAndUpdate(
-      { userId }, // assuming athlete profile links via `userId`
+      { userId },
       athlete_details,
       { new: true }
     );
@@ -94,15 +116,48 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
   };
 };
 
-// Delete Profile
 export const deleteProfile = async (req: AuthenticatedRequest) => {
-  if (!req.user) throw new Error("User not authenticated");
+  try {
+    if (!req.user || !req.user.id || !req.user.role) {
+      throw new Error("User not authenticated");
+    }
 
-  const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const userId: string = req.params.id;
+    const requesterId: string = req.user.id;
+    const requesterRole: string = req.user.role;
 
-  if (!deletedUser) throw new Error("Failed to delete profile");
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
 
-  return { message: "Profile deleted successfully" };
+    const isSelf = requesterId === userId;
+    const isSuperAdmin = requesterRole === "superAdmin";
+    const isCreator = targetUser.createdBy?.toString() === requesterId;
+    const isSalesRepAndCreator =
+      requesterRole === "salesRep" &&
+      targetUser.createdBy?.toString() === requesterId;
+
+    const isAuthorized =
+      isSuperAdmin || isSelf || isCreator || isSalesRepAndCreator;
+
+    if (!isAuthorized) {
+      throw new Error("Unauthorized to delete this profile");
+    }
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      throw new Error("Failed to delete profile");
+    }
+
+    return { message: "Profile deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting profile:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Internal Server Error"
+    );
+  }
 };
 
 // Update Profile Image

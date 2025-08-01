@@ -12,3 +12,11 @@ export const monthMap: Record<string, number> = {
   november: 10,
   december: 11,
 };
+// utils/roles.ts
+
+export const RoleHierarchy: Record<string, number> = {
+  admin: 3,
+  salesRep: 2,
+  gymOwner: 1,
+  athlete: 0,
+};

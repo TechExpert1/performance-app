@@ -1,3 +1,4 @@
+import { AuthenticatedRequest } from "./../middlewares/user";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User, { UserDocument } from "../models/User.js";
@@ -7,7 +8,7 @@ import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
 import { Request } from "express";
 import Member_Awaiting from "../models/Member_Awaiting.js";
-
+import mongoose, { Types } from "mongoose";
 interface LoginResult {
   user: UserDocument;
 }
@@ -20,13 +21,19 @@ interface GenericResult {
   verification?: boolean;
 }
 
-export const handleSignup = async (req: Request): Promise<GenericResult> => {
+export const handleSignup = async (
+  req: AuthenticatedRequest
+): Promise<GenericResult> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { role } = req.query;
 
     if (!role || typeof role !== "string") {
       return { message: "Role query parameter is required" };
     }
+
     const userData = JSON.parse(req.body.user);
     const athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
@@ -38,6 +45,7 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     userData.password = hashedPassword;
     userData.role = role;
+
     if (
       req.fileUrls &&
       Array.isArray(req.fileUrls.profile) &&
@@ -45,43 +53,81 @@ export const handleSignup = async (req: Request): Promise<GenericResult> => {
     ) {
       userData.profileImage = req.fileUrls.profile[0];
     }
-    const existingUser = await User.findOne({ email: userData.email });
+
+    const existingUser = await User.findOne({ email: userData.email }).session(
+      session
+    );
     if (existingUser) {
+      await session.abortTransaction();
+      session.endSession();
       return { message: "User with this email already exists" };
     }
-    const newUser = (await User.create(userData)) as UserDocument;
+
+    const newUser = await User.create([userData], { session });
+
+    const createdUser = newUser[0];
 
     if (role === "athlete") {
       if (!athleteDetails) {
+        await session.abortTransaction();
+        session.endSession();
         return { message: "Athlete details are required for role athlete" };
       }
 
-      await Athlete_User.create({
-        userId: newUser._id,
-        ...athleteDetails,
-      });
-    } else if (role === "gymOwner") {
-      if (!gymDetails) {
-        return { message: "Gym Owner details are required for role gymOwner" };
-      }
-
-      await Gym.create({
-        owner: newUser._id,
-        ...gymDetails,
-        proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
-        gymImages: req.fileUrls?.gymImages || [],
-        personalIdentification: req.fileUrls?.personalIdentification || [],
-      });
+      await Athlete_User.create(
+        [
+          {
+            userId: createdUser._id,
+            ...athleteDetails,
+          },
+        ],
+        { session }
+      );
+    } else if (role === "gymOwner" && gymDetails) {
+      await Gym.create(
+        [
+          {
+            owner: createdUser._id,
+            ...gymDetails,
+            proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
+            gymImages: req.fileUrls?.gymImages || [],
+            personalIdentification: req.fileUrls?.personalIdentification || [],
+          },
+        ],
+        { session }
+      );
     }
+
+    if (role === "gymOwner") {
+      createdUser.adminStatus = "pending";
+      await createdUser.save({ session });
+    }
+
     const record = await Member_Awaiting.findOne({
-      email: newUser.email,
-    });
+      email: createdUser.email,
+    }).session(session);
+
+    const token = req.headers.token as string;
+    if (token) {
+      const user = jwt.verify(token, process.env.JWT_SECRET as string);
+      req.user = user as AuthenticatedRequest["user"];
+      if (req.user?.id) {
+        createdUser.createdBy = new Types.ObjectId(req.user.id);
+        await createdUser.save({ session });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
     return {
       message: "User registered successfully",
-      user: newUser,
-      code: record ? record.code : "Not a gym/club memebr",
+      user: createdUser,
+      code: record ? record.code : "Not a gym/club member",
     };
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Signup error:", error);
     throw error;
   }

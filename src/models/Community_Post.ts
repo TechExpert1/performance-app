@@ -7,6 +7,8 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
   {
     images: { type: [String] },
     caption: { type: String, trim: true },
+    likes: { type: Number },
+
     community: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Community",
@@ -20,7 +22,14 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
   },
   { timestamps: true }
 );
+communityPostSchema.virtual("comments", {
+  ref: "Community_Post_Comment", // model name of the comment schema
+  localField: "_id", // the field on Community_Post
+  foreignField: "post", // the field in comment that refers to Community_Post
+});
 
+communityPostSchema.set("toObject", { virtuals: true });
+communityPostSchema.set("toJSON", { virtuals: true });
 export default mongoose.model<CommunityPostDocument>(
   "Community_Post",
   communityPostSchema

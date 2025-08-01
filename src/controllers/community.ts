@@ -9,7 +9,7 @@ import {
   handleGetRequests,
 } from "../services/community.js";
 
-export const communityController = {
+export const CommunityController = {
   create: async (req: Request, res: Response) => {
     try {
       const result = await createCommunity(req);

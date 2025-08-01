@@ -16,3 +16,4 @@ import "./Gym_Member.js";
 import "./Member_Awaiting.js";
 import "./Training_Member.js";
 import "./Skill_Set.js";
+import "./Community_Post_Comment.js";

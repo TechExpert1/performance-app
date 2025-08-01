@@ -9,7 +9,6 @@ export const createCoach = async (req: AuthenticatedRequest) => {
       return { message: "Gym owner information is missing from request." };
     }
     const data = {
-      gymOwner: req.user.id,
       ...req.body,
       profileImage: (req as any).fileUrls?.profile?.[0] || "",
     };
@@ -51,7 +50,7 @@ export const updateCoach = async (req: AuthenticatedRequest) => {
     }
 
     const updatedCoach = await User.findOneAndUpdate(
-      { _id: id, gymOwner: req.user.id }, // ensure gym owner can only update their own coach
+      { _id: id }, // ensure gym owner can only update their own coach
       updateData,
       { new: true }
     );

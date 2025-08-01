@@ -11,9 +11,15 @@ export const createCommunity = async (req: AuthenticatedRequest) => {
   const payload = {
     ...req.body,
     createdBy: req.user.id,
-    image: req.fileUrl,
+    gym: req.query.gym,
   };
-
+  if (
+    req.fileUrls &&
+    Array.isArray(req.fileUrls.image) &&
+    req.fileUrls.image.length > 0
+  ) {
+    payload.image = req.fileUrls.image[0];
+  }
   const community = await Community.create(payload);
   return {
     message: "Community created successfully",
@@ -63,18 +69,27 @@ export const getCommunityById = async (req: AuthenticatedRequest) => {
   const found = await Community.findById(communityId).populate("createdBy");
   if (!found) throw new Error("Community not found");
 
-  const [totalMembers, totalPosts] = await Promise.all([
+  const [totalMembers, totalPosts, members] = await Promise.all([
     Community_Member.countDocuments({
       community: communityId,
       status: "active",
     }),
     Community_Post.countDocuments({ community: communityId }),
+
+    Community_Member.find({ community: communityId, status: "active" })
+      .limit(3)
+      .populate({
+        path: "user",
+        select: "profileImage name",
+      }),
   ]);
+  const memberUsers = members.map((m) => m.user);
 
   return {
     ...found.toObject(),
     totalMembers,
     totalPosts,
+    members: memberUsers,
   };
 };
 
@@ -142,11 +157,12 @@ export const getActiveMembersOfCommunity = async (req: Request) => {
     },
   };
 };
+
 export const getAllCommunities = async (req: Request) => {
   try {
     const {
-      page = "1",
-      limit = "10",
+      page,
+      limit,
       sortBy = "createdAt",
       sortOrder = "desc",
       ...filters
@@ -164,23 +180,41 @@ export const getAllCommunities = async (req: Request) => {
       [sortBy]: sortOrder === "asc" ? 1 : -1,
     };
 
-    const dataQuery = Community.find(query)
-      .populate("createdBy")
-      .sort(sortOption);
+    // If pagination parameters are provided
+    if (page && limit) {
+      const skip = (Number(page) - 1) * Number(limit);
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const paginatedData = await dataQuery.skip(skip).limit(Number(limit));
-    const total = await Community.countDocuments(query);
+      const dataQuery = Community.find(query)
+        .populate("createdBy")
+        .sort(sortOption)
+        .skip(skip)
+        .limit(Number(limit));
 
-    return {
-      data: paginatedData,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
-        totalResults: total,
-      },
-    };
+      const paginatedData = await dataQuery;
+      const total = await Community.countDocuments(query);
+
+      return {
+        data: paginatedData,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+          totalResults: total,
+        },
+      };
+    } else {
+      // No pagination: group by scope
+      const allCommunities = await Community.find(query)
+        .populate("createdBy")
+        .sort(sortOption);
+
+      const grouped = {
+        public: allCommunities.filter((comm) => comm.scope === "public"),
+        private: allCommunities.filter((comm) => comm.scope === "private"),
+      };
+
+      return { data: grouped };
+    }
   } catch (error) {
     throw new Error("Failed to fetch communities");
   }
