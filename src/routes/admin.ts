@@ -11,6 +11,8 @@ import {
   sendOtpAdmin,
   uploadImageAdmin,
   verifyOTPAndResetPassAdmin,
+  createSubAdmin,
+  getPendingGymOwner,
 } from "../controllers/admin.js";
 import { verifyAdminToken as verifyToken } from "../middlewares/admin.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
@@ -19,8 +21,8 @@ const router = Router();
 router.post("/login", LoginAdmin);
 router.post("/signup", adminSignup);
 // forget pass
-router.post("/otp/send" , sendOtpAdmin);
-router.post("/otp/verify-and-reset" , verifyOTPAndResetPassAdmin);
+router.post("/otp/send", sendOtpAdmin);
+router.post("/otp/verify-and-reset", verifyOTPAndResetPassAdmin);
 // homepage
 router.get("/dashboard/home", verifyToken, getNoOfAllTypesOfUsers);
 // all user types flows in admin
@@ -33,6 +35,14 @@ router.get(
 router.get("/users/details/:userId", verifyToken, getSingleUserDetails);
 router.delete("/users/:userId", verifyToken, deleteAUser);
 router.get("/admins", verifyToken, getAdmins);
+router.post(
+  "/create-sub-admin",
+  verifyToken,
+  newMulterUpload,
+  uploadMultipleToS3,
+  createSubAdmin
+);
+router.get("/pending-gym-owners", verifyToken, getPendingGymOwner);
 router.patch(
   "/profile",
   verifyToken,
@@ -40,4 +50,5 @@ router.patch(
   uploadMultipleToS3,
   uploadImageAdmin
 );
+
 export default router;

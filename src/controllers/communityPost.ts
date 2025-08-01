@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { createCommunityPost } from "../services/communityPost.js";
+import {
+  createCommunityPost,
+  getAllCommunityPosts,
+} from "../services/communityPost.js";
 
 export const communityPostController = {
   create: async (req: Request, res: Response) => {
@@ -46,14 +49,14 @@ export const communityPostController = {
   //     }
   //   },
 
-  //   getAll: async (req: Request, res: Response) => {
-  //     try {
-  //       const result = await getAllCommunities(req);
-  //       res.status(200).json(result);
-  //     } catch (err) {
-  //       res
-  //         .status(422)
-  //         .json({ error: err instanceof Error ? err.message : "Unknown error" });
-  //     }
-  //   },
+  getAll: async (req: Request, res: Response) => {
+    try {
+      const result = await getAllCommunityPosts(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
 };

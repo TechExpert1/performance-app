@@ -13,13 +13,18 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       enum: ["male", "female", "other"],
     },
+    adminStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
     resetOTP: { type: String },
     token: { type: String },
     nationality: { type: String },
     dob: { type: Date },
     role: {
       type: String,
-      enum: ["superAdmin", "gymOwner", "coach", "athlete"],
+      enum: ["superAdmin", "gymOwner", "coach", "athlete", "salesRep"],
       required: true,
     },
     profileImage: { type: String },
@@ -29,6 +34,7 @@ const userSchema = new Schema<UserDocument>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gym",
     }, // for coach
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

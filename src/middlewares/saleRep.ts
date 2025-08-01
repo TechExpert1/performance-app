@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AuthenticatedRequest } from "./user";
 
-export const gymOwnerAuth = (
+export const salesRepAuth = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -19,9 +19,7 @@ export const gymOwnerAuth = (
     req.user = decoded as AuthenticatedRequest["user"];
     if (
       !req.user ||
-      (req.user.role !== "gymOwner" &&
-        req.user.role !== "superAdmin" &&
-        req.user.role !== "salesRep")
+      (req.user.role !== "superAdmin" && req.user.role !== "salesRep")
     ) {
       res.status(403).json({
         message: `Forbidden: Gym Owner or Admin access or salesRep required, cant access with ${req?.user?.role} account`,

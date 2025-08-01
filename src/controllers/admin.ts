@@ -170,7 +170,7 @@ export const searchGeneralUsersByEmail = async (
     const { username, email } = req.query;
     const reg = new RegExp(email ? (email as string) : "", "i");
     const reg2 = new RegExp(username ? (username as string) : "", "i");
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists!" });
@@ -200,7 +200,7 @@ export const searchGeneralUsersByEmail = async (
 export const getSingleUserDetails = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists!" });
@@ -233,7 +233,7 @@ export const deleteAUser = async (
   const session = await mongoose.startSession();
   try {
     const { userId } = req.params;
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
 
     const admin = await User.findById(adminId);
     if (!admin) {
@@ -294,7 +294,7 @@ export const deleteAUser = async (
 
 export const getAdmins = async (req: Request, res: Response) => {
   try {
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists" });
@@ -304,7 +304,7 @@ export const getAdmins = async (req: Request, res: Response) => {
       res.status(401).json({ message: "Unauthorized to access this resource" });
       return;
     }
-    const admins = await User.find({ role: "superAdmin" })
+    const admins = await User.find({ role: req.query.role })
       .select("name email createdAt")
       .sort({ createdAt: -1 });
     res.status(200).json({ admins });
@@ -319,7 +319,7 @@ export const getAdmins = async (req: Request, res: Response) => {
 };
 export const getNoOfAllTypesOfUsers = async (req: Request, res: Response) => {
   try {
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists" });
@@ -360,7 +360,7 @@ export const getNoOfAllTypesOfUsers = async (req: Request, res: Response) => {
 };
 export const getGeneralUsers = async (req: Request, res: Response) => {
   try {
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists" });
@@ -397,7 +397,7 @@ export const uploadImageAdmin = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "Required an image to proceed the request" });
     }
-    const adminId = req?.admin?._id;
+    const adminId = req?.user?.id;
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists" });
@@ -417,6 +417,71 @@ export const uploadImageAdmin = async (req: Request, res: Response) => {
         .status(500)
         .json({ message: "Error uploading image : " + error?.message });
     }
+    return;
+  }
+};
+export const createSubAdmin = async (req: Request, res: Response) => {
+  try {
+    const userData = req.body;
+
+    const existingUser = await User.findOne({ email: userData.email });
+    if (existingUser) {
+      res
+        .status(409)
+        .json({ message: "Sub Admin with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    userData.password = hashedPassword;
+    userData.role = "salesRep";
+
+    if (
+      req.fileUrls &&
+      Array.isArray(req.fileUrls.profile) &&
+      req.fileUrls.profile.length > 0
+    ) {
+      userData.profileImage = req.fileUrls.profile[0];
+    }
+
+    const newUser = await User.create(userData);
+    res
+      .status(201)
+      .json({ message: "Sub Admin created successfully", data: newUser });
+  } catch (error) {
+    console.error("Error creating sub admin:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+export const getPendingGymOwner = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({
+      role: "gymOwner",
+      adminStatus: "pending",
+    }).populate("gym friends");
+
+    const data = await Promise.all(
+      users.map(async (user) => {
+        const gymDetails = await Gym.findOne({ owner: user._id })
+          .populate({
+            path: "sport",
+            populate: {
+              path: "skillSet",
+            },
+          })
+          .lean();
+
+        return {
+          user,
+          gymDetails,
+        };
+      })
+    );
+
+    res.status(200).json({ data });
+    return;
+  } catch (error) {
+    console.error("Error fetching pending gym owners with gyms:", error);
+    res.status(500).json({ message: "Internal Server Error" });
     return;
   }
 };

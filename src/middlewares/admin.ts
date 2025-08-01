@@ -1,39 +1,49 @@
 import { Request, Response, NextFunction } from "express";
-import Jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { StatusCodes } from "http-status-codes";
-interface UserPayload {
-  _id: string;
+
+interface AdminPayload {
+  id: string;
+  role?: string;
 }
+
 declare global {
   namespace Express {
     interface Request {
-      admin?: UserPayload;
+      user?: AdminPayload;
     }
   }
 }
+
 export const verifyAdminToken = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
-    Jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
-      if (err) {
-        res
-          .status(StatusCodes.UNAUTHORIZED)
-          .json({ message: "Token not matched" });
-        return;
-      }
-      const user = decoded as UserPayload;
-      req.admin = user;
-      next();
-    });
-  } else {
+): void => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) {
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Access Denied: No token provided" });
+      return;
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as AdminPayload;
+    if (!decoded || decoded.role != "superAdmin") {
+      res.status(StatusCodes.FORBIDDEN).json({
+        message: `Forbidden: Admin access required, cant access with ${decoded.role} account`,
+      });
+      return;
+    }
+    req.user = decoded;
+    next();
+  } catch (err) {
     res
       .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "Access Denied Invalid Token" });
-    return;
+      .json({ message: "Unauthorized: Invalid or expired token" });
   }
 };
