@@ -79,7 +79,7 @@ app.use("/physical-performances", physicalPerformanceRoutes);
 app.use("/system-user-challenges", systemUserChallengeRoutes);
 app.use("/coaches", coachRoutes);
 app.use("/api/v1/admin", adminRoutes);
-app.use("/api/sub-admin", subAdminRoutes);
+app.use("/api/v1/sub-admin", subAdminRoutes);
 app.use("/dropdowns", dropdownRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
