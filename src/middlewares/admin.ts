@@ -21,29 +21,40 @@ export const verifyAdminToken = (
   next: NextFunction
 ): void => {
   try {
-    const token = req.headers.authorization;
-    if (!token) {
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json({ message: "Access Denied: No token provided" });
+    const authHeader = req.headers?.authorization;
+
+    const isInvalid = !authHeader && !authHeader?.startsWith("Bearer ");
+
+    if (isInvalid) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Access Denied: No Bearer token provided",
+      });
       return;
     }
+
+    const token = authHeader!.split(" ")[1];
 
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
     ) as AdminPayload;
-    if (!decoded || decoded.role != "superAdmin") {
+
+    if (!decoded || decoded.role !== "superAdmin") {
       res.status(StatusCodes.FORBIDDEN).json({
-        message: `Forbidden: Admin access required, cant access with ${decoded.role} account`,
+        message: `Forbidden: Admin access required, cannot access with ${decoded.role} account`,
       });
       return;
     }
-    req.user = decoded;
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
+
     next();
   } catch (err) {
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json({ message: "Unauthorized: Invalid or expired token" });
+    res.status(StatusCodes.UNAUTHORIZED).json({
+      message: "Unauthorized: Invalid or expired token",
+    });
   }
 };

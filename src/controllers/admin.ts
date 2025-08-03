@@ -35,7 +35,8 @@ export const LoginAdmin = async (req: Request, res: Response) => {
     }
     const token = jwt.sign(
       {
-        _id: userExists._id,
+        id: userExists._id,
+        role: userExists.role,
       },
       process.env.JWT_SECRET!
     );
@@ -337,6 +338,7 @@ export const getNoOfAllTypesOfUsers = async (req: Request, res: Response) => {
     }).select("createdAt");
     const hostAgencies = await User.find({
       role: "gymOwner",
+      adminStatus: "approved",
     }).select("createdAt");
     const noOfGeneralUsers = generalUsers.length;
     const noOfTrainingProviders = trainingProviders.length;

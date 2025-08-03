@@ -78,7 +78,7 @@ app.use("/landing-page", landingPageRoutes);
 app.use("/physical-performances", physicalPerformanceRoutes);
 app.use("/system-user-challenges", systemUserChallengeRoutes);
 app.use("/coaches", coachRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/v1/admin", adminRoutes);
 app.use("/api/sub-admin", subAdminRoutes);
 app.use("/dropdowns", dropdownRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
