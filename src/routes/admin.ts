@@ -14,6 +14,7 @@ import {
   createSubAdmin,
   getPendingGymOwner,
 } from "../controllers/admin.js";
+import { ProfileController } from "../controllers/profile.js";
 import { verifyAdminToken as verifyToken } from "../middlewares/admin.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 const router = Router();
@@ -43,6 +44,12 @@ router.post(
   createSubAdmin
 );
 router.get("/pending-gym-owners", verifyToken, getPendingGymOwner);
+router.patch(
+  "/:id/gymOwner-status-update",
+  verifyToken,
+  ProfileController.update
+);
+router.patch("/:id/sub-admin-update", verifyToken, ProfileController.update);
 router.patch(
   "/profile",
   verifyToken,
