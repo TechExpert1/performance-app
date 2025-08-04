@@ -185,6 +185,7 @@ export const searchGeneralUsersByEmail = async (
       role: { $ne: "superAdmin" },
       email: { $regex: reg },
       name: { $regex: reg2 },
+      $or: [{ adminStatus: { $exists: false } }, { adminStatus: "approved" }],
     })
       .select("name email profileImage role createdAt")
       .sort({ createdAt: -1 });
@@ -374,6 +375,7 @@ export const getGeneralUsers = async (req: Request, res: Response) => {
     }
     const generalUsers = await User.find({
       role: { $ne: "superAdmin" },
+      $or: [{ adminStatus: { $exists: false } }, { adminStatus: "approved" }],
     })
       .select("name email role profileImage createdAt")
       .sort({ createdAt: -1 });
