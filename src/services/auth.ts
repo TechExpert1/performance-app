@@ -31,7 +31,7 @@ export const handleSignup = async (
     const { role } = req.query;
 
     if (!role || typeof role !== "string") {
-      return { message: "Role query parameter is required" };
+      throw new Error("Role query parameter is required");
     }
 
     const userData = JSON.parse(req.body.user);
@@ -58,9 +58,7 @@ export const handleSignup = async (
       session
     );
     if (existingUser) {
-      await session.abortTransaction();
-      session.endSession();
-      return { message: "User with this email already exists" };
+      throw new Error("User with this email already exists");
     }
 
     const newUser = await User.create([userData], { session });
@@ -71,7 +69,7 @@ export const handleSignup = async (
       if (!athleteDetails) {
         await session.abortTransaction();
         session.endSession();
-        return { message: "Athlete details are required for role athlete" };
+        throw new Error("Athlete details are required for role athlete");
       }
 
       await Athlete_User.create(
@@ -173,16 +171,16 @@ export const handleForgotPassword = async (
     const verificationMethod = req.query.verificationMethod;
     if (verificationMethod == "email") {
       if (!email) {
-        return { message: "Email is required." };
+        throw new Error("Email is required.");
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return { message: "Email is not valid." };
+        throw new Error("Email is not valid.");
       }
     }
     const user = await User.findOne({ email });
-    if (!user) return { message: "User not found" };
+    if (!user) throw new Error("User not found");
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.resetOTP = otp;
@@ -212,10 +210,10 @@ export const handleVerifyOtp = async (req: Request): Promise<GenericResult> => {
     const { otp, user_id } = req.body;
 
     const user = (await User.findById(user_id)) as UserDocument | null;
-    if (!user) return { message: "User not found" };
+    if (!user) throw new Error("User not found");
 
     if (user.resetOTP !== otp) {
-      throw new Error("Invalid OTP");
+      throw new Error("The OTP you entered is incorrect. Please try again.");
     }
 
     user.resetOTP = " ";
@@ -238,7 +236,7 @@ export const handleResetPassword = async (
   try {
     const { user_id, newPassword } = req.body;
     if (!newPassword || newPassword.trim() === "") {
-      return { message: "Password cannot be empty." };
+      throw new Error("Password cannot be empty.");
     }
     const user = await User.findById(user_id);
     if (!user) throw new Error("User not found");
