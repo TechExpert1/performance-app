@@ -5,6 +5,7 @@ export interface IUser {
   email: string;
   password: string;
   phoneNumber?: string;
+  deviceToken?: string;
   gender?: "male" | "female" | "other";
   resetOTP?: string;
   token?: string;

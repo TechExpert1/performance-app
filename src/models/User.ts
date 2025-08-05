@@ -9,6 +9,7 @@ const userSchema = new Schema<UserDocument>(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     phoneNumber: { type: String },
+    deviceToken: { type: String },
     gender: {
       type: String,
       enum: ["male", "female", "other"],
