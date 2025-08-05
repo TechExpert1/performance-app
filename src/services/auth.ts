@@ -180,7 +180,7 @@ export const handleForgotPassword = async (
       }
     }
     const user = await User.findOne({ email });
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found with this email");
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.resetOTP = otp;
