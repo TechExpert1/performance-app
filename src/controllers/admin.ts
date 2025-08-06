@@ -47,6 +47,7 @@ export const LoginAdmin = async (req: Request, res: Response) => {
       email: userExists.email,
       phone_no: userExists.phoneNumber,
       profile_pic: userExists.profileImage,
+      role: userExists.role,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -181,6 +182,7 @@ export const searchGeneralUsersByEmail = async (
       res.status(400).json({ message: "You are not authorized!" });
       return;
     }
+
     const generalUsers = await User.find({
       role: { $ne: "superAdmin" },
       email: { $regex: reg },
