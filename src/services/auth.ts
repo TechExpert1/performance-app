@@ -11,6 +11,7 @@ import Member_Awaiting from "../models/Member_Awaiting.js";
 import mongoose, { Types } from "mongoose";
 interface LoginResult {
   user: UserDocument;
+  response: any;
 }
 
 interface GenericResult {
@@ -132,11 +133,12 @@ export const handleSignup = async (
 };
 
 // Login Handler
-export const handleLogin = async (req: Request): Promise<LoginResult> => {
+export const handleLogin = async (req: Request) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+
     if (!user) return Promise.reject(new Error("Invalid credentials"));
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -154,8 +156,19 @@ export const handleLogin = async (req: Request): Promise<LoginResult> => {
 
     user.token = token;
     await user.save();
+    let gym;
 
-    return { user };
+    if (user?.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: user._id }).lean();
+    }
+    if (gym) {
+      return {
+        user,
+        gym,
+      };
+    } else {
+      return { user };
+    }
   } catch (error) {
     console.error("Login Error:", error);
     throw error;
