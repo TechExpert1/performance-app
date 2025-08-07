@@ -7,6 +7,17 @@ const router = express.Router();
 
 // Profile Routes
 router.get("/:id", ProfileController.get);
+router.get(
+  "/:receiverId/friend-request",
+  userAuth,
+  ProfileController.sendFriendRequest
+);
+router.get(
+  "/:id/update-friend-request",
+  userAuth,
+  ProfileController.updateFriendRequestStatus
+);
+router.get("/:id/notifications", ProfileController.getNotifications);
 router.patch("/:id", userAuth, ProfileController.update);
 router.delete("/:id", userAuth, ProfileController.delete);
 router.patch(

@@ -5,10 +5,14 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import { SortOrder } from "mongoose";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek.js";
-import isBetween from "dayjs/plugin/isBetween.js";
+import GymMember from "../models/Gym_Member.js";
+import User from "../models/User.js";
+import Gym from "../models/Gym.js";
 import { monthMap } from "../utils/commonConst.js";
 import SportCategorySkill from "../models/Sport_Category_Skill.js";
-import GymMember from "../models/Gym_Member.js";
+import Notification from "../models/Notification.js";
+import { sendPushNotification } from "../config/firebase.js";
+import TrainingMember from "../models/Training_Member.js";
 dayjs.extend(isoWeek);
 
 export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
@@ -16,25 +20,74 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     throw new Error("User not authenticated");
   }
 
-  const { recurrence, date } = req.body;
+  const { recurrence, date, trainingScope, gym: gymId, attendees } = req.body;
 
   const data: any = {
     user: req.user.id,
     ...req.body,
   };
 
+  // Set recurrence end date
   if (recurrence && date) {
     const baseDate = dayjs(date);
-
     if (recurrence === "weekly") {
       data.recurrenceEndDate = baseDate.add(7, "day").toDate();
     } else if (recurrence === "monthly") {
       data.recurrenceEndDate = baseDate.add(1, "month").toDate();
     }
   }
-  const created = await TrainingCalendar.create(data);
+
+  const created = (await TrainingCalendar.create(data)) as { _id: string };
+
+  if (Array.isArray(attendees) && attendees.length > 0) {
+    const memberDocs = attendees.map((userId: string) => ({
+      user: userId,
+      training: created._id,
+      status: "approved",
+    }));
+
+    await TrainingMember.insertMany(memberDocs);
+  }
+  if (
+    trainingScope === "gym" &&
+    Array.isArray(attendees) &&
+    attendees.length > 0
+  ) {
+    const message = `Your training has been scheduled by ${
+      req?.user.name || "gym Owner"
+    }.`;
+
+    const notificationTasks = attendees.map(async (userId: string) => {
+      const notification = {
+        user: userId,
+        message,
+        entityType: "training_calendar",
+        entityId: created._id,
+        isRead: false,
+      };
+
+      const user = await User.findById(userId).select("deviceToken");
+
+      if (user?.deviceToken) {
+        await sendPushNotification(
+          user.deviceToken,
+          "New Training Scheduled",
+          message,
+          created._id.toString(),
+          "training_calendar"
+        );
+      }
+
+      return notification;
+    });
+
+    const notifications = await Promise.all(notificationTasks);
+    await Notification.insertMany(notifications);
+  }
+
   return { message: "Training calendar created", data: created };
 };
+
 export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
   const updateData = req.body;
@@ -50,18 +103,31 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
 
 export const getTrainingCalendarById = async (req: Request) => {
   const { id } = req.params;
+
   const entry = await TrainingCalendar.findById(id).populate([
     "user",
-    "attendees",
-    "coaches",
+    "coach",
     "sport",
     "category",
     "skill",
+    "gym",
   ]);
 
-  if (!entry) return { message: "Training calendar not found" };
+  if (!entry) {
+    return { message: "Training calendar not found" };
+  }
 
-  return entry;
+  const attendees = await Training_Member.find({
+    training: id,
+    status: "approved",
+  })
+    .select("user")
+    .populate("user");
+
+  return {
+    ...entry.toObject(),
+    attendees,
+  };
 };
 
 export const deleteTrainingCalendar = async (req: Request) => {

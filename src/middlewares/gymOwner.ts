@@ -20,6 +20,7 @@ export const gymOwnerAuth = (
     if (
       !req.user ||
       (req.user.role !== "gymOwner" &&
+        req.user.role !== "coach" &&
         req.user.role !== "superAdmin" &&
         req.user.role !== "salesRep")
     ) {

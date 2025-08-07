@@ -36,6 +36,7 @@ const userSchema = new Schema<UserDocument>(
       ref: "Gym",
     }, // for coach
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    coach: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

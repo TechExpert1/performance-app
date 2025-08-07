@@ -4,6 +4,7 @@ export interface IGymMember extends Document {
   user: mongoose.Types.ObjectId;
   gym: mongoose.Types.ObjectId;
   status: string;
+  role: string;
 }
 
 const GymMemberSchema = new Schema<IGymMember>(
@@ -22,6 +23,11 @@ const GymMemberSchema = new Schema<IGymMember>(
       type: String,
       enum: ["active", "inactive", "pending"],
       default: "pending",
+    },
+    role: {
+      type: String,
+      enum: ["athlete", "coach"],
+      default: "athlete",
     },
   },
   {

@@ -28,7 +28,6 @@ cron.schedule("* * * * *", () => {
 
       const clone = new TrainingCalendar({
         user: training.user,
-        attendees: training.attendees,
         trainingName: training.trainingName,
         sport: training.sport,
         category: training.category,

@@ -2,7 +2,10 @@ import { Request } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { SortOrder } from "mongoose";
+import mongoose from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
+import { sendPushNotification } from "../config/firebase.js";
+import Notification from "../models/Notification.js";
 export const createCoach = async (req: AuthenticatedRequest) => {
   try {
     if (!req.user) {
@@ -99,6 +102,75 @@ export const getCoachById = async (req: Request) => {
     if (!coach) throw new Error("Coach not found");
 
     return coach;
+  } catch (error) {
+    console.error("Error in getCoachById:", error);
+    throw error;
+  }
+};
+
+export const getAllMembers = async (req: Request) => {
+  try {
+    const coachId = req.params.id;
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [members, total] = await Promise.all([
+      User.find({ coach: coachId })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }),
+      User.countDocuments({ coach: coachId }),
+    ]);
+
+    return {
+      members,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  } catch (error) {
+    console.error("Error in getAllMembers:", error);
+    throw error;
+  }
+};
+export const handleAssignMember = async (req: Request) => {
+  try {
+    if (req.user?.role === "coach")
+      throw new Error(
+        "Not authorized, only gym owner can perform this operation"
+      );
+    const coach = await User.findById(req.params.id);
+    if (!coach) throw new Error("Coach not found");
+    const user = await User.findById(req.body.userId);
+    if (!user) throw new Error("User not found");
+    if (user?.coach) {
+      throw new Error("User has already assigined with a coach");
+    } else {
+      user.coach = new mongoose.Types.ObjectId(req.params.id);
+      await user.save();
+    }
+    await Notification.create({
+      user: coach._id,
+      message: `${user.name} has been assigned to you for coaching.`,
+      entityType: "assing_member_to_coach",
+      entityId: user._id,
+      isRead: false,
+    });
+
+    // Push notification
+    if (coach.deviceToken) {
+      await sendPushNotification(
+        coach.deviceToken,
+        "New member assigned",
+        `${user.name} has been assigned to you for coaching.`,
+        String(user._id),
+        "assing_member_to_coach"
+      );
+    }
+    return user;
   } catch (error) {
     console.error("Error in getCoachById:", error);
     throw error;

@@ -27,6 +27,7 @@ import chatRoutes from "./routes/chat.js";
 import userSubscriptionRoutes from "./routes/userSubscription.js";
 import { createRecurringSession, webhook } from "./config/stripe.js";
 import { userAuth } from "./middlewares/user.js";
+import { sendEmail } from "./config/awsConfig.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -55,7 +56,6 @@ const apiLimiter = rateLimit({
 });
 
 connectDB();
-
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -84,4 +84,5 @@ app.use("/dropdowns", dropdownRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
 app.post("/create-checkout-session", userAuth, createRecurringSession);
+app.get("/user-notifications", userAuth, createRecurringSession);
 app.listen(PORT);

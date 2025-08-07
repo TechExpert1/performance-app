@@ -1,9 +1,9 @@
 import { Types } from "mongoose";
 
 export interface ITrainingCalendar {
+  _id: Types.ObjectId;
   user?: Types.ObjectId;
-  attendees?: Types.ObjectId[];
-  coaches?: Types.ObjectId[];
+  coach?: Types.ObjectId;
   trainingName?: string;
   sport?: Types.ObjectId;
   category?: Types.ObjectId;

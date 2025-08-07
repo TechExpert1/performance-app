@@ -5,6 +5,8 @@ import {
   removeCoach,
   getCoachById,
   getAllCoachs,
+  handleAssignMember,
+  getAllMembers,
 } from "../services/coach.js";
 
 export const CoachController = {
@@ -41,9 +43,31 @@ export const CoachController = {
     }
   },
 
+  assignMember: async (req: Request, res: Response) => {
+    try {
+      const result = await handleAssignMember(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
   getById: async (req: Request, res: Response) => {
     try {
       const result = await getCoachById(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getMembers: async (req: Request, res: Response) => {
+    try {
+      const result = await getAllMembers(req);
       res.status(200).json(result);
     } catch (err) {
       res

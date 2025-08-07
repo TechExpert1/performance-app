@@ -2,7 +2,9 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import ChatBox from "../models/Chat_Box.js";
 import Message from "../models/Message.js";
-
+import User from "../models/User.js";
+import { sendPushNotification } from "../config/firebase.js";
+import Notification from "../models/Notification.js";
 // Send a message (text only)
 export const sendMessage = async (
   req: AuthenticatedRequest,
@@ -22,8 +24,6 @@ export const sendMessage = async (
       text,
     });
 
-    await message.save();
-
     let chatBox = await ChatBox.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
@@ -42,7 +42,31 @@ export const sendMessage = async (
     }
 
     await chatBox.save();
+    // Get sender and receiver details
+    const [sender, receiver] = await Promise.all([
+      User.findById(senderId).select("name deviceToken"),
+      User.findById(receiverId).select("deviceToken"),
+    ]);
 
+    // Create notification
+    const notification = await Notification.create({
+      user: receiverId,
+      message: `${sender?.name || "Someone"} sent you a message.`,
+      entityType: "message",
+      entityId: chatBox._id,
+      isRead: false,
+    });
+
+    // Push notification
+    if (receiver?.deviceToken) {
+      await sendPushNotification(
+        receiver.deviceToken,
+        "New Message",
+        `${sender?.name || "Someone"} sent you a message.`,
+        String(chatBox._id),
+        "message"
+      );
+    }
     res.status(201).json({
       message: "Message sent successfully",
       chatBoxId: chatBox._id,
@@ -53,12 +77,14 @@ export const sendMessage = async (
   }
 };
 
-// Get messages between two users
 export const getMessagesBetweenTwo = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   const { senderId, receiverId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
 
   if (req.user?.id !== senderId) {
     res.status(403).json({ message: "Unauthorized" });
@@ -71,21 +97,41 @@ export const getMessagesBetweenTwo = async (
         { sender: senderId, receiver: receiverId },
         { sender: receiverId, receiver: senderId },
       ],
-    }).sort({ createdAt: 1 });
+    })
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json({ messages });
+    const total = await Message.countDocuments({
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId },
+      ],
+    });
+
+    res.status(200).json({
+      messages,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });
   }
 };
 
-// Get all chatboxes for a user
 export const getAllChats = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   const { userId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  const skip = (page - 1) * limit;
 
   if (req.user?.id !== userId) {
     res.status(403).json({ message: "Unauthorized" });
@@ -98,9 +144,23 @@ export const getAllChats = async (
     })
       .populate("sender", "name profileImage")
       .populate("receiver", "name profileImage")
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json({ chatList });
+    const total = await ChatBox.countDocuments({
+      $or: [{ sender: userId }, { receiver: userId }],
+    });
+
+    res.status(200).json({
+      chatList,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error", error });

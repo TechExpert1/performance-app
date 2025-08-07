@@ -18,6 +18,7 @@ export interface IUser {
   friends?: [Types.ObjectId];
   gym?: Types.ObjectId;
   createdBy?: Types.ObjectId;
+  coach?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

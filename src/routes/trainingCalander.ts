@@ -6,6 +6,16 @@ const router = express.Router();
 
 // Sports Type Routes
 router.get("/monthly-counts", trainingCalendarController.getMonthlyCount);
+router.get(
+  "/update-status/:id",
+  userAuth,
+  trainingCalendarController.updateTrainingMemberStatus
+);
+router.get(
+  "/:id/checkin-request",
+  userAuth,
+  trainingCalendarController.checkInRequest
+);
 router.post("/", userAuth, trainingCalendarController.create);
 router.patch("/:id", trainingCalendarController.update);
 router.delete("/:id", trainingCalendarController.remove);

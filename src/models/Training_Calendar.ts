@@ -6,8 +6,7 @@ export type TrainingCalendarDocument = ITrainingCalendar & Document;
 const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    coaches: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    coach: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     trainingName: { type: String },
     sport: {
       type: mongoose.Schema.Types.ObjectId,

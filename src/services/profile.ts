@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
+import Notification from "../models/Notification.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
 // Get Profile
@@ -45,6 +46,18 @@ export const getProfile = async (req: Request) => {
   };
 
   return response;
+};
+
+export const handleGetProfile = async (req: Request) => {
+  try {
+    const notifications =
+      (await Notification.find({ user: req.params.id }).populate("entityId")) ||
+      [];
+    return notifications;
+  } catch (error) {
+    console.error("Error fetching profile notifications:", error);
+    throw error;
+  }
 };
 
 export const updateProfile = async (req: AuthenticatedRequest) => {

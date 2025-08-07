@@ -29,7 +29,8 @@ export const userAuth = (
       (req.user.role !== "gymOwner" &&
         req.user.role !== "superAdmin" &&
         req.user.role !== "salesRep" &&
-        req.user.role !== "athlete")
+        req.user.role !== "athlete" &&
+        req.user.role !== "coach")
     ) {
       res.status(403).json({
         message: `Forbidden: Need an valid token for accessing resource`,

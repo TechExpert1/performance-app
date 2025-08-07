@@ -1,5 +1,8 @@
 import { Request } from "express";
 import Review from "../models/Review.js";
+import User from "../models/User.js";
+import { sendPushNotification } from "../config/firebase.js";
+import Notification from "../models/Notification.js";
 import { SortOrder } from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import dayjs from "dayjs";
@@ -14,7 +17,52 @@ export const createReview = async (req: AuthenticatedRequest) => {
     media: req.fileUrls?.media || [],
     ...req.body,
   };
-  const review = await Review.create(data);
+  const review = (await Review.create(data)) as { _id: string };
+  const notifications: any[] = [];
+  const pushTasks: Promise<any>[] = [];
+
+  const entityType = "review";
+  const entityId = review._id.toString();
+  const requesterName = req.user.name || "Someone";
+
+  const coachId = req.body["coachFeedback.coach"];
+  const peerId = req.body["peerFeedback.friend"];
+  // Function to notify a user
+  const notifyUser = async (userId: string, role: "coach" | "peer") => {
+    const roleLabel = role === "coach" ? "a coach" : "a friend";
+
+    const message = `${requesterName} has requested a review from you as ${roleLabel}.`;
+
+    // Store in-app notification
+    notifications.push({
+      user: userId,
+      message,
+      entityType,
+      entityId,
+      isRead: false,
+    });
+
+    // Send push notification
+    const user = await User.findById(userId).select("deviceToken");
+    if (user?.deviceToken) {
+      return sendPushNotification(
+        user.deviceToken,
+        "Review Request",
+        message,
+        entityId,
+        entityType
+      );
+    }
+  };
+  if (coachId) pushTasks.push(notifyUser(coachId, "coach"));
+  if (peerId) pushTasks.push(notifyUser(peerId, "peer"));
+
+  await Promise.all(pushTasks);
+
+  if (notifications.length > 0) {
+    await Notification.insertMany(notifications);
+  }
+
   return { message: "Review created successfully", data: review };
 };
 
