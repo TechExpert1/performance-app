@@ -11,7 +11,7 @@ import Gym from "../models/Gym.js";
 import { monthMap } from "../utils/commonConst.js";
 import SportCategorySkill from "../models/Sport_Category_Skill.js";
 import Notification from "../models/Notification.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import TrainingMember from "../models/Training_Member.js";
 dayjs.extend(isoWeek);
 
@@ -68,15 +68,15 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
 
       const user = await User.findById(userId).select("deviceToken");
 
-      if (user?.deviceToken) {
-        await sendPushNotification(
-          user.deviceToken,
-          "New Training Scheduled",
-          message,
-          created._id.toString(),
-          "training_calendar"
-        );
-      }
+      // if (user?.deviceToken) {
+      //   await sendPushNotification(
+      //     user.deviceToken,
+      //     "New Training Scheduled",
+      //     message,
+      //     created._id.toString(),
+      //     "training_calendar"
+      //   );
+      // }
 
       return notification;
     });

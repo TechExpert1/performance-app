@@ -11,7 +11,7 @@ import TrainingMember from "../models/Training_Member.js";
 import TrainingCalendar from "../models/Training_Calendar.js";
 import Gym from "../models/Gym.js";
 import User from "../models/User.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 
 export const trainingCalendarController = {
@@ -177,15 +177,15 @@ export const trainingCalendarController = {
         const member = await User.findById(trainingMember.user).select(
           "deviceToken"
         );
-        if (member?.deviceToken) {
-          return sendPushNotification(
-            member.deviceToken,
-            "Checkin rejected",
-            "Your check-in request was rejected by the coach.",
-            trainingMember._id.toString(),
-            "training_calender"
-          );
-        }
+        // if (member?.deviceToken) {
+        //   return sendPushNotification(
+        //     member.deviceToken,
+        //     "Checkin rejected",
+        //     "Your check-in request was rejected by the coach.",
+        //     trainingMember._id.toString(),
+        //     "training_calender"
+        //   );
+        // }
       }
       res.status(200).json({ message: "Status updated", data: updated });
     } catch (error) {

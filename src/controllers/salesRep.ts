@@ -3,7 +3,7 @@ import { Response } from "express";
 import Gym from "../models/Gym.js";
 import User from "../models/User.js";
 import GymMember from "../models/Gym_Member.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 export const salesRepController = {
   createGym: async (req: AuthenticatedRequest, res: Response) => {
@@ -194,15 +194,15 @@ export const salesRepController = {
       });
 
       // Optional: Send Push Notification if deviceToken exists
-      if (user.deviceToken) {
-        await sendPushNotification(
-          user.deviceToken,
-          "Gym Invitation",
-          message,
-          String(newMember._id),
-          "gym_member"
-        );
-      }
+      // if (user.deviceToken) {
+      //   await sendPushNotification(
+      //     user.deviceToken,
+      //     "Gym Invitation",
+      //     message,
+      //     String(newMember._id),
+      //     "gym_member"
+      //   );
+      // }
 
       res.status(201).json({
         message: `${user.role} added successfully`,

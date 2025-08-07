@@ -1,7 +1,7 @@
 import { Request } from "express";
 import Review from "../models/Review.js";
 import User from "../models/User.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 import { SortOrder } from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
@@ -44,15 +44,15 @@ export const createReview = async (req: AuthenticatedRequest) => {
 
     // Send push notification
     const user = await User.findById(userId).select("deviceToken");
-    if (user?.deviceToken) {
-      return sendPushNotification(
-        user.deviceToken,
-        "Review Request",
-        message,
-        entityId,
-        entityType
-      );
-    }
+    // if (user?.deviceToken) {
+    //   return sendPushNotification(
+    //     user.deviceToken,
+    //     "Review Request",
+    //     message,
+    //     entityId,
+    //     entityType
+    //   );
+    // }
   };
   if (coachId) pushTasks.push(notifyUser(coachId, "coach"));
   if (peerId) pushTasks.push(notifyUser(peerId, "peer"));

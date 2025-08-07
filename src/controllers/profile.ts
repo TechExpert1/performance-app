@@ -8,7 +8,7 @@ import {
 } from "../services/profile.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import User from "../models/User.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 import FriendRequest from "../models/Friend_Request.js";
 
@@ -102,15 +102,15 @@ export const ProfileController = {
       });
 
       // Push notification
-      if (receiver.deviceToken) {
-        await sendPushNotification(
-          receiver.deviceToken,
-          "New Friend Request",
-          `${sender.name} has sent you a friend request.`,
-          friendRequest._id.toString(),
-          "friend_request"
-        );
-      }
+      // if (receiver.deviceToken) {
+      //   await sendPushNotification(
+      //     receiver.deviceToken,
+      //     "New Friend Request",
+      //     `${sender.name} has sent you a friend request.`,
+      //     friendRequest._id.toString(),
+      //     "friend_request"
+      //   );
+      // }
 
       res.status(201).json({
         message: "Friend request sent",
@@ -200,17 +200,17 @@ export const ProfileController = {
         isRead: false,
       });
 
-      if (sender.deviceToken) {
-        await sendPushNotification(
-          sender.deviceToken,
-          "Friend Request Update",
-          status === "accepted"
-            ? `${receiver.name} accepted your friend request.`
-            : `${receiver.name} rejected your friend request.`,
-          friendRequest._id.toString(),
-          "friend_request"
-        );
-      }
+      // if (sender.deviceToken) {
+      //   await sendPushNotification(
+      //     sender.deviceToken,
+      //     "Friend Request Update",
+      //     status === "accepted"
+      //       ? `${receiver.name} accepted your friend request.`
+      //       : `${receiver.name} rejected your friend request.`,
+      //     friendRequest._id.toString(),
+      //     "friend_request"
+      //   );
+      // }
 
       res.status(200).json({
         message: `Friend request ${status}`,

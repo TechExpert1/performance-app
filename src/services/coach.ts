@@ -4,7 +4,7 @@ import User from "../models/User.js";
 import { SortOrder } from "mongoose";
 import mongoose from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 export const createCoach = async (req: AuthenticatedRequest) => {
   try {
@@ -161,15 +161,15 @@ export const handleAssignMember = async (req: Request) => {
     });
 
     // Push notification
-    if (coach.deviceToken) {
-      await sendPushNotification(
-        coach.deviceToken,
-        "New member assigned",
-        `${user.name} has been assigned to you for coaching.`,
-        String(user._id),
-        "assing_member_to_coach"
-      );
-    }
+    // if (coach.deviceToken) {
+    //   await sendPushNotification(
+    //     coach.deviceToken,
+    //     "New member assigned",
+    //     `${user.name} has been assigned to you for coaching.`,
+    //     String(user._id),
+    //     "assing_member_to_coach"
+    //   );
+    // }
     return user;
   } catch (error) {
     console.error("Error in getCoachById:", error);

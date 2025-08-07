@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import ChatBox from "../models/Chat_Box.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
-import { sendPushNotification } from "../config/firebase.js";
+// import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 // Send a message (text only)
 export const sendMessage = async (
@@ -58,15 +58,15 @@ export const sendMessage = async (
     });
 
     // Push notification
-    if (receiver?.deviceToken) {
-      await sendPushNotification(
-        receiver.deviceToken,
-        "New Message",
-        `${sender?.name || "Someone"} sent you a message.`,
-        String(chatBox._id),
-        "message"
-      );
-    }
+    // if (receiver?.deviceToken) {
+    //   await sendPushNotification(
+    //     receiver.deviceToken,
+    //     "New Message",
+    //     `${sender?.name || "Someone"} sent you a message.`,
+    //     String(chatBox._id),
+    //     "message"
+    //   );
+    // }
     res.status(201).json({
       message: "Message sent successfully",
       chatBoxId: chatBox._id,
