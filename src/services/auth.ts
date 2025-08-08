@@ -105,23 +105,23 @@ export const handleSignup = async (
       email: createdUser.email,
     }).session(session);
 
-    let token = req.headers?.authorization;
+    // let token = req.headers?.authorization;
 
-    const isInvalid = !token && !token?.startsWith("Bearer ");
+    // const isInvalid = !token && !token?.startsWith("Bearer ");
 
-    if (isInvalid) {
-      throw new Error("Access Denied: No Bearer token provided.");
-    }
+    // if (isInvalid) {
+    //   throw new Error("Access Denied: No Bearer token provided.");
+    // }
 
-    token = token!.split(" ")[1];
-    if (token) {
-      const user = jwt.verify(token, process.env.JWT_SECRET as string);
-      req.user = user as AuthenticatedRequest["user"];
-      if (req.user?.id) {
-        createdUser.createdBy = new Types.ObjectId(req.user.id);
-        await createdUser.save({ session });
-      }
-    }
+    // token = token!.split(" ")[1];
+    // if (token) {
+    //   const user = jwt.verify(token, process.env.JWT_SECRET as string);
+    //   req.user = user as AuthenticatedRequest["user"];
+    //   if (req.user?.id) {
+    //     createdUser.createdBy = new Types.ObjectId(req.user.id);
+    //     await createdUser.save({ session });
+    //   }
+    // }
 
     await session.commitTransaction();
     session.endSession();
