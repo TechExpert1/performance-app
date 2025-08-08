@@ -105,6 +105,18 @@ export const handleSignup = async (
       email: createdUser.email,
     }).session(session);
 
+    const token = jwt.sign(
+      {
+        id: createdUser._id,
+        name: createdUser.name,
+        email: createdUser.email,
+        role: createdUser.role,
+      },
+      process.env.JWT_SECRET as string
+    );
+
+    createdUser.token = token;
+    await createdUser.save();
     // let token = req.headers?.authorization;
 
     // const isInvalid = !token && !token?.startsWith("Bearer ");
