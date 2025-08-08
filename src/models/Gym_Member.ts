@@ -26,7 +26,7 @@ const GymMemberSchema = new Schema<IGymMember>(
     },
     role: {
       type: String,
-      enum: ["athlete", "coach"],
+      enum: ["athlete", "coach", "gymOwner"],
       default: "athlete",
     },
   },

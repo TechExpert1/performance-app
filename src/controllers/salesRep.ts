@@ -87,7 +87,8 @@ export const salesRepController = {
 
   getAllGyms: async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const gyms = await Gym.find()
+      console.log(req.user?.id);
+      const gyms = await Gym.find({ createdBy: req.user?.id })
         .sort({ createdAt: -1 })
         .select("name address ");
 
@@ -105,9 +106,31 @@ export const salesRepController = {
     }
   },
 
+  getMembers: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const members = await User.find({ createdBy: req.user?.id })
+        .sort({ createdAt: -1 })
+        .select("name email profileImage role");
+
+      res.status(200).json({
+        members,
+      });
+      return;
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({
+        message: "Error fetching members",
+        error,
+      });
+      return;
+    }
+  },
+
   getGymById: async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const gym = await Gym.findById(req.params.gymId).populate("owner");
+      const gym = await Gym.findById(req.params.gymId).populate(
+        "createdBy owner"
+      );
       if (!gym) {
         res.status(404).json({
           message: "Gym not found",
@@ -134,16 +157,22 @@ export const salesRepController = {
 
       // Validate gym ownership
       let gym;
-      if (req.user?.role === "gymOwner") {
-        gym = await Gym.findOne({ _id: gymId, owner: loggedInUserId });
-        if (!gym) {
+      gym = await Gym.findOne({ _id: gymId });
+      if (!gym) {
+        res.status(404).json({ message: "Gym Not found." });
+        return;
+      }
+      if (
+        req.user?.role === "gymOwner" ||
+        req.user?.role === "salesRep" ||
+        req.user?.role === "athlete"
+      ) {
+        if (String(gym.createdBy) !== String(loggedInUserId)) {
           res
             .status(403)
             .json({ message: "Unauthorized to add members to this gym." });
           return;
         }
-      } else {
-        gym = await Gym.findById(gymId);
       }
 
       const user = await User.findById(userId).select("role deviceToken");

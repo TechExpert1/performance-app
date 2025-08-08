@@ -11,7 +11,6 @@ import Member_Awaiting from "../models/Member_Awaiting.js";
 import mongoose, { Types } from "mongoose";
 interface LoginResult {
   user: UserDocument;
-  response: any;
 }
 
 interface GenericResult {
@@ -106,7 +105,15 @@ export const handleSignup = async (
       email: createdUser.email,
     }).session(session);
 
-    const token = req.headers.token as string;
+    let token = req.headers?.authorization;
+
+    const isInvalid = !token && !token?.startsWith("Bearer ");
+
+    if (isInvalid) {
+      throw new Error("Access Denied: No Bearer token provided.");
+    }
+
+    token = token!.split(" ")[1];
     if (token) {
       const user = jwt.verify(token, process.env.JWT_SECRET as string);
       req.user = user as AuthenticatedRequest["user"];
