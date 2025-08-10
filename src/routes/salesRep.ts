@@ -33,6 +33,7 @@ router.get("/members", verifyToken, salesRepController.getMembers);
 router.post("/gyms/add-member", verifyToken, salesRepController.addGymMember);
 router.patch("/profile/:id", verifyToken, ProfileController.update);
 router.get("/gyms/:gymId", salesRepController.getGymById);
+router.get("/gyms/:gymId/members", salesRepController.getGymMembers);
 router.get("/gyms", verifyToken, salesRepController.getAllGyms);
 
 export default router;

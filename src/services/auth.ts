@@ -29,7 +29,6 @@ export const handleSignup = async (
 
   try {
     const { role } = req.query;
-
     if (!role || typeof role !== "string") {
       throw new Error("Role query parameter is required");
     }
@@ -42,10 +41,11 @@ export const handleSignup = async (
       ? JSON.parse(req.body.gym_details)
       : null;
 
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    userData.password = hashedPassword;
+    // Hash password & set role
+    userData.password = await bcrypt.hash(userData.password, 10);
     userData.role = role;
 
+    // Set profile image if provided
     if (
       req.fileUrls &&
       Array.isArray(req.fileUrls.profile) &&
@@ -54,6 +54,7 @@ export const handleSignup = async (
       userData.profileImage = req.fileUrls.profile[0];
     }
 
+    // Check if user already exists
     const existingUser = await User.findOne({ email: userData.email }).session(
       session
     );
@@ -61,24 +62,16 @@ export const handleSignup = async (
       throw new Error("User with this email already exists");
     }
 
-    const newUser = await User.create([userData], { session });
+    // Create new user
+    const [createdUser] = await User.create([userData], { session });
 
-    const createdUser = newUser[0];
-
+    // Handle role-specific details
     if (role === "athlete") {
       if (!athleteDetails) {
-        await session.abortTransaction();
-        session.endSession();
         throw new Error("Athlete details are required for role athlete");
       }
-
       await Athlete_User.create(
-        [
-          {
-            userId: createdUser._id,
-            ...athleteDetails,
-          },
-        ],
+        [{ userId: createdUser._id, ...athleteDetails }],
         { session }
       );
     } else if (role === "gymOwner" && gymDetails) {
@@ -94,18 +87,27 @@ export const handleSignup = async (
         ],
         { session }
       );
-    }
-
-    if (role === "gymOwner") {
       createdUser.adminStatus = "pending";
       await createdUser.save({ session });
     }
 
-    const record = await Member_Awaiting.findOne({
-      email: createdUser.email,
-    }).session(session);
+    // If a Bearer token is provided, set createdBy
+    let headerToken = req.headers?.authorization;
+    if (headerToken && headerToken.startsWith("Bearer ")) {
+      const extractedToken = headerToken.split(" ")[1];
+      const decodedUser = jwt.verify(
+        extractedToken,
+        process.env.JWT_SECRET as string
+      ) as AuthenticatedRequest["user"];
 
-    const token = jwt.sign(
+      if (decodedUser?.id) {
+        createdUser.createdBy = new Types.ObjectId(decodedUser.id);
+        await createdUser.save({ session });
+      }
+    }
+
+    // Generate token for new user
+    const signupToken = jwt.sign(
       {
         id: createdUser._id,
         name: createdUser.name,
@@ -114,26 +116,13 @@ export const handleSignup = async (
       },
       process.env.JWT_SECRET as string
     );
+    createdUser.token = signupToken;
+    await createdUser.save({ session });
 
-    createdUser.token = token;
-    await createdUser.save();
-    // let token = req.headers?.authorization;
-
-    // const isInvalid = !token && !token?.startsWith("Bearer ");
-
-    // if (isInvalid) {
-    //   throw new Error("Access Denied: No Bearer token provided.");
-    // }
-
-    // token = token!.split(" ")[1];
-    // if (token) {
-    //   const user = jwt.verify(token, process.env.JWT_SECRET as string);
-    //   req.user = user as AuthenticatedRequest["user"];
-    //   if (req.user?.id) {
-    //     createdUser.createdBy = new Types.ObjectId(req.user.id);
-    //     await createdUser.save({ session });
-    //   }
-    // }
+    // Check if they are in awaiting members
+    const record = await Member_Awaiting.findOne({
+      email: createdUser.email,
+    }).session(session);
 
     await session.commitTransaction();
     session.endSession();

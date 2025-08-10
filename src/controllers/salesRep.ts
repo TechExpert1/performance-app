@@ -150,6 +150,28 @@ export const salesRepController = {
     }
   },
 
+  getGymMembers: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const gymMembers = await GymMember.find({ gym: req.params.gymId })
+        .select("user")
+        .populate({
+          path: "user",
+          select: "name email profileImage role",
+        });
+      res.status(200).json({
+        gymMembers,
+      });
+      return;
+    } catch (error) {
+      console.error("Error fetching gym members:", error);
+      res.status(500).json({
+        message: "Error fetching gym members",
+        error,
+      });
+      return;
+    }
+  },
+
   addGymMember: async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { gymId, userId } = req.body;
