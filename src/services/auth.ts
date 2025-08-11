@@ -5,6 +5,7 @@ import User, { UserDocument } from "../models/User.js";
 import { transporter } from "../utils/nodeMailer.js";
 import { client } from "../utils/twillioSms.js";
 import Athlete_User from "../models/Athlete_User.js";
+import Gym_Member from "../models/Gym_Member.js";
 import Gym from "../models/Gym.js";
 import { Request } from "express";
 import Member_Awaiting from "../models/Member_Awaiting.js";
@@ -18,6 +19,7 @@ interface GenericResult {
   user?: UserDocument;
   user_id?: string;
   code?: string;
+  token?: string;
   verification?: boolean;
 }
 
@@ -130,6 +132,7 @@ export const handleSignup = async (
     return {
       message: "User registered successfully",
       user: createdUser,
+      token: signupToken,
       code: record ? record.code : "Not a gym/club member",
     };
   } catch (error) {
@@ -145,12 +148,11 @@ export const handleLogin = async (req: Request) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-
-    if (!user) return Promise.reject(new Error("Invalid credentials"));
+    const user = await User.findOne({ email }).populate("gym friends");
+    if (!user) throw new Error("Invalid credentials");
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return Promise.reject(new Error("Invalid credentials"));
+    if (!isMatch) throw new Error("Invalid credentials");
 
     const token = jwt.sign(
       {
@@ -162,21 +164,35 @@ export const handleLogin = async (req: Request) => {
       process.env.JWT_SECRET as string
     );
 
+    // Optional: Save token if persistent sessions are required
     user.token = token;
     await user.save();
-    let gym;
 
-    if (user?.role === "gymOwner") {
+    let gym = null;
+    let athleteDetails = null;
+
+    if (user.role === "gymOwner") {
       gym = await Gym.findOne({ owner: user._id }).lean();
     }
-    if (gym) {
-      return {
-        user,
-        gym,
-      };
-    } else {
-      return { user };
+
+    if (user.role === "athlete") {
+      gym = await Gym_Member.findOne({
+        user: user._id,
+        status: "active",
+      }).lean();
+
+      athleteDetails = await Athlete_User.findOne({ userId: user._id })
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .lean();
     }
+
+    return {
+      user,
+      token,
+      ...(gym && { gym }),
+      ...(athleteDetails && { athlete_details: athleteDetails }),
+    };
   } catch (error) {
     console.error("Login Error:", error);
     throw error;
