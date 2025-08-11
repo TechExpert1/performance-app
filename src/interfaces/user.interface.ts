@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 
 export interface IUser {
   name: string;
+  stripeCustomerId: string;
   email: string;
   password: string;
   phoneNumber?: string;

@@ -1,41 +1,51 @@
 import { Request, Response } from "express";
 import {
-  subscribeUser,
-  cancelUserSubscription,
-  getFilters,
+  handleCreateSubscription,
+  handleUpdateSubscription,
+  handleCancelSubscription,
+  getAllProductsWithPrices,
 } from "../services/userSubscription.js";
 
-export const UserSubscriptionController = {
-  subscribe: async (req: Request, res: Response) => {
-    try {
-      const result = await subscribeUser(req);
-      res.status(201).json(result);
-    } catch (err) {
-      res
-        .status(422)
-        .json({ error: err instanceof Error ? err.message : "Unknown error" });
-    }
-  },
+export const createSubscription = async (req: Request, res: Response) => {
+  try {
+    const result = await handleCreateSubscription(req);
+    res.status(200).json(result);
+  } catch (err) {
+    res
+      .status(422)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+};
 
-  filters: async (req: Request, res: Response) => {
-    try {
-      const result = await getFilters(req);
-      res.status(201).json(result);
-    } catch (err) {
-      res
-        .status(422)
-        .json({ error: err instanceof Error ? err.message : "Unknown error" });
-    }
-  },
+export const updateSubscription = async (req: Request, res: Response) => {
+  try {
+    const result = await handleUpdateSubscription(req);
+    res.status(200).json(result);
+  } catch (err) {
+    res
+      .status(422)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+};
 
-  cancel: async (req: Request, res: Response) => {
-    try {
-      const result = await cancelUserSubscription(req);
-      res.status(200).json(result);
-    } catch (err) {
-      res
-        .status(422)
-        .json({ error: err instanceof Error ? err.message : "Unknown error" });
-    }
-  },
+export const cancelSubscription = async (req: Request, res: Response) => {
+  try {
+    const result = await handleCancelSubscription(req);
+    res.status(200).json(result);
+  } catch (err) {
+    res
+      .status(422)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+};
+
+export const products = async (req: Request, res: Response) => {
+  try {
+    const result = await getAllProductsWithPrices(req);
+    res.status(200).json(result);
+  } catch (err) {
+    res
+      .status(422)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
 };

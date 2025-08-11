@@ -2,23 +2,16 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface ISubscriptionPlan extends Document {
   name: string;
-  features: string[];
-  price: number;
-  durationInDays: number;
-  stripePriceId: string;
-  interval: string;
+  stripeProductId: string;
+  stripeMonthlyPriceId: string;
+  stripeYearlyPriceId: string;
 }
 
 const SubscriptionPlanSchema = new Schema<ISubscriptionPlan>({
   name: { type: String, required: true, unique: true },
-  stripePriceId: { type: String },
-  features: { type: [String], required: true },
-  price: { type: Number, required: true },
-  durationInDays: { type: Number },
-  interval: {
-    type: String,
-    enum: ["day", "week", "month", "year"],
-  },
+  stripeProductId: { type: String },
+  stripeMonthlyPriceId: { type: String },
+  stripeYearlyPriceId: { type: String },
 });
 
 export default mongoose.model<ISubscriptionPlan>(

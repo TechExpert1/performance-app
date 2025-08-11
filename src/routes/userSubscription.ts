@@ -1,13 +1,18 @@
 // routes/userSubscription.ts
 import express from "express";
-import { UserSubscriptionController } from "../controllers/userSubscription.js";
+import {
+  createSubscription,
+  updateSubscription,
+  cancelSubscription,
+  products,
+} from "../controllers/userSubscription.js";
 import { userAuth } from "../middlewares/user.js";
 
 const router = express.Router();
 
-router.post("/subscribe", userAuth, UserSubscriptionController.subscribe);
-router.post("/filters", userAuth, UserSubscriptionController.filters);
-
-router.patch("/:userId/cancel", UserSubscriptionController.cancel);
+router.post("/subscribe", userAuth, createSubscription);
+router.post("/update-subscription", userAuth, updateSubscription);
+router.post("/cancel-subscription", userAuth, cancelSubscription);
+router.get("/plans", userAuth, products);
 
 export default router;

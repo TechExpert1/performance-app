@@ -29,6 +29,7 @@ const userSchema = new Schema<UserDocument>(
       required: true,
     },
     profileImage: { type: String },
+    stripeCustomerId: { type: String },
     referralSource: { type: String },
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     gym: {
