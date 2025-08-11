@@ -90,22 +90,42 @@ export const getChallengeById = async (req: Request) => {
 };
 
 export const getAllChallenges = async (req: Request) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const skip = (page - 1) * limit;
-  const sortBy = (req.query.sortBy as string) || "createdAt";
-  const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
+  const {
+    page = "1",
+    limit = "20",
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    ...filters
+  } = req.query as Record<string, string>;
 
-  const total = await Challenge.countDocuments();
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+  const skip = (pageNum - 1) * limitNum;
 
-  const challenges = await Challenge.find()
+  const query: Record<string, any> = {};
+
+  for (const key in filters) {
+    if (
+      filters[key] !== undefined &&
+      filters[key] !== null &&
+      filters[key] !== ""
+    ) {
+      query[key] = filters[key];
+    }
+  }
+
+  const total = await Challenge.countDocuments(query);
+
+  const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+  const challenges = await Challenge.find(query)
     .populate("createdBy")
     .populate("exercise")
     .populate("format")
     .populate("type")
     .skip(skip)
-    .limit(limit)
-    .sort({ [sortBy]: sortOrder });
+    .limit(limitNum)
+    .sort({ [sortBy]: sortDirection });
 
   const today = new Date();
 
@@ -124,9 +144,9 @@ export const getAllChallenges = async (req: Request) => {
     message: "Challenges fetched successfully",
     data: dataWithDaysLeft,
     pagination: {
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
       totalResults: total,
     },
   };

@@ -1,13 +1,12 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { IChallenge } from "../interfaces/challenge.interface";
-import ChallengeCategory from "./Challenge_Category";
 
 export type ChallengeDocument = IChallenge & Document;
 
 const challengeSchema = new Schema<ChallengeDocument>(
   {
     name: { type: String, required: true, trim: true },
-    gym: { type: String },
+    community: { type: mongoose.Schema.Types.ObjectId, ref: "Community" },
     time: { type: String },
     distance: { type: String },
     frequency: { type: String, trim: true },
