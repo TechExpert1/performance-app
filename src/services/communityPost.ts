@@ -106,42 +106,32 @@ export const getAllCommunityPosts = async (req: Request) => {
 
   const query: Record<string, any> = {};
 
-  // Apply filters from query params
+  // Apply filters safely
   for (const key in filters) {
-    if (filters[key]) {
+    if (
+      filters[key] !== undefined &&
+      filters[key] !== null &&
+      filters[key] !== ""
+    ) {
       query[key] = filters[key];
     }
+  }
+
+  if (req.params.communityId) {
+    query.community = req.params.communityId;
   }
 
   const skip = (Number(page) - 1) * Number(limit);
   const sortDirection = sortOrder === "asc" ? 1 : -1;
 
-  const posts = await Community_Post.aggregate([
-    { $match: query },
-    {
-      $lookup: {
-        from: "community_post_comments",
-        localField: "_id",
-        foreignField: "post",
-        as: "comments",
-      },
-    },
-    {
-      $addFields: {
-        totalComments: { $size: "$comments" },
-      },
-    },
-    {
-      $project: {
-        comments: 0, // exclude full comments array
-      },
-    },
-    { $sort: { [sortBy]: sortDirection } },
-    { $skip: skip },
-    { $limit: Number(limit) },
-  ]);
-
+  // Get total count for pagination
   const total = await Community_Post.countDocuments(query);
+
+  // Fetch posts with pagination and sorting
+  const posts = await Community_Post.find(query)
+    .sort({ [sortBy]: sortDirection })
+    .skip(skip)
+    .limit(Number(limit));
 
   return {
     data: posts,
