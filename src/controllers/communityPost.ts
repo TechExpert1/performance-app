@@ -2,12 +2,35 @@ import { Request, Response } from "express";
 import {
   createCommunityPost,
   getAllCommunityPosts,
+  toggleCommunityPostReaction,
+  createPostComment,
 } from "../services/communityPost.js";
 
 export const communityPostController = {
   create: async (req: Request, res: Response) => {
     try {
       const result = await createCommunityPost(req);
+      res.status(201).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  postReaction: async (req: Request, res: Response) => {
+    try {
+      const result = await toggleCommunityPostReaction(req);
+      res.status(201).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+  postComment: async (req: Request, res: Response) => {
+    try {
+      const result = await createPostComment(req);
       res.status(201).json(result);
     } catch (err) {
       res

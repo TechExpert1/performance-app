@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IComment extends Document {
   post: mongoose.Types.ObjectId;
   text: string;
-  createdBy: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
 }
 
 const commentSchema = new Schema<IComment>(
@@ -14,7 +14,7 @@ const commentSchema = new Schema<IComment>(
       required: true,
     },
     text: { type: String, required: true },
-    createdBy: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

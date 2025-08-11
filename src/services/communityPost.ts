@@ -1,4 +1,5 @@
 import Community_Post from "../models/Community_Post.js";
+import Reaction from "../models/Reaction.js";
 import { Request } from "express";
 import mongoose from "mongoose";
 import { SortOrder } from "mongoose";
@@ -19,6 +20,78 @@ export const createCommunityPost = async (req: AuthenticatedRequest) => {
   return {
     message: "Post created successfully",
     community,
+  };
+};
+
+export const toggleCommunityPostReaction = async (
+  req: AuthenticatedRequest
+) => {
+  if (!req.user) {
+    throw new Error("User information is missing from request.");
+  }
+
+  const { postId } = req.params;
+  const { type } = req.body;
+
+  if (!postId) {
+    throw new Error("Post ID is missing from request.");
+  }
+  let post = await Community_Post.findById(postId);
+  if (!post) {
+    throw new Error("Post not found.");
+  }
+  const existingReaction = await Reaction.findOne({
+    post: postId,
+    user: req.user.id,
+    type,
+  });
+
+  if (existingReaction) {
+    await Reaction.findByIdAndDelete(existingReaction._id);
+
+    if (type === "like" && Number(post.likes ?? 0) > 0) {
+      post.likes = Number(post.likes ?? 0) - 1;
+      await post.save();
+    }
+    return { message: "Reaction removed successfully" };
+  }
+
+  const newReaction = await Reaction.create({
+    post: postId,
+    user: req.user.id,
+    type,
+  });
+
+  if (type === "like") {
+    post.likes = Number(post.likes ?? 0) + 1;
+    await post.save();
+  }
+  return {
+    message: "Reaction added successfully",
+    reaction: newReaction,
+  };
+};
+
+export const createPostComment = async (req: AuthenticatedRequest) => {
+  if (!req.user) {
+    throw new Error("User information is missing from request.");
+  }
+
+  const { postId } = req.params;
+
+  if (!postId) {
+    throw new Error("Post ID is missing from request.");
+  }
+  const payload = {
+    ...req.body,
+    user: req.user.id,
+    post: postId,
+  };
+  const comment = await Community_Post_Comment.create(payload);
+
+  return {
+    message: "comment added successfully",
+    comment,
   };
 };
 

@@ -37,6 +37,18 @@ router.post(
 );
 router.get("/:communityId/posts", communityPostController.getAll);
 
+// reaction
+router.post(
+  "/:communityId/posts/:postId/reactions",
+  userAuth,
+  communityPostController.postReaction
+);
+router.post(
+  "/:communityId/posts/:postId/comments",
+  userAuth,
+  communityPostController.postComment
+);
+
 // members
 router.get(
   "/:communityId/member-request",

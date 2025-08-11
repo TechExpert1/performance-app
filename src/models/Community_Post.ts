@@ -7,8 +7,8 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
   {
     images: { type: [String] },
     caption: { type: String, trim: true },
-    likes: { type: Number },
-
+    likes: { type: Number, default: 0 },
+    reactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Reaction" }],
     community: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Community",
