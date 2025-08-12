@@ -24,6 +24,7 @@ export const SkillSet = mongoose.model<ISkillSet>("Skill_Set", skillSetSchema);
 // ========================
 export interface ISkillSetLevel extends Document {
   name: string;
+  description: string;
   image?: string;
   skillSet: Types.ObjectId;
 }
@@ -32,6 +33,7 @@ const skillSetLevelSchema = new Schema<ISkillSetLevel>(
   {
     name: { type: String, required: true },
     image: { type: String, default: "" },
+    description: { type: String, default: "" },
     skillSet: {
       type: Schema.Types.ObjectId,
       ref: "Skill_Set",
