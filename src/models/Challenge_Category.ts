@@ -6,6 +6,7 @@ export type ChallengeCategoryDocument = IChallengeCategory & Document;
 const challengeCategorySchema = new Schema<ChallengeCategoryDocument>(
   {
     name: { type: String, required: true, trim: true },
+    image: { type: String },
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { IChallengeCategoryType } from "../interfaces/challengeCategoryType.interface";
-
+import ChallengeCategoryTypeFormat from "./Challenge_Category_Type_Format.js";
 export type ChallengeCategoryTypeDocument = IChallengeCategoryType & Document;
 
 const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
@@ -15,6 +15,14 @@ const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
   },
   { timestamps: true }
 );
+
+challengeCategoryTypeSchema.pre("findOneAndDelete", async function (next) {
+  const docToDelete = await this.model.findOne(this.getQuery());
+  if (docToDelete) {
+    await ChallengeCategoryTypeFormat.deleteMany({ type: docToDelete._id });
+  }
+  next();
+});
 
 export default mongoose.model<ChallengeCategoryTypeDocument>(
   "Challenge_Category_Type",
