@@ -23,7 +23,12 @@ interface GenericResult {
   verification?: boolean;
 }
 
-export const handleSignup = async (req: AuthenticatedRequest) => {
+export const handleSignup = async (
+  req: AuthenticatedRequest
+): Promise<GenericResult> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { role } = req.query;
     if (!role || typeof role !== "string") {
@@ -52,36 +57,44 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: userData.email });
+    const existingUser = await User.findOne({ email: userData.email }).session(
+      session
+    );
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
 
-    // Create user
-    const createdUser = await User.create(userData);
+    // Create new user
+    const [createdUser] = await User.create([userData], { session });
 
-    // Role-specific details
+    // Handle role-specific details
     if (role === "athlete") {
       if (!athleteDetails) {
         throw new Error("Athlete details are required for role athlete");
       }
-      await Athlete_User.create({
-        userId: createdUser._id,
-        ...athleteDetails,
-      });
+      await Athlete_User.create(
+        [{ userId: createdUser._id, ...athleteDetails }],
+        { session }
+      );
     } else if (role === "gymOwner" && gymDetails) {
-      const gymData = {
-        owner: createdUser._id,
-        ...gymDetails,
-        proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
-        gymImages: req.fileUrls?.gymImages || [],
-        personalIdentification: req.fileUrls?.personalIdentification || [],
-      };
-      await Gym.create(gymData);
+      await Gym.create(
+        [
+          {
+            owner: createdUser._id,
+            ...gymDetails,
+            proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
+            gymImages: req.fileUrls?.gymImages || [],
+            personalIdentification: req.fileUrls?.personalIdentification || [],
+          },
+        ],
+        { session }
+      );
+      createdUser.adminStatus = "pending";
+      await createdUser.save({ session });
     }
 
-    // If Bearer token is provided, set createdBy
-    const headerToken = req.headers?.authorization;
+    // If a Bearer token is provided, set createdBy
+    let headerToken = req.headers?.authorization;
     if (headerToken && headerToken.startsWith("Bearer ")) {
       const extractedToken = headerToken.split(" ")[1];
       const decodedUser = jwt.verify(
@@ -91,7 +104,7 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
 
       if (decodedUser?.id) {
         createdUser.createdBy = new Types.ObjectId(decodedUser.id);
-        await createdUser.save();
+        await createdUser.save({ session });
       }
     }
 
@@ -105,16 +118,26 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       },
       process.env.JWT_SECRET as string
     );
-
     createdUser.token = signupToken;
-    await createdUser.save();
+    await createdUser.save({ session });
+
+    // Check if they are in awaiting members
+    const record = await Member_Awaiting.findOne({
+      email: createdUser.email,
+    }).session(session);
+
+    await session.commitTransaction();
+    session.endSession();
 
     return {
       message: "User registered successfully",
       user: createdUser,
       token: signupToken,
+      code: record ? record.code : "Not a gym/club member",
     };
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Signup error:", error);
     throw error;
   }
@@ -310,16 +333,6 @@ export const handleVerifyCode = async (req: Request): Promise<boolean> => {
 
     const record = await Member_Awaiting.findOne({ email, code });
     return !!record; // returns true if record exists, otherwise false
-  } catch (error) {
-    console.error("Verify Code Error:", error);
-    throw error;
-  }
-};
-export const createGym = async (gym: any) => {
-  try {
-    const newGym = await Gym.create(gym);
-    newGym.save();
-    return newGym;
   } catch (error) {
     console.error("Verify Code Error:", error);
     throw error;
