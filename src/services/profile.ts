@@ -2,9 +2,11 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
+import Friend_Request from "../models/Friend_Request.js";
 import Notification from "../models/Notification.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
+import Gym_Member from "../models/Gym_Member.js";
 // Get Profile
 export const getProfile = async (req: Request) => {
   const user = await User.findById(req.params.id).populate("gym friends");
@@ -26,7 +28,7 @@ export const getProfile = async (req: Request) => {
         model: "Skill_Set_Level",
       })
       .lean();
-    linkedProfileName = "profile";
+    linkedProfileName = "athleteProfile";
   }
   if (user.role === "gymOwner") {
     linkedProfile = await Gym.findOne({ owner: req.params.id })
@@ -39,9 +41,13 @@ export const getProfile = async (req: Request) => {
       .lean();
     linkedProfileName = "gymDetails";
   }
-
+  const requests = await Friend_Request.find({
+    receiver: req.params.id,
+    status: "pending",
+  }).populate("sender", "name email profileImage");
   const response = {
     user,
+    requests,
     [linkedProfileName]: linkedProfile,
   };
 

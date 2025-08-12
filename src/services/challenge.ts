@@ -12,7 +12,7 @@ export const createChallenge = async (
   req: AuthenticatedRequest
 ): Promise<ServiceResponse<ChallengeDocument>> => {
   if (!req.user) {
-    return { message: "User information is missing from request." };
+    throw new Error("User information is missing from request.");
   }
   const data = {
     createdBy: req.user.id,
@@ -42,7 +42,7 @@ export const updateChallenge = async (
     new: true,
   });
 
-  if (!updated) return { message: "Challenge not found" };
+  if (!updated) throw new Error("Challenge not found.");
 
   return {
     message: "Challenge updated successfully",
@@ -54,7 +54,7 @@ export const removeChallenge = async (
   req: Request
 ): Promise<ServiceResponse<null>> => {
   const removed = await Challenge.findByIdAndDelete(req.params.id);
-  if (!removed) return { message: "Challenge not found" };
+  if (!removed) throw new Error("Challenge not found.");
 
   return { message: "Challenge removed successfully" };
 };
@@ -68,7 +68,7 @@ export const getChallengeById = async (req: Request) => {
       .populate("type");
 
     if (!found) {
-      return { message: "Challenge not found" };
+      throw new Error("Challenge not found.");
     }
 
     const attendees = await User_Challenge.find({
