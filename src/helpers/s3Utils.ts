@@ -173,7 +173,6 @@ export const uploadMultipleToS3 = async (
     }
 
     req.fileUrls = fileUrls;
-    console.log(req.fileUrls);
     next();
   } catch (err) {
     console.error("Dynamic Upload Error:", err);

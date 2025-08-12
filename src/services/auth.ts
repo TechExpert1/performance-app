@@ -23,9 +23,7 @@ interface GenericResult {
   verification?: boolean;
 }
 
-export const handleSignup = async (
-  req: AuthenticatedRequest
-): Promise<GenericResult> => {
+export const handleSignup = async (req: AuthenticatedRequest) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -66,7 +64,7 @@ export const handleSignup = async (
 
     // Create new user
     const [createdUser] = await User.create([userData], { session });
-
+    let gym;
     // Handle role-specific details
     if (role === "athlete") {
       if (!athleteDetails) {
@@ -77,7 +75,7 @@ export const handleSignup = async (
         { session }
       );
     } else if (role === "gymOwner" && gymDetails) {
-      await Gym.create(
+      gym = await Gym.create(
         [
           {
             owner: createdUser._id,
@@ -89,6 +87,7 @@ export const handleSignup = async (
         ],
         { session }
       );
+      gym = gym[0];
       createdUser.adminStatus = "pending";
       await createdUser.save({ session });
     }
@@ -118,8 +117,6 @@ export const handleSignup = async (
       },
       process.env.JWT_SECRET as string
     );
-    createdUser.token = signupToken;
-    await createdUser.save({ session });
 
     // Check if they are in awaiting members
     const record = await Member_Awaiting.findOne({
@@ -132,6 +129,7 @@ export const handleSignup = async (
     return {
       message: "User registered successfully",
       user: createdUser,
+      gym: gym || null,
       token: signupToken,
       code: record ? record.code : "Not a gym/club member",
     };
@@ -163,10 +161,6 @@ export const handleLogin = async (req: Request) => {
       },
       process.env.JWT_SECRET as string
     );
-
-    // Optional: Save token if persistent sessions are required
-    user.token = token;
-    await user.save();
 
     let gym = null;
     let athleteDetails = null;
