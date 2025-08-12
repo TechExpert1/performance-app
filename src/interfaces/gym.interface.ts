@@ -1,7 +1,6 @@
 import { Types } from "mongoose";
 
 export interface IGym {
-  _id: Types.ObjectId;
   owner: Types.ObjectId;
   createdBy: Types.ObjectId;
   name: string;

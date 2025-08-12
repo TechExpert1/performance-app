@@ -7,7 +7,6 @@ export type GymDocument = IGym & Document;
 
 const GymSchema = new Schema<GymDocument>(
   {
-    _id: { type: Schema.Types.ObjectId },
     owner: { type: Schema.Types.ObjectId, ref: "User" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     name: { type: String, required: true },
