@@ -190,7 +190,7 @@ export const handleLogin = async (req: Request) => {
     return {
       user,
       token,
-      ...(gym && { gym }),
+      gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
     };
   } catch (error) {
