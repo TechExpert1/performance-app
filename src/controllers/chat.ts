@@ -18,12 +18,12 @@ export const sendMessage = async (
   }
 
   try {
-    const message = new Message({
+    const message = await Message.create({
       sender: senderId,
       receiver: receiverId,
       text,
     });
-
+    console.log(message);
     let chatBox = await ChatBox.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
