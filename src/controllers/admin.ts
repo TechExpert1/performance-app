@@ -215,12 +215,26 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
       return;
     }
     let user = await User.findById(userId).select("-password");
+    let linkedProfileName;
+    if (user?.role === "gymOwner") {
+      const gymDetails = await Gym.findOne({ owner: userId })
+        .populate({
+          path: "sport",
+          populate: { path: "skillSet" },
+        })
+        .lean();
+
+      if (gymDetails) linkedProfileName = gymDetails;
+    }
     if (!user) {
       res.status(400).json({ message: "No such user exists!" });
       return;
     }
     const userr = user.toObject({ getters: true });
-    res.status(200).json({ user: userr });
+    res.status(200).json({
+      user: userr,
+      ...(linkedProfileName ? { gymDetails: linkedProfileName } : {}),
+    });
   } catch (error) {
     if (error instanceof Error) {
       res
