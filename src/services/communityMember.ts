@@ -1,5 +1,6 @@
 import Community_Member from "../models/Community_Member.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
+import { Types } from "mongoose";
 
 export const joinCommunityRequest = async (req: AuthenticatedRequest) => {
   if (!req.user) {
@@ -45,18 +46,40 @@ export const updateCommunityMemberStatus = async (
     throw new Error("Status is required in query.");
   }
 
-  const updatedMember = await Community_Member.findByIdAndUpdate(
-    id,
-    { status },
-    { new: true }
-  );
+  if (!req.user) {
+    throw new Error("Unauthorized: No user in request.");
+  }
 
-  if (!updatedMember) {
+  const member = await Community_Member.findById(id).populate<{
+    community: { createdBy: Types.ObjectId };
+  }>("community", "createdBy");
+
+  if (!member) {
     throw new Error("Community member not found.");
   }
 
+  const userId = req.user.id.toString();
+  const userRole = req.user.role;
+
+  const isSalesRepOrSuperAdmin =
+    userRole === "salesRep" || userRole === "superAdmin";
+
+  const isCommunityCreator =
+    member.community &&
+    "createdBy" in member.community &&
+    member.community.createdBy.toString() === userId;
+
+  if (!isSalesRepOrSuperAdmin && !isCommunityCreator) {
+    throw new Error(
+      "Unauthorized: You do not have permission to update this member."
+    );
+  }
+
+  member.status = status as string;
+  await member.save();
+
   return {
     message: "Member status updated successfully.",
-    member: updatedMember,
+    member,
   };
 };

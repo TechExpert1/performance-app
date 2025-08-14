@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { transporter } from "../utils/nodeMailer.js";
 import { Request, Response } from "express";
 import AthleteProfile from "../models/Athlete_User.js";
+import Gym_Member from "../models/Gym_Member.js";
 import AttendanceGoal from "../models/Attendance_Goal.js";
 import Challenge from "../models/Challenge.js";
 import Community from "../models/Community.js";
@@ -219,6 +220,7 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const adminId = req?.user?.id;
+
     const admin = await User.findById(adminId);
     if (!admin) {
       res.status(400).json({ message: "No such admin exists!" });
@@ -228,8 +230,10 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
       res.status(401).json({ message: "Unauthorized to access this resource" });
       return;
     }
+
     let user = await User.findById(userId).select("-password");
     let linkedProfileName;
+
     if (user?.role === "gymOwner") {
       const gymDetails = await Gym.findOne({ owner: userId })
         .populate({
@@ -240,10 +244,31 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
 
       if (gymDetails) linkedProfileName = gymDetails;
     }
+
+    if (user?.role === "athlete") {
+      const gymMember = await Gym_Member.findOne({
+        user: userId,
+        status: "active",
+      })
+        .populate({
+          path: "gym",
+          populate: {
+            path: "sport",
+            populate: { path: "skillSet" },
+          },
+        })
+        .lean();
+
+      if (gymMember?.gym) {
+        linkedProfileName = gymMember.gym;
+      }
+    }
+
     if (!user) {
       res.status(400).json({ message: "No such user exists!" });
       return;
     }
+
     const userr = user.toObject({ getters: true });
     res.status(200).json({
       user: userr,
@@ -258,6 +283,7 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
     return;
   }
 };
+
 export const deleteAUser = async (
   req: Request,
   res: Response
@@ -293,15 +319,21 @@ export const deleteAUser = async (
       Community.deleteMany({ createdBy: userId }).session(session),
       CommunityMember.deleteMany({ user: userId }).session(session),
       CommunityPost.deleteMany({ createdBy: userId }).session(session),
-      Gym.deleteOne({ userId }).session(session),
       PhysicalPerformance.deleteMany({ user: userId }).session(session),
       Review.deleteMany({
         $or: [{ user: userId }, { opponent: userId }],
       }).session(session),
       SystemUserChallenge.deleteMany({ user: userId }).session(session),
+      Gym.deleteOne({ createdBy: userId }).session(session),
       TrainingCalendar.deleteMany({
-        $or: [{ user: userId }, { attendees: userId }, { coaches: userId }],
+        user: userId,
       }).session(session),
+      TrainingCalendar.updateMany(
+        { attendees: userId },
+        { $pull: { attendees: userId } },
+        { session }
+      ),
+
       UserChallenge.deleteMany({ user: userId }).session(session),
     ]);
 
