@@ -92,12 +92,13 @@ export const sendOtpAdmin = async (req: Request, res: Response) => {
   try {
     const user = await User.findOne({
       email: email.toLowerCase(),
-      role: "superAdmin",
+      role: { $in: ["superAdmin", "salesRep"] },
     });
+
     if (!user) {
-      res
-        .status(400)
-        .json({ message: "No such admin exists with this email!" });
+      res.status(400).json({
+        message: "No such admin or sales representator exists with this email!",
+      });
       return;
     }
     const newOtp = new OtpReset({
@@ -105,11 +106,18 @@ export const sendOtpAdmin = async (req: Request, res: Response) => {
       userId: user._id,
     });
     await newOtp.save();
+    const roleLabelMap = {
+      superAdmin: "Prymo Admin",
+      salesRep: "Prymo Sales Representative",
+    } as const;
+
     await transporter.sendMail({
       sender: process.env.EMAIL_USER,
       to: email,
       subject: "Password Reset OTP",
-      text: `Prymo Admin: Your OTP is ${otp}`,
+      text: `${
+        roleLabelMap[user.role as keyof typeof roleLabelMap] || "User"
+      }: Your OTP is ${otp}`,
     });
     res.status(200).json({ message: "Otp sent to your email!" });
   } catch (error) {
@@ -129,39 +137,45 @@ export const verifyOTPAndResetPassAdmin = async (
   try {
     const user = await User.findOne({
       email: email.toLowerCase(),
-      role: "superAdmin",
+      role: { $in: ["superAdmin", "salesRep"] },
     });
+
     if (!user) {
-      res
-        .status(400)
-        .json({ message: "No such admin exists with this email!" });
+      res.status(400).json({
+        message:
+          "No such admin or sales representative exists with this email!",
+      });
       return;
     }
+
     const otp = await OtpReset.findOne({
       userId: user._id,
       otp: sentOtp,
     });
+
     if (!otp) {
-      res.status(400).json({ message: "Incorrect Otp!" });
+      res.status(400).json({ message: "Incorrect OTP!" });
       return;
     }
     await otp.deleteOne();
+
     if (password !== confirm_password) {
       res.status(400).json({ message: "Passwords do not match!" });
       return;
     }
+
     user.password = await bcrypt.hash(password, 12);
     await user.save();
+
     res.status(200).json({
-      message: "Otp verified and new password is updated successfully!",
+      message: "OTP verified and new password updated successfully!",
     });
   } catch (error) {
     if (error instanceof Error) {
       res
         .status(500)
-        .json({ message: "Error uploading image : " + error?.message });
+        .json({ message: "Error resetting password: " + error.message });
     }
-    return;
   }
 };
 export const searchGeneralUsersByEmail = async (
