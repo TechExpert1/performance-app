@@ -245,7 +245,7 @@ export const getSingleUserDetails = async (req: Request, res: Response) => {
       if (gymDetails) linkedProfileName = gymDetails;
     }
 
-    if (user?.role === "athlete") {
+    if (user?.role === "athlete" || "coach") {
       const gymMember = await Gym_Member.findOne({
         user: userId,
         status: "active",
