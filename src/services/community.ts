@@ -122,7 +122,7 @@ export const getActiveMembersOfCommunity = async (req: Request) => {
 
   const query: Record<string, any> = {
     community: communityId,
-    status: "active",
+    status: "approved",
   };
 
   // Apply additional filters from req.query
