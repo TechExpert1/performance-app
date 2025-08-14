@@ -5,11 +5,6 @@ export type UserChallengeDocument = IUserChallenge & Document;
 
 const dailySubmissionSchema = new Schema({
   date: { type: Date },
-  mediaType: {
-    type: String,
-    enum: ["photo", "video"],
-    required: true,
-  },
   mediaUrl: { type: String },
   ownerApprovalStatus: {
     type: String,

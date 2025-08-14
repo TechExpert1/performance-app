@@ -12,16 +12,11 @@ const challengeCategoryTypeFormatSchema =
         type: mongoose.Schema.Types.ObjectId,
         ref: "Challenge_Category",
       },
-      type: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Challenge_Category_Type",
-        required: true,
-      },
     },
     { timestamps: true }
   );
 
 export default mongoose.model<ChallengeCategoryTypeFormatDocument>(
-  "Challenge_Category_Type_Format",
+  "Challenge_Category_Format",
   challengeCategoryTypeFormatSchema
 );

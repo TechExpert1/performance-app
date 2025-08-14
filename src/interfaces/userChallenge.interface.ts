@@ -2,7 +2,6 @@ import { Types } from "mongoose";
 
 export interface IDailySubmission {
   date: Date;
-  mediaType: "photo" | "video";
   mediaUrl: string;
   note?: string;
   ownerApprovalStatus: "pending" | "accepted" | "rejected";

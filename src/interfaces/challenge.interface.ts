@@ -5,12 +5,13 @@ export interface IChallenge {
   time: string;
   distance: string;
   mediaUrl: string;
-  frequency: string;
+  duration: string;
   createdBy: Types.ObjectId;
   community: Types.ObjectId;
   type: Types.ObjectId;
   exercise: Types.ObjectId;
   format: Types.ObjectId;
+  participants: Types.ObjectId[];
   rules: string[];
   startDate: Date;
   endDate: Date;

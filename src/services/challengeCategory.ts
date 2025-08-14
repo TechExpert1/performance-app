@@ -1,32 +1,54 @@
 import { Request } from "express";
 
 import ChallengeCategoryType from "../models/Challenge_Category_Type.js";
-import ChallengeCategoryTypeFormat from "../models/Challenge_Category_Type_Format.js";
+import ChallengeCategoryFormat from "../models/Challenge_Category_Format.js";
 import ChallengeCategory from "../models/Challenge_Category.js";
 
 export const getAllChallengeCategories = async (req: Request) => {
   try {
-    const categoriesWithTypes = await ChallengeCategory.aggregate([
+    const categoriesWithTypesAndFormats = await ChallengeCategory.aggregate([
       // Sort categories in descending order
       { $sort: { createdAt: -1 } },
+
+      // Lookup types
       {
         $lookup: {
-          from: "challenge_category_types", // collection name
+          from: "challenge_category_types", // collection name for types
           localField: "_id",
           foreignField: "challengeCategory",
           as: "types",
         },
       },
+
+      // Lookup formats
+      {
+        $lookup: {
+          from: "challenge_category_formats", // collection name for formats
+          localField: "_id",
+          foreignField: "category",
+          as: "formats",
+        },
+      },
+
+      // Sort types and formats arrays
       {
         $addFields: {
           types: {
             $sortArray: {
               input: "$types",
-              sortBy: { createdAt: -1 }, // sort types descending too
+              sortBy: { createdAt: -1 },
+            },
+          },
+          formats: {
+            $sortArray: {
+              input: "$formats",
+              sortBy: { createdAt: -1 },
             },
           },
         },
       },
+
+      // Select only needed fields
       {
         $project: {
           _id: 1,
@@ -37,11 +59,15 @@ export const getAllChallengeCategories = async (req: Request) => {
             name: 1,
             rules: 1,
           },
+          formats: {
+            _id: 1,
+            name: 1,
+          },
         },
       },
     ]);
 
-    return categoriesWithTypes;
+    return categoriesWithTypesAndFormats;
   } catch (error) {
     console.error("Error in getting challenge categories for dropdown:", error);
     throw error;
@@ -84,7 +110,7 @@ export const handleRemoveChallenge = async (req: Request) => {
 
     const typeIds = types.map((type) => type._id);
 
-    await ChallengeCategoryTypeFormat.deleteMany({
+    await ChallengeCategoryFormat.deleteMany({
       $or: [{ category: categoryId }, { type: { $in: typeIds } }],
     });
 

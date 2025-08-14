@@ -2,6 +2,7 @@ import { Request } from "express";
 import UserChallenge, {
   UserChallengeDocument,
 } from "../models/User_Challenge.js";
+import Challenge from "../models/Challenge.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 
 export const createUserChallenge = async (req: AuthenticatedRequest) => {
@@ -24,7 +25,11 @@ export const createUserChallenge = async (req: AuthenticatedRequest) => {
     };
   }
   const userChallenge = await UserChallenge.create(data);
-
+  await Challenge.findByIdAndUpdate(
+    data.challenge,
+    { $addToSet: { participants: req.user.id } },
+    { new: true }
+  );
   return {
     message: "User challenge created successfully",
     userChallenge,
@@ -32,7 +37,8 @@ export const createUserChallenge = async (req: AuthenticatedRequest) => {
 };
 
 export const updateUserChallenge = async (req: AuthenticatedRequest) => {
-  const { submission, status } = req.body;
+  const { status } = req.body;
+
   const userChallenge = await UserChallenge.findById(req.params.id);
   if (!userChallenge) {
     throw new Error("User challenge not found");
@@ -46,34 +52,78 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
     userChallenge.status = status;
   }
 
-  if (submission || req.body["media.type"] || req.fileUrl) {
-    let parsedSubmission: {
-      date?: string;
-      note?: string;
-    } = {};
+  if (
+    req.body.submission ||
+    (req.fileUrls?.media && req.fileUrls.media.length > 0)
+  ) {
+    let parsedSubmission: { date?: string; note?: string } = {};
 
     try {
-      parsedSubmission =
-        typeof submission === "string"
-          ? JSON.parse(submission)
-          : submission || {};
+      if (typeof req.body.submission === "string") {
+        parsedSubmission = JSON.parse(req.body.submission);
+      } else if (
+        typeof req.body.submission === "object" &&
+        req.body.submission !== null
+      ) {
+        parsedSubmission = req.body.submission;
+      }
     } catch {
       throw new Error("Invalid submission JSON format");
     }
+    let challenge: any;
+    if (parsedSubmission.date) {
+      challenge = await Challenge.findById(userChallenge.challenge);
+      if (!challenge) {
+        throw new Error("Challenge not found");
+      }
+      if (!challenge?.createdAt || !challenge.endDate) {
+        throw new Error("Challenge start date or end date is missing");
+      }
 
-    if (!req.fileUrl) {
-      throw new Error("Image URL is required for submission");
+      const submissionDate = new Date(parsedSubmission.date);
+      const startDate = new Date(challenge.createdAt);
+      const endDate = new Date(challenge.endDate);
+
+      if (isNaN(submissionDate.getTime())) {
+        throw new Error("Invalid submission date format");
+      }
+
+      if (submissionDate < startDate || submissionDate > endDate) {
+        throw new Error(
+          "Submission date must be between the challenge start date and end date"
+        );
+      }
     }
-
     userChallenge.dailySubmissions.push({
       date: parsedSubmission.date
         ? new Date(parsedSubmission.date)
         : new Date(),
-      mediaType: req.body["media.type"],
-      mediaUrl: req.fileUrl,
+      mediaUrl: req.fileUrls?.media?.[0] || " ",
       note: parsedSubmission.note || "",
       ownerApprovalStatus: "pending",
     });
+
+    if (!challenge) {
+      challenge = await Challenge.findById(userChallenge.challenge);
+    }
+
+    if (challenge) {
+      const challengeDuration = challenge.duration?.toLowerCase();
+      const requiredDays =
+        challengeDuration === "week"
+          ? 7
+          : challengeDuration === "month"
+          ? 30
+          : null;
+
+      if (requiredDays) {
+        const totalSubmissions = userChallenge.dailySubmissions.length;
+
+        if (totalSubmissions >= requiredDays) {
+          userChallenge.status = "completed";
+        }
+      }
+    }
   }
 
   await userChallenge.save();
@@ -97,14 +147,35 @@ export const removeUserChallenge = async (req: Request) => {
 
 export const getUserChallengeById = async (req: Request) => {
   const found = await UserChallenge.findById(req.params.id)
-    .populate("user")
-    .populate("challenge");
+    .populate("user", "profileImage")
+    .populate("challenge")
+    .lean();
 
   if (!found) {
     throw new Error("User challenge not found");
   }
 
-  return found;
+  // Find last 3 participants in the same challenge (excluding this one)
+  const otherParticipants = await UserChallenge.find({
+    challenge: found.challenge._id,
+    _id: { $ne: found._id },
+  })
+    .populate("user", "profileImage")
+    .sort({ createdAt: -1 })
+    .limit(3)
+    .lean();
+
+  // Return a new object with last3ProfileImages
+  return {
+    ...found,
+    last3ProfileImages: otherParticipants
+      .map((p) =>
+        typeof p.user === "object" && "profileImage" in p.user
+          ? p.user.profileImage
+          : null
+      )
+      .filter(Boolean),
+  };
 };
 
 export const getAllUserChallenges = async (req: Request) => {
@@ -121,7 +192,6 @@ export const getAllUserChallenges = async (req: Request) => {
     ...filters
   } = req.query;
 
-  // Build dynamic MongoDB filter
   const query: Record<string, any> = {};
 
   Object.entries(filters).forEach(([key, value]) => {
@@ -138,7 +208,13 @@ export const getAllUserChallenges = async (req: Request) => {
   const total = await UserChallenge.countDocuments(query);
   const data = await UserChallenge.find(query)
     .populate("user")
-    .populate("challenge")
+    .populate({
+      path: "challenge",
+      populate: {
+        path: "participants",
+        select: "profileImage",
+      },
+    })
     .skip(skip)
     .limit(limit)
     .sort(sort);

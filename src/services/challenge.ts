@@ -2,6 +2,7 @@ import { Request } from "express";
 import Challenge, { ChallengeDocument } from "../models/Challenge.js";
 import User_Challenge from "../models/User_Challenge.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
+import dayjs from "dayjs";
 interface ServiceResponse<T> {
   message: string;
   challenge?: T;
@@ -14,9 +15,22 @@ export const createChallenge = async (
   if (!req.user) {
     throw new Error("User information is missing from request.");
   }
+  const { duration } = req.body;
+  let endDate: Date | null = null;
+
+  if (duration) {
+    if (duration.toLowerCase() === "week") {
+      endDate = dayjs().add(7, "day").toDate();
+    } else if (duration.toLowerCase() === "month") {
+      endDate = dayjs().add(30, "day").toDate();
+    } else {
+      throw new Error("Invalid duration value. Allowed: 'week', 'month'");
+    }
+  }
   const data = {
     createdBy: req.user.id,
-    mediaUrl: req.fileUrls?.mediaUrl[0],
+    mediaUrl: req.fileUrls?.mediaUrl?.[0] || "",
+    endDate,
     ...req.body,
   };
   const challenge = await Challenge.create(data);

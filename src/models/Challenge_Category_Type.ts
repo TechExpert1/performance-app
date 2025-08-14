@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { IChallengeCategoryType } from "../interfaces/challengeCategoryType.interface";
-import ChallengeCategoryTypeFormat from "./Challenge_Category_Type_Format.js";
+import ChallengeCategoryTypeFormat from "./Challenge_Category_Format.js";
 export type ChallengeCategoryTypeDocument = IChallengeCategoryType & Document;
 
 const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
