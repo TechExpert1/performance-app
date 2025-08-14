@@ -310,49 +310,47 @@ export const deleteAUser = async (
       return;
     }
 
-    session.startTransaction();
-
-    await Promise.all([
-      AthleteProfile.deleteOne({ userId }).session(session),
-      AttendanceGoal.deleteMany({ user: userId }).session(session),
-      Challenge.deleteMany({ createdBy: userId }).session(session),
-      Community.deleteMany({ createdBy: userId }).session(session),
-      CommunityMember.deleteMany({ user: userId }).session(session),
-      CommunityPost.deleteMany({ createdBy: userId }).session(session),
-      PhysicalPerformance.deleteMany({ user: userId }).session(session),
-      Review.deleteMany({
+    await session.withTransaction(async () => {
+      await AthleteProfile.deleteOne({ userId }).session(session);
+      await AttendanceGoal.deleteMany({ user: userId }).session(session);
+      await Challenge.deleteMany({ createdBy: userId }).session(session);
+      await Community.deleteMany({ createdBy: userId }).session(session);
+      await CommunityMember.deleteMany({ user: userId }).session(session);
+      await CommunityPost.deleteMany({ createdBy: userId }).session(session);
+      await PhysicalPerformance.deleteMany({ user: userId }).session(session);
+      await Review.deleteMany({
         $or: [{ user: userId }, { opponent: userId }],
-      }).session(session),
-      SystemUserChallenge.deleteMany({ user: userId }).session(session),
-      Gym.deleteOne({ createdBy: userId }).session(session),
-      TrainingCalendar.deleteMany({
-        user: userId,
-      }).session(session),
-      TrainingCalendar.updateMany(
+      }).session(session);
+      await SystemUserChallenge.deleteMany({ user: userId }).session(session);
+      await Gym.deleteOne({ createdBy: userId }).session(session);
+
+      await TrainingCalendar.deleteMany({ user: userId }).session(session);
+      await TrainingCalendar.updateMany(
         { attendees: userId },
         { $pull: { attendees: userId } },
         { session }
-      ),
+      );
+      await TrainingCalendar.updateMany(
+        { coaches: userId },
+        { $pull: { coaches: userId } },
+        { session }
+      );
 
-      UserChallenge.deleteMany({ user: userId }).session(session),
-    ]);
-
-    await User.findByIdAndDelete(userId).session(session);
-
-    await session.commitTransaction();
-    session.endSession();
+      await UserChallenge.deleteMany({ user: userId }).session(session);
+      await User.findByIdAndDelete(userId).session(session);
+    });
 
     res
       .status(200)
       .json({ message: "User and related data deleted successfully!" });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error deleting user:", error);
     res.status(500).json({
       message: "Error deleting user and related data",
       error: error instanceof Error ? error.message : String(error),
     });
+  } finally {
+    session.endSession();
   }
 };
 
