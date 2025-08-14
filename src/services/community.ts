@@ -76,12 +76,10 @@ export const getCommunityById = async (req: AuthenticatedRequest) => {
     }),
     Community_Post.countDocuments({ community: communityId }),
 
-    Community_Member.find({ community: communityId, status: "active" })
-      .limit(3)
-      .populate({
-        path: "user",
-        select: "profileImage name",
-      }),
+    Community_Member.find({
+      community: communityId,
+      status: "approved",
+    }).populate("user"),
   ]);
   const memberUsers = members.map((m) => m.user);
 
