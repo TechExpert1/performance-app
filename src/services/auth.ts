@@ -161,7 +161,8 @@ export const handleLogin = async (req: Request) => {
       },
       process.env.JWT_SECRET as string
     );
-
+    user.token = token;
+    await user.save();
     let gym = null;
     let athleteDetails = null;
 
