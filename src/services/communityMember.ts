@@ -3,37 +3,44 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Types } from "mongoose";
 
 export const joinCommunityRequest = async (req: AuthenticatedRequest) => {
-  if (!req.user) {
-    return { message: "User information is missing from request." };
-  }
+  try {
+    if (!req.user) {
+      throw new Error("User information is missing from request.");
+    }
 
-  const filter = {
-    community: req.params.communityId,
-    user: req.user.id,
-  };
-
-  const update = {
-    $setOnInsert: {
+    const filter = {
       community: req.params.communityId,
       user: req.user.id,
-    },
-  };
+    };
 
-  const options = {
-    upsert: true,
-    new: true,
-  };
+    const update = {
+      $setOnInsert: {
+        community: req.params.communityId,
+        user: req.user.id,
+      },
+    };
 
-  const community = await Community_Member.findOneAndUpdate(
-    filter,
-    update,
-    options
-  );
+    const options = {
+      upsert: true,
+      new: true,
+    };
 
-  return {
-    message: "Request sent successfully to community admin",
-    community,
-  };
+    const community = await Community_Member.findOneAndUpdate(
+      filter,
+      update,
+      options
+    );
+
+    return {
+      message: "Request sent successfully to community admin",
+      community,
+    };
+  } catch (error) {
+    console.error("Error in joinCommunityRequest:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to join community."
+    );
+  }
 };
 
 export const updateCommunityMemberStatus = async (
