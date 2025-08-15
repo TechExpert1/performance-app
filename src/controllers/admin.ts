@@ -322,7 +322,9 @@ export const deleteAUser = async (
         $or: [{ user: userId }, { opponent: userId }],
       }).session(session);
       await SystemUserChallenge.deleteMany({ user: userId }).session(session);
-      await Gym.deleteOne({ createdBy: userId }).session(session);
+      await Gym.deleteMany({ createdBy: userId }).session(session);
+      await Gym.deleteMany({ owner: userId }).session(session);
+      await User.deleteMany({ createdBy: userId }).session(session);
 
       await TrainingCalendar.deleteMany({ user: userId }).session(session);
       await TrainingCalendar.updateMany(
