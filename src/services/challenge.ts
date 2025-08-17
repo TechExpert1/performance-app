@@ -137,6 +137,7 @@ export const getAllChallenges = async (req: Request) => {
     .populate("exercise")
     .populate("format")
     .populate("type")
+    .populate("participants")
     .skip(skip)
     .limit(limitNum)
     .sort({ [sortBy]: sortDirection });
