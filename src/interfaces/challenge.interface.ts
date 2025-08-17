@@ -3,6 +3,8 @@ import { Types } from "mongoose";
 export interface IChallenge {
   name: string;
   time: string;
+  sessionGoals: string;
+  completionCount: string;
   distance: string;
   mediaUrl: string;
   duration: string;
