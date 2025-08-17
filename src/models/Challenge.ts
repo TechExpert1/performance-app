@@ -9,6 +9,11 @@ const challengeSchema = new Schema<ChallengeDocument>(
     community: { type: mongoose.Schema.Types.ObjectId, ref: "Community" },
     time: { type: String },
     distance: { type: String },
+    sessionGoals: { type: String },
+    completionCount: {
+      type: String,
+      enum: ["sessionLog", "attendedClass", "either"],
+    },
     duration: { type: String, trim: true },
     type: {
       type: mongoose.Schema.Types.ObjectId,
