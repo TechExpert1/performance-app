@@ -27,12 +27,10 @@ const challengeSchema = new Schema<ChallengeDocument>(
     exercise: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category_Type",
-      required: true,
     },
     format: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category_Format",
-      required: true,
     },
     startDate: { type: Date },
     endDate: { type: Date },

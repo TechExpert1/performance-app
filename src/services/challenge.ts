@@ -19,12 +19,20 @@ export const createChallenge = async (
   let endDate: Date | null = null;
 
   if (duration) {
-    if (duration.toLowerCase() === "week") {
+    const lowerDuration = duration.toLowerCase();
+
+    if (lowerDuration === "week") {
       endDate = dayjs().add(7, "day").toDate();
-    } else if (duration.toLowerCase() === "month") {
+    } else if (lowerDuration === "month") {
       endDate = dayjs().add(30, "day").toDate();
+    } else if (!isNaN(parseInt(duration, 10))) {
+      // Handle numeric string input as days
+      const days = parseInt(duration, 10);
+      endDate = dayjs().add(days, "day").toDate();
     } else {
-      throw new Error("Invalid duration value. Allowed: 'week', 'month'");
+      throw new Error(
+        "Invalid duration value. Allowed: 'week', 'month', or a number of days"
+      );
     }
   }
   const data = {
@@ -78,6 +86,7 @@ export const getChallengeById = async (req: Request) => {
     const found = await Challenge.findById(req.params.id)
       .populate("createdBy")
       .populate("exercise")
+      .populate("participants")
       .populate("format")
       .populate("type");
 
@@ -85,18 +94,7 @@ export const getChallengeById = async (req: Request) => {
       throw new Error("Challenge not found.");
     }
 
-    const attendees = await User_Challenge.find({
-      challenge: found._id,
-    })
-      .populate("user")
-      .limit(20);
-
-    const challengeWithAttendees = {
-      ...found.toObject(),
-      attendees,
-    };
-
-    return challengeWithAttendees;
+    return found;
   } catch (error) {
     console.error("Error in getChallengeById:", error);
     return { message: "An error occurred while fetching the challenge" };
