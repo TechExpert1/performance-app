@@ -131,7 +131,8 @@ export const getAllCommunityPosts = async (req: Request) => {
   const posts = await Community_Post.find(query)
     .sort({ [sortBy]: sortDirection })
     .skip(skip)
-    .limit(Number(limit));
+    .limit(Number(limit))
+    .populate("createdBy");
 
   return {
     data: posts,
