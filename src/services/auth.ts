@@ -221,7 +221,8 @@ export const handleForgotPassword = async (
     if (verificationMethod === "email") {
       await sendResetOTP(email, otp);
     } else {
-      if (user?.phoneNumber) await sendResetOTPSMS(user.phoneNumber, otp);
+      // if (user?.phoneNumber) await sendResetOTPSMS(user.phoneNumber, otp);
+      throw new Error("Phone number verification is not enabled yet");
     }
 
     return {
