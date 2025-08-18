@@ -167,7 +167,6 @@ export const getAllCommunities = async (req: Request) => {
     } = req.query as Record<string, string>;
 
     const query: Record<string, any> = {};
-
     for (const key in filters) {
       if (filters[key]) {
         query[key] = filters[key];
@@ -178,21 +177,52 @@ export const getAllCommunities = async (req: Request) => {
       [sortBy]: sortOrder === "asc" ? 1 : -1,
     };
 
-    // If pagination parameters are provided
+    // Fetch communities with/without pagination
+    let communities: any[] = [];
+    let total = 0;
+
     if (page && limit) {
       const skip = (Number(page) - 1) * Number(limit);
-
-      const dataQuery = Community.find(query)
+      communities = await Community.find(query)
         .populate("createdBy")
         .sort(sortOption)
         .skip(skip)
         .limit(Number(limit));
 
-      const paginatedData = await dataQuery;
-      const total = await Community.countDocuments(query);
+      total = await Community.countDocuments(query);
+    } else {
+      communities = await Community.find(query)
+        .populate("createdBy")
+        .sort(sortOption);
+    }
 
+    // Add members & totalMembers for each community
+    const enrichedCommunities = await Promise.all(
+      communities.map(async (community) => {
+        const [totalMembers, members] = await Promise.all([
+          Community_Member.countDocuments({
+            community: community._id,
+            status: "approved",
+          }),
+          Community_Member.find({
+            community: community._id,
+            status: "approved",
+          }).populate("user"),
+        ]);
+
+        const memberUsers = members.map((m) => m.user);
+
+        return {
+          ...community.toObject(),
+          totalMembers,
+          members: memberUsers,
+        };
+      })
+    );
+
+    if (page && limit) {
       return {
-        data: paginatedData,
+        data: enrichedCommunities,
         pagination: {
           page: Number(page),
           limit: Number(limit),
@@ -201,16 +231,10 @@ export const getAllCommunities = async (req: Request) => {
         },
       };
     } else {
-      // No pagination: group by scope
-      const allCommunities = await Community.find(query)
-        .populate("createdBy")
-        .sort(sortOption);
-
       const grouped = {
-        public: allCommunities.filter((comm) => comm.scope === "public"),
-        private: allCommunities.filter((comm) => comm.scope === "private"),
+        public: enrichedCommunities.filter((comm) => comm.scope === "public"),
+        private: enrichedCommunities.filter((comm) => comm.scope === "private"),
       };
-
       return { data: grouped };
     }
   } catch (error) {
