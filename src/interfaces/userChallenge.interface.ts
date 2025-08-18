@@ -3,6 +3,8 @@ import { Types } from "mongoose";
 export interface IDailySubmission {
   date: Date;
   mediaUrl: string;
+  time?: string;
+  reps?: string;
   note?: string;
   ownerApprovalStatus: "pending" | "accepted" | "rejected";
 }

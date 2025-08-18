@@ -56,7 +56,12 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
     req.body.submission ||
     (req.fileUrls?.media && req.fileUrls.media.length > 0)
   ) {
-    let parsedSubmission: { date?: string; note?: string } = {};
+    let parsedSubmission: {
+      date?: string;
+      note?: string;
+      time?: string;
+      reps?: string;
+    } = {};
 
     try {
       if (typeof req.body.submission === "string") {
@@ -100,6 +105,8 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
         : new Date(),
       mediaUrl: req.fileUrls?.media?.[0] || " ",
       note: parsedSubmission.note || "",
+      time: parsedSubmission.time || "",
+      reps: parsedSubmission.reps || "",
       ownerApprovalStatus: "pending",
     });
 

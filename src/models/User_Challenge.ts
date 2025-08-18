@@ -5,6 +5,9 @@ export type UserChallengeDocument = IUserChallenge & Document;
 
 const dailySubmissionSchema = new Schema({
   date: { type: Date },
+  time: { type: String },
+  reps: { type: String },
+  distance: { type: String },
   mediaUrl: { type: String },
   ownerApprovalStatus: {
     type: String,
