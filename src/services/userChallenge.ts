@@ -20,9 +20,7 @@ export const createUserChallenge = async (req: AuthenticatedRequest) => {
   });
 
   if (existing) {
-    return {
-      message: "User has already joined this challenge.",
-    };
+    throw new Error("User has already joined this challenge.");
   }
   const userChallenge = await UserChallenge.create(data);
   await Challenge.findByIdAndUpdate(

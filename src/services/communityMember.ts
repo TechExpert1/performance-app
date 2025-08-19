@@ -8,28 +8,30 @@ export const joinCommunityRequest = async (req: AuthenticatedRequest) => {
       throw new Error("User information is missing from request.");
     }
 
-    const filter = {
-      community: req.params.communityId,
-      user: req.user.id,
-    };
+    const { communityId } = req.params;
+    const userId = req.user.id;
 
-    const update = {
-      $setOnInsert: {
-        community: req.params.communityId,
-        user: req.user.id,
-      },
-    };
+    // First check if a record already exists
+    const existingMember = await Community_Member.findOne({
+      community: communityId,
+      user: userId,
+    });
 
-    const options = {
-      upsert: true,
-      new: true,
-    };
+    if (existingMember) {
+      if (existingMember.status === "pending") {
+        throw new Error("Request already submitted and awaiting approval.");
+      }
+      if (existingMember.status === "approved") {
+        throw new Error("You are already a member of this community.");
+      }
+    }
 
-    const community = await Community_Member.findOneAndUpdate(
-      filter,
-      update,
-      options
-    );
+    // If no record found, create a new request with status pending
+    const community = await Community_Member.create({
+      community: communityId,
+      user: userId,
+      status: "pending",
+    });
 
     return {
       message: "Request sent successfully to community admin",
