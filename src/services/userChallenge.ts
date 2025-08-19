@@ -185,12 +185,63 @@ export const getUserChallengeById = async (req: Request) => {
   };
 };
 
+// export const getAllUserChallenges = async (req: Request) => {
+//   const page = parseInt(req.query.page as string) || 1;
+//   const limit = parseInt(req.query.limit as string) || 10;
+//   const skip = (page - 1) * limit;
+
+//   // Extract and remove pagination and sorting params
+//   const {
+//     page: _page,
+//     limit: _limit,
+//     sortBy = "createdAt",
+//     sortOrder = "desc",
+//     ...filters
+//   } = req.query;
+
+//   const query: Record<string, any> = {};
+
+//   Object.entries(filters).forEach(([key, value]) => {
+//     if (value !== undefined) {
+//       query[key] = value;
+//     }
+//   });
+
+//   // Build sorting object
+//   const sort: Record<string, 1 | -1> = {
+//     [sortBy as string]: sortOrder === "asc" ? 1 : -1,
+//   };
+
+//   const total = await UserChallenge.countDocuments(query);
+//   const data = await UserChallenge.find(query)
+//     .populate("user")
+//     .populate({
+//       path: "challenge",
+//       populate: {
+//         path: "participants",
+//         select: "profileImage",
+//       },
+//     })
+//     .skip(skip)
+//     .limit(limit)
+//     .sort(sort);
+
+//   return {
+//     message: "User challenges fetched successfully",
+//     data,
+//     pagination: {
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//       totalResults: total,
+//     },
+//   };
+// };
 export const getAllUserChallenges = async (req: Request) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
 
-  // Extract and remove pagination and sorting params
   const {
     page: _page,
     limit: _limit,
@@ -207,13 +258,13 @@ export const getAllUserChallenges = async (req: Request) => {
     }
   });
 
-  // Build sorting object
   const sort: Record<string, 1 | -1> = {
     [sortBy as string]: sortOrder === "asc" ? 1 : -1,
   };
 
   const total = await UserChallenge.countDocuments(query);
-  const data = await UserChallenge.find(query)
+
+  const challenges = await UserChallenge.find(query)
     .populate("user")
     .populate({
       path: "challenge",
@@ -226,9 +277,29 @@ export const getAllUserChallenges = async (req: Request) => {
     .limit(limit)
     .sort(sort);
 
+  // Grouping challenges by status
+  const grouped = {
+    active: [] as any[],
+    completed: [] as any[],
+    cancelled: [] as any[],
+    incomplete: [] as any[],
+  };
+
+  challenges.forEach((ch) => {
+    if (ch.status === "active") {
+      grouped.active.push(ch);
+    } else if (ch.status === "completed") {
+      grouped.completed.push(ch);
+    } else if (ch.status === "cancelled") {
+      grouped.cancelled.push(ch);
+    } else {
+      grouped.incomplete.push(ch);
+    }
+  });
+
   return {
     message: "User challenges fetched successfully",
-    data,
+    data: grouped,
     pagination: {
       page,
       limit,
