@@ -169,6 +169,22 @@ export const getAllChallenges = async (req: Request) => {
 
 export const handleGetLeaderBoard = async (req: Request) => {
   try {
+    const challenge = await Challenge.findById(req.params.id)
+      .populate({
+        path: "community",
+        populate: {
+          path: "gym",
+          select: "name",
+        },
+      })
+      .lean();
+
+    const populatedChallenge = challenge as unknown as {
+      community?: {
+        gym?: { name?: string };
+      };
+    };
+
     const leaderboard = await UserChallenge.aggregate([
       {
         $match: { challenge: new mongoose.Types.ObjectId(req.params.id) },
@@ -201,7 +217,10 @@ export const handleGetLeaderBoard = async (req: Request) => {
       },
     ]);
 
-    return leaderboard;
+    return {
+      gym: populatedChallenge.community?.gym?.name,
+      leaderboard,
+    };
   } catch (error: any) {
     throw new Error("Error fetching leaderboard: " + error.message);
   }
