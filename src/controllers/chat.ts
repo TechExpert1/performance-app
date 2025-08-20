@@ -11,19 +11,18 @@ export const sendMessage = async (
   res: Response
 ): Promise<void> => {
   const { senderId, receiverId, text } = req.body;
-
   if (req.user?.id !== senderId) {
     res.status(403).json({ message: "Unauthorized" });
     return;
   }
-
   try {
     const message = await Message.create({
       sender: senderId,
       receiver: receiverId,
       text,
+      files: req.fileUrls?.files || [],
+      messageType: req.body.messageType,
     });
-    console.log(message);
     let chatBox = await ChatBox.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
@@ -69,6 +68,7 @@ export const sendMessage = async (
     // }
     res.status(201).json({
       message: "Message sent successfully",
+      data: message,
       chatBoxId: chatBox._id,
     });
   } catch (error) {

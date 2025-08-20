@@ -6,6 +6,10 @@ export interface IUser {
   email: string;
   password: string;
   phoneNumber?: string;
+  preference: {
+    height: string;
+    weight: string;
+  };
   deviceToken?: string;
   gender?: "male" | "female" | "other";
   resetOTP?: string;

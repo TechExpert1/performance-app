@@ -5,34 +5,22 @@ export interface IMessageDocument extends IMessage, Document {}
 
 const messageSchema: Schema<IMessageDocument> = new Schema<IMessageDocument>(
   {
-    sender: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    receiver: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    text: {
+    sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    text: { type: String },
+    files: { type: [String], default: [] },
+    messageType: {
       type: String,
-    },
-    fileUrl: {
-      type: String,
-    },
-    fileType: {
-      type: String,
-      enum: ["audio", "video", "image", "document"],
+      enum: ["text", "image", "video"],
+      default: "text",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const Message: Model<IMessageDocument> = mongoose.model<IMessageDocument>(
   "Message",
   messageSchema
 );
+
 export default Message;

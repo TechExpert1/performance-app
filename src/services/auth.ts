@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User, { UserDocument } from "../models/User.js";
 import { transporter } from "../utils/nodeMailer.js";
 import { client } from "../utils/twillioSms.js";
+import { kgToLb, cmToInches } from "../utils/functions.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym_Member from "../models/Gym_Member.js";
 import Gym from "../models/Gym.js";
@@ -34,7 +35,7 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     }
 
     const userData = JSON.parse(req.body.user);
-    const athleteDetails = req.body.athlete_details
+    let athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
       : null;
     const gymDetails = req.body.gym_details
@@ -70,8 +71,20 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       if (!athleteDetails) {
         throw new Error("Athlete details are required for role athlete");
       }
+      const formattedAthleteDetails = {
+        ...athleteDetails,
+        weight: {
+          kg: athleteDetails.weight,
+          lbs: kgToLb(athleteDetails.weight),
+        },
+        height: {
+          cm: athleteDetails.height,
+          inches: cmToInches(athleteDetails.height),
+        },
+      };
+
       await Athlete_User.create(
-        [{ userId: createdUser._id, ...athleteDetails }],
+        [{ userId: createdUser._id, ...formattedAthleteDetails }],
         { session }
       );
     } else if (role === "gymOwner" && gymDetails) {
@@ -141,7 +154,6 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
   }
 };
 
-// Login Handler
 export const handleLogin = async (req: Request) => {
   try {
     const { email, password } = req.body;
@@ -151,7 +163,6 @@ export const handleLogin = async (req: Request) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error("Invalid credentials");
-
     const token = jwt.sign(
       {
         id: user._id,
@@ -194,7 +205,6 @@ export const handleLogin = async (req: Request) => {
   }
 };
 
-// Forgot Password Handler
 export const handleForgotPassword = async (
   req: Request
 ): Promise<GenericResult> => {
@@ -237,7 +247,6 @@ export const handleForgotPassword = async (
   }
 };
 
-// Verify OTP Handler
 export const handleVerifyOtp = async (req: Request): Promise<GenericResult> => {
   try {
     const { otp, user_id } = req.body;
@@ -262,7 +271,6 @@ export const handleVerifyOtp = async (req: Request): Promise<GenericResult> => {
   }
 };
 
-// Reset Password Handler
 export const handleResetPassword = async (
   req: Request
 ): Promise<GenericResult> => {
@@ -287,7 +295,6 @@ export const handleResetPassword = async (
   }
 };
 
-// Helper function: Send OTP via Email
 export const sendResetOTP = async (
   email: string,
   otp: string
@@ -306,7 +313,6 @@ export const sendResetOTP = async (
   }
 };
 
-// Helper function: Send OTP via SMS
 export const sendResetOTPSMS = async (
   phoneNumber: string,
   otp: string

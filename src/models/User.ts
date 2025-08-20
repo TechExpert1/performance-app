@@ -10,6 +10,10 @@ const userSchema = new Schema<UserDocument>(
     password: { type: String, required: true },
     phoneNumber: { type: String },
     deviceToken: { type: String },
+    preference: {
+      height: { type: String, default: "cm" },
+      weight: { type: String, default: "kg" },
+    },
     gender: {
       type: String,
       enum: ["male", "female", "other"],

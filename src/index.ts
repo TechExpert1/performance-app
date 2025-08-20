@@ -5,6 +5,8 @@ import rateLimit from "express-rate-limit";
 import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
 import sportsTypeRoutes from "./routes/sportsType.js";
@@ -81,4 +83,14 @@ app.use("/api/v1/sub-admin", subAdminRoutes);
 app.use("/dropdowns", dropdownRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
-app.listen(PORT);
+// app.listen(PORT);
+const server = createServer(app);
+
+export const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+server.listen(PORT);

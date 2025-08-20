@@ -11,9 +11,14 @@ const athleteProfileSchema: Schema<AthleteProfileDocument> = new Schema(
       required: true,
       unique: true,
     },
-    height: { type: Number, required: true },
-    weight: { type: Number, required: true },
-
+    height: {
+      cm: { type: Number, required: true },
+      inches: { type: Number, required: true },
+    },
+    weight: {
+      kg: { type: Number, required: true },
+      lbs: { type: Number, required: true },
+    },
     sportsAndSkillLevels: [
       {
         sport: {
