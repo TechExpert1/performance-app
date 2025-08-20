@@ -1,6 +1,8 @@
 import { Request } from "express";
+
+import mongoose from "mongoose";
 import Challenge, { ChallengeDocument } from "../models/Challenge.js";
-import User_Challenge from "../models/User_Challenge.js";
+import UserChallenge from "../models/User_Challenge.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import dayjs from "dayjs";
 interface ServiceResponse<T> {
@@ -163,4 +165,44 @@ export const getAllChallenges = async (req: Request) => {
       totalResults: total,
     },
   };
+};
+
+export const handleGetLeaderBoard = async (req: Request) => {
+  try {
+    const leaderboard = await UserChallenge.aggregate([
+      {
+        $match: { challenge: new mongoose.Types.ObjectId(req.params.id) },
+      },
+      {
+        $unwind: "$dailySubmissions",
+      },
+      {
+        $match: { "dailySubmissions.ownerApprovalStatus": "accepted" },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      { $unwind: "$userData" },
+      {
+        $project: {
+          _id: 0,
+          name: "$userData.name",
+          country: "$userData.country",
+          submission: "$dailySubmissions",
+        },
+      },
+      {
+        $sort: { "submission.createdAt": 1 },
+      },
+    ]);
+
+    return leaderboard;
+  } catch (error: any) {
+    throw new Error("Error fetching leaderboard: " + error.message);
+  }
 };

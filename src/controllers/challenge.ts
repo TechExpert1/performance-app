@@ -5,6 +5,7 @@ import {
   removeChallenge,
   getChallengeById,
   getAllChallenges,
+  handleGetLeaderBoard,
 } from "../services/challenge.js";
 
 export const challengeController = {
@@ -55,6 +56,17 @@ export const challengeController = {
   getAll: async (req: Request, res: Response) => {
     try {
       const result = await getAllChallenges(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getLeaderBoard: async (req: Request, res: Response) => {
+    try {
+      const result = await handleGetLeaderBoard(req);
       res.status(200).json(result);
     } catch (err) {
       res

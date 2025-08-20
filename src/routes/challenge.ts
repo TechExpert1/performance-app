@@ -20,6 +20,7 @@ router.patch(
 );
 router.delete("/:id", gymOwnerAuth, challengeController.remove);
 router.get("/:id", challengeController.getById);
+router.get("/:id/leader-board", challengeController.getLeaderBoard);
 router.get("/", challengeController.getAll);
 
 export default router;

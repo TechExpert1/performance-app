@@ -3,19 +3,22 @@ import { IUserChallenge } from "../interfaces/userChallenge.interface";
 
 export type UserChallengeDocument = IUserChallenge & Document;
 
-const dailySubmissionSchema = new Schema({
-  date: { type: Date },
-  time: { type: String },
-  reps: { type: String },
-  distance: { type: String },
-  mediaUrl: { type: String },
-  ownerApprovalStatus: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"],
-    default: "pending",
+const dailySubmissionSchema = new Schema(
+  {
+    date: { type: Date },
+    time: { type: String },
+    reps: { type: String },
+    distance: { type: String },
+    mediaUrl: { type: String },
+    ownerApprovalStatus: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending",
+    },
+    note: { type: String },
   },
-  note: { type: String },
-});
+  { timestamps: true }
+);
 
 const userChallengeSchema = new Schema<UserChallengeDocument>(
   {
