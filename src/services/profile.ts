@@ -217,6 +217,7 @@ export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
   const code = Math.floor(1000 + Math.random() * 9000).toString();
 
   const awaitingMember = await Member_Awaiting.create({
+    createdBy: req.user.id,
     email,
     name,
     address,
