@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import Member_Awaiting from "../models/Member_Awaiting.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
 import Friend_Request from "../models/Friend_Request.js";
@@ -197,4 +198,31 @@ export const updateProfileImage = async (req: AuthenticatedRequest) => {
   if (!updatedUser) throw new Error("Failed to update profile image");
 
   return updatedUser;
+};
+export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
+  if (!req.user) throw new Error("User not authenticated");
+
+  const { email, name, address, contact } = req.body;
+
+  if (!email) {
+    throw new Error("Email is required");
+  }
+
+  const existingUser = await User.findOne({ email });
+  const existingUserAwaiting = await Member_Awaiting.findOne({ email });
+  if (existingUser || existingUserAwaiting) {
+    throw new Error("User with this email aready exists");
+  }
+
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+  const awaitingMember = await Member_Awaiting.create({
+    email,
+    name,
+    address,
+    contact,
+    code,
+  });
+
+  return awaitingMember;
 };

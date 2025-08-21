@@ -5,6 +5,7 @@ import {
   deleteProfile,
   updateProfileImage,
   handleGetProfile,
+  addGymMemberProfile,
 } from "../services/profile.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import User from "../models/User.js";
@@ -49,6 +50,16 @@ export const ProfileController = {
   delete: async (req: AuthenticatedRequest, res: Response) => {
     try {
       const result = await deleteProfile(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+  addGymAwaitingMember: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const result = await addGymMemberProfile(req);
       res.status(200).json(result);
     } catch (err) {
       res

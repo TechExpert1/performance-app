@@ -1,6 +1,7 @@
 import express from "express";
 import { ProfileController } from "../controllers/profile.js";
 import { userAuth } from "../middlewares/user.js";
+import { gymOwnerAuth } from "../middlewares/gymOwner.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 
 const router = express.Router();
@@ -20,6 +21,11 @@ router.get(
 router.get("/:id/notifications", ProfileController.getNotifications);
 router.patch("/:id", userAuth, ProfileController.update);
 router.delete("/:id", userAuth, ProfileController.delete);
+router.post(
+  "/add-gym-awaiting-member",
+  gymOwnerAuth,
+  ProfileController.addGymAwaitingMember
+);
 router.patch(
   "/:id/profile-image-update",
   userAuth,
