@@ -123,7 +123,8 @@ export const getPerformanceById = async (req: Request) => {
   if (!performance) return { message: "Performance not found" };
 
   const sets = await PerformanceSet.find({ performance: id })
-    .populate("type")
+    .populate("category")
+    .populate("subCategory")
     .populate("exercise")
     .lean();
 
@@ -173,7 +174,8 @@ export const getAllPerformances = async (req: Request) => {
   const resultsWithSets = await Promise.all(
     performances.map(async (perf) => {
       const sets = await PerformanceSet.find({ performance: perf._id })
-        .populate("type")
+        .populate("category")
+        .populate("subCategory")
         .populate("exercise")
         .lean();
       return {

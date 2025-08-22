@@ -1,36 +1,110 @@
 import { Request } from "express";
 
-import ChallengeCategoryType from "../models/Challenge_Category_Type.js";
+import ChallengeCategoryExercise from "../models/Challenge_Category_Type.js";
 import ChallengeCategoryFormat from "../models/Challenge_Category_Format.js";
 import ChallengeCategory from "../models/Challenge_Category.js";
+
+export const getAllChallengeCategoriesWithSubsAndExercises = async (
+  req: Request
+) => {
+  try {
+    const categories = await ChallengeCategory.aggregate([
+      { $sort: { createdAt: -1 } },
+
+      // lookup subcategories
+      {
+        $lookup: {
+          from: "challenge_sub_categories",
+          localField: "_id",
+          foreignField: "challengeCategory",
+          as: "subCategories",
+        },
+      },
+
+      // for each subCategory, lookup exercises (strict: must match BOTH category + subCategory)
+      {
+        $lookup: {
+          from: "challenge_sub_categories",
+          localField: "_id",
+          foreignField: "challengeCategory",
+          as: "subCategories",
+          pipeline: [
+            {
+              $lookup: {
+                from: "challenge_category_exercises",
+                let: {
+                  categoryId: "$challengeCategory",
+                  subCategoryId: "$_id",
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$challengeCategory", "$$categoryId"] },
+                          { $eq: ["$subCategory", "$$subCategoryId"] },
+                        ],
+                      },
+                    },
+                  },
+                  { $sort: { createdAt: -1 } },
+                  { $project: { _id: 1, name: 1, rules: 1 } },
+                ],
+                as: "exercises",
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                exercises: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      // final projection
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          image: 1,
+          subCategories: 1,
+        },
+      },
+    ]);
+
+    return categories;
+  } catch (error) {
+    console.error("Error fetching challenge categories:", error);
+    throw error;
+  }
+};
 
 export const getAllChallengeCategories = async (req: Request) => {
   try {
     const categoriesWithTypesAndFormats = await ChallengeCategory.aggregate([
-      // Sort categories in descending order
       { $sort: { createdAt: -1 } },
 
-      // Lookup types
       {
         $lookup: {
-          from: "challenge_category_types", // collection name for types
+          from: "challenge_category_exercises",
           localField: "_id",
           foreignField: "challengeCategory",
           as: "types",
         },
       },
 
-      // Lookup formats
       {
         $lookup: {
-          from: "challenge_category_formats", // collection name for formats
+          from: "challenge_category_formats",
           localField: "_id",
           foreignField: "category",
           as: "formats",
         },
       },
 
-      // Sort types and formats arrays
       {
         $addFields: {
           types: {
@@ -48,7 +122,6 @@ export const getAllChallengeCategories = async (req: Request) => {
         },
       },
 
-      // Select only needed fields
       {
         $project: {
           _id: 1,
@@ -104,7 +177,7 @@ export const handleRemoveChallenge = async (req: Request) => {
       throw new Error("Category not found");
     }
 
-    const types = await ChallengeCategoryType.find({
+    const types = await ChallengeCategoryExercise.find({
       challengeCategory: categoryId,
     });
 
@@ -114,7 +187,9 @@ export const handleRemoveChallenge = async (req: Request) => {
       $or: [{ category: categoryId }, { type: { $in: typeIds } }],
     });
 
-    await ChallengeCategoryType.deleteMany({ challengeCategory: categoryId });
+    await ChallengeCategoryExercise.deleteMany({
+      challengeCategory: categoryId,
+    });
 
     await ChallengeCategory.findByIdAndDelete(categoryId);
 
@@ -142,7 +217,7 @@ export const handleCreateType = async (req: Request) => {
       throw new Error("Challenge category not found");
     }
 
-    const existingType = await ChallengeCategoryType.findOne({
+    const existingType = await ChallengeCategoryExercise.findOne({
       challengeCategory: categoryId,
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
@@ -151,7 +226,7 @@ export const handleCreateType = async (req: Request) => {
       throw new Error("Type with this name already exists for this category");
     }
 
-    const newType = await ChallengeCategoryType.create({
+    const newType = await ChallengeCategoryExercise.create({
       name: name.trim(),
       challengeCategory: categoryId,
       rules: rules || [],
@@ -168,12 +243,12 @@ export const handleRemoveType = async (req: Request) => {
   try {
     const { typeId } = req.params;
 
-    const existingType = await ChallengeCategoryType.findById(typeId);
+    const existingType = await ChallengeCategoryExercise.findById(typeId);
     if (!existingType) {
       throw new Error("Challenge category type not found");
     }
 
-    await ChallengeCategoryType.findByIdAndDelete(typeId);
+    await ChallengeCategoryExercise.findByIdAndDelete(typeId);
 
     return { message: "Type and its related formats removed successfully" };
   } catch (error) {

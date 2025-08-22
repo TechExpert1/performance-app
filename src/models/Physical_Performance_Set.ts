@@ -1,42 +1,3 @@
-// import mongoose, { Schema, Document } from "mongoose";
-// import { IPerformanceSet } from "../interfaces/physicalPerformanceSets.interface";
-
-// export type PerformanceSetDocument = IPerformanceSet & Document;
-
-// const PerformanceSetSchema = new Schema<PerformanceSetDocument>(
-//   {
-//     performance: { type: Schema.Types.ObjectId, ref: "Physical_Performance" },
-
-//     type: {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: "Challenge_Category",
-//       required: true,
-//     },
-
-//     exercise: {
-//       type: Schema.Types.ObjectId,
-//       ref: "Challenge_Category_Type",
-//       required: true,
-//     },
-
-//     sets: Number,
-//     weight: Number,
-//     reps: Number,
-//     rpe: Number,
-
-//     duration: Number,
-//     distance: Number,
-//     time: Number,
-
-//     notes: String,
-//   },
-//   { timestamps: true }
-// );
-
-// export default mongoose.model<PerformanceSetDocument>(
-//   "Physical_Performance_Set",
-//   PerformanceSetSchema
-// );
 import mongoose, { Schema, Document } from "mongoose";
 import { IPerformanceSet } from "../interfaces/physicalPerformanceSets.interface";
 
@@ -62,14 +23,19 @@ const PerformanceSetSchema = new Schema<PerformanceSetDocument>(
       type: Schema.Types.ObjectId,
       ref: "Physical_Performance",
     },
-    type: {
+    category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",
       required: true,
     },
+    subCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Challenge_Sub_Category",
+      required: true,
+    },
     exercise: {
       type: Schema.Types.ObjectId,
-      ref: "Challenge_Category_Type",
+      ref: "Challenge_Category_Exercise",
       required: true,
     },
     variation: {

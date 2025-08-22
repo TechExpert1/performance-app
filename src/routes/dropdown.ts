@@ -13,4 +13,8 @@ router.get(
   "/challange-categories-types",
   challengeCategoryController.challengeCategoryDropdown
 );
+router.get(
+  "/challange-categories-sub-exercise",
+  challengeCategoryController.challengeCategorySubAndExerciseDropdown
+);
 export default router;

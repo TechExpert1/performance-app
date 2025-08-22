@@ -11,6 +11,11 @@ const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
       ref: "Challenge_Category",
       required: true,
     },
+    subCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Challenge_Sub_Category",
+      required: true,
+    },
     rules: [{ type: String }],
   },
   { timestamps: true }
@@ -25,6 +30,6 @@ challengeCategoryTypeSchema.pre("findOneAndDelete", async function (next) {
 });
 
 export default mongoose.model<ChallengeCategoryTypeDocument>(
-  "Challenge_Category_Type",
+  "Challenge_Category_Exercise",
   challengeCategoryTypeSchema
 );

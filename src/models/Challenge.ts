@@ -26,7 +26,7 @@ const challengeSchema = new Schema<ChallengeDocument>(
     },
     exercise: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Challenge_Category_Type",
+      ref: "Challenge_Category_Exercise",
     },
     format: {
       type: mongoose.Schema.Types.ObjectId,
