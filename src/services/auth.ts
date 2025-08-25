@@ -249,9 +249,9 @@ export const handleForgotPassword = async (
 
 export const handleVerifyOtp = async (req: Request): Promise<GenericResult> => {
   try {
-    const { otp, user_id } = req.body;
+    const { otp, userId } = req.body;
 
-    const user = (await User.findById(user_id)) as UserDocument | null;
+    const user = (await User.findById(userId)) as UserDocument | null;
     if (!user) throw new Error("User not found");
 
     if (user.resetOTP !== otp) {
