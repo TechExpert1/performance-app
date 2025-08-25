@@ -22,7 +22,7 @@ router.patch(
   CommunityController.update
 );
 router.delete("/:id", gymOwnerAuth, CommunityController.remove);
-router.get("/:id", CommunityController.getById);
+router.get("/:id", userAuth, CommunityController.getById);
 router.get("/:id/requests", gymOwnerAuth, CommunityController.getRequests);
 router.get("/:id/members", CommunityController.getMembers);
 router.get("/", CommunityController.getAll);

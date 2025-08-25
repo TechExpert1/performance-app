@@ -82,12 +82,22 @@ export const getCommunityById = async (req: AuthenticatedRequest) => {
     }).populate("user"),
   ]);
   const memberUsers = members.map((m) => m.user);
+  let isRequested = false;
 
+  if (req.user?.id) {
+    const pendingRequest = await Community_Member.findOne({
+      community: communityId,
+      user: req.user.id,
+      status: "pending",
+    });
+    isRequested = !!pendingRequest;
+  }
   return {
     ...found.toObject(),
     totalMembers,
     totalPosts,
     members: memberUsers,
+    isRequested,
   };
 };
 

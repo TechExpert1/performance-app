@@ -14,7 +14,7 @@ export const userAuth = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void => {
+) => {
   try {
     const token = req.headers.token as string;
     if (!token) {
