@@ -329,12 +329,35 @@ export const sendResetOTPSMS = async (
   }
 };
 
-export const handleVerifyCode = async (req: Request): Promise<boolean> => {
+export const handleVerifyCode = async (req: Request) => {
   try {
     const { email, code } = req.body;
 
     const record = await Member_Awaiting.findOne({ email, code });
-    return !!record;
+    if (!record) throw new Error("You are not a registered member");
+
+    const user = await User.findOne({ email }).lean();
+    if (!user) throw new Error("User not found for given email");
+
+    const gym = await Gym.findOne({ owner: record.createdBy }).lean();
+    if (!gym) throw new Error("Gym not found for given owner");
+
+    await Gym_Member.findOneAndUpdate(
+      { user: user._id, gym: gym._id, status: "active" },
+      {
+        $setOnInsert: {
+          user: user._id,
+          gym: gym._id,
+          status: "active",
+          role: "athlete",
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    await Member_Awaiting.deleteOne({ _id: record._id });
+
+    return { message: "Code verified" };
   } catch (error) {
     console.error("Verify Code Error:", error);
     throw error;
