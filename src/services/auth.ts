@@ -182,11 +182,11 @@ export const handleLogin = async (req: Request) => {
     }
 
     if (user.role === "athlete") {
-      gym = await Gym_Member.findOne({
+      const gymMember = await Gym_Member.findOne({
         user: user._id,
         status: "active",
       }).lean();
-
+      gym = gymMember ? { _id: gymMember.gym } : null;
       athleteDetails = await Athlete_User.findOne({ userId: user._id })
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")
@@ -334,7 +334,7 @@ export const handleVerifyCode = async (req: Request): Promise<boolean> => {
     const { email, code } = req.body;
 
     const record = await Member_Awaiting.findOne({ email, code });
-    return !!record; // returns true if record exists, otherwise false
+    return !!record;
   } catch (error) {
     console.error("Verify Code Error:", error);
     throw error;
