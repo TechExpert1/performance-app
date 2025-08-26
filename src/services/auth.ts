@@ -357,7 +357,7 @@ export const handleVerifyCode = async (req: Request) => {
 
     await Member_Awaiting.deleteOne({ _id: record._id });
 
-    return { message: "Code verified" };
+    return { message: "Code verified", gym };
   } catch (error) {
     console.error("Verify Code Error:", error);
     throw error;
