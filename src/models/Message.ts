@@ -11,7 +11,7 @@ const messageSchema: Schema<IMessageDocument> = new Schema<IMessageDocument>(
     files: { type: [String], default: [] },
     messageType: {
       type: String,
-      enum: ["text", "image", "video"],
+      enum: ["text", "image", "video", "audio"],
       default: "text",
     },
   },
