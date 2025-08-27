@@ -7,7 +7,9 @@ export interface IChallengeLevel {
 export interface ISystemChallenge {
   title: string;
   description: string;
+  coachTip: string;
   levels: IChallengeLevel[];
+  format: Types.ObjectId;
   category: Types.ObjectId;
   categoryType: Types.ObjectId;
   createdAt?: Date;

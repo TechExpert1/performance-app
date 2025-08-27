@@ -6,6 +6,7 @@ export type SystemChallengeTypeDocument = ISystemChallengeType & Document;
 const systemChallengeTypeSchema = new Schema<SystemChallengeTypeDocument>(
   {
     name: { type: String, required: true, trim: true },
+    image: { type: String },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",

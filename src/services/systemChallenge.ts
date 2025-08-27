@@ -1,12 +1,13 @@
 import { Request } from "express";
 import SystemChallenge from "../models/System_Challenge.js";
+import SystemUserChallenge from "../models/System_User_Challenge.js";
 
 export const getAllSystemChallenges = async (req: Request) => {
-  const { page = "1", limit = "10", date, ...filters } = req.query;
+  const { date, user, ...filters } = req.query;
   const { challengeType } = req.params;
 
   const query: any = {
-    categoryType: challengeType, // from route param
+    categoryType: challengeType,
   };
 
   // Add query string filters
@@ -29,27 +30,40 @@ export const getAllSystemChallenges = async (req: Request) => {
     };
   }
 
-  const pageNum = parseInt(page as string, 10);
-  const limitNum = parseInt(limit as string, 10);
-  const skip = (pageNum - 1) * limitNum;
+  // Fetch all system challenges
+  const challenges = await SystemChallenge.find(query)
+    .sort({ date: -1 })
+    .lean();
 
-  const [challenges, total] = await Promise.all([
-    SystemChallenge.find(query)
-      .populate("categoryType")
-      .sort({ date: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean(),
-    SystemChallenge.countDocuments(query),
-  ]);
+  let userChallengesByStatus: any = {
+    active: [],
+    completed: [],
+  };
+
+  if (user) {
+    const userChallenges = await SystemUserChallenge.find({
+      user,
+      challenge: { $in: challenges.map((c) => c._id) },
+    })
+      .populate("user")
+      .populate({
+        path: "challenge",
+        populate: [
+          { path: "category" },
+          { path: "format" },
+          { path: "categoryType" },
+        ],
+      })
+      .lean();
+
+    userChallengesByStatus = {
+      active: userChallenges.filter((uc) => uc.status === "active"),
+      completed: userChallenges.filter((uc) => uc.status === "completed"),
+    };
+  }
 
   return {
-    data: challenges,
-    pagination: {
-      total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(total / limitNum),
-    },
+    allChallenges: challenges,
+    userChallenges: userChallengesByStatus,
   };
 };

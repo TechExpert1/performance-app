@@ -145,7 +145,6 @@ export const getActiveMembersOfCommunity = async (req: Request) => {
   };
 
   const skip = (Number(page) - 1) * Number(limit);
-  console.log(query);
   const [members, total] = await Promise.all([
     Community_Member.find(query)
       .populate("user")

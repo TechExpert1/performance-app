@@ -45,20 +45,10 @@ export const updateSystemUserChallenge = async (req: Request) => {
 
     const submission: Record<string, any> = {};
     for (const key in req.body) {
-      if (key !== "media.type") {
-        submission[key] = req.body[key];
-      }
+      submission[key] = req.body[key];
     }
 
-    if (req.fileUrl) {
-      const mediaType = req.body["media.type"];
-      if (!mediaType) {
-        throw new Error("Media type is required when uploading file");
-      }
-
-      submission.mediaType = mediaType;
-      submission.mediaUrl = req.fileUrl;
-    }
+    submission.mediaUrl = req.fileUrls?.file;
 
     doc.submissions = submission;
     doc.status = "completed";
@@ -93,8 +83,14 @@ export const getAllSystemUserChallenges = async (req: AuthenticatedRequest) => {
 
       const allUserDocs = await SystemUserChallenge.find(query)
         .populate("user")
-        .populate("challenge")
-        .populate("type")
+        .populate({
+          path: "challenge",
+          populate: [
+            { path: "category" },
+            { path: "format" },
+            { path: "categoryType" },
+          ],
+        })
         .sort({ createdAt: -1 })
         .lean();
 
@@ -120,8 +116,14 @@ export const getAllSystemUserChallenges = async (req: AuthenticatedRequest) => {
     const [results, total] = await Promise.all([
       SystemUserChallenge.find(query)
         .populate("user")
-        .populate("challenge")
-        .populate("type")
+        .populate({
+          path: "challenge",
+          populate: [
+            { path: "category" },
+            { path: "format" },
+            { path: "categoryType" },
+          ],
+        })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)

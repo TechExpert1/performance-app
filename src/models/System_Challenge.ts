@@ -15,11 +15,16 @@ const systemChallengeSchema = new Schema<SystemChallengeDocument>(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
+    coachTip: { type: String },
     levels: { type: [levelSchema], default: [] },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",
       required: true,
+    },
+    format: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Challenge_Category_Format",
     },
     categoryType: {
       type: mongoose.Schema.Types.ObjectId,

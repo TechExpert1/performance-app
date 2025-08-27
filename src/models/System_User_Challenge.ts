@@ -11,16 +11,6 @@ const systemUserChallengeSchema = new Schema<SystemUserChallengeDocument>(
       ref: "System_Challenge",
       required: true,
     },
-    type: {
-      type: Schema.Types.ObjectId,
-      ref: "System_Challenge_Type",
-      required: true,
-    },
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: "Challenge_Category",
-      required: true,
-    },
     status: {
       type: String,
       enum: ["active", "completed"],

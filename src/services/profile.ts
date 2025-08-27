@@ -8,6 +8,8 @@ import Notification from "../models/Notification.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
 import Gym_Member from "../models/Gym_Member.js";
+import { transporter } from "../utils/nodeMailer.js";
+
 // Get Profile
 export const getProfile = async (req: Request) => {
   const user = await User.findById(req.params.id).populate("gym friends");
@@ -224,6 +226,12 @@ export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
     contact,
     code,
   });
-
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Gym verification code",
+    text: `Use this verification code to join gym: ${code}`,
+  };
+  await transporter.sendMail(mailOptions);
   return awaitingMember;
 };
