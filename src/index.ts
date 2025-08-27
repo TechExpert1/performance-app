@@ -28,6 +28,7 @@ import subAdminRoutes from "./routes/salesRep.js";
 import dropdownRoutes from "./routes/dropdown.js";
 import chatRoutes from "./routes/chat.js";
 import userSubscriptionRoutes from "./routes/userSubscription.js";
+import { registerSocketHandlers } from "./webSocket/socket.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
 dotenv.config();
@@ -92,5 +93,5 @@ export const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
+registerSocketHandlers(io);
 server.listen(PORT);

@@ -1,33 +1,37 @@
-// socket.ts
-import { io } from "../index.js";
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 
+let ioInstance: Server; // will hold io
 const onlineUsers: { [userId: string]: string } = {};
 
-io.on("connection", (socket: Socket) => {
-  console.log("User connected:", socket.id);
+// Called once in index.ts to register handlers and store io
+export function registerSocketHandlers(io: Server) {
+  ioInstance = io; // ✅ store io globally here
 
-  socket.on("register", (userId: string) => {
-    onlineUsers[userId] = socket.id;
-    console.log(`User ${userId} registered with socket ${socket.id}`);
-  });
+  io.on("connection", (socket: Socket) => {
+    console.log("User connected:", socket.id);
 
-  socket.on("disconnect", () => {
-    for (const [userId, sId] of Object.entries(onlineUsers)) {
-      if (sId === socket.id) {
-        delete onlineUsers[userId];
-        console.log(`User ${userId} disconnected`);
+    socket.on("register", (userId: string) => {
+      onlineUsers[userId] = socket.id;
+      console.log(`User ${userId} registered with socket ${socket.id}`);
+    });
+
+    socket.on("disconnect", () => {
+      for (const [userId, sId] of Object.entries(onlineUsers)) {
+        if (sId === socket.id) {
+          delete onlineUsers[userId];
+          console.log(`User ${userId} disconnected`);
+        }
       }
-    }
+    });
   });
-});
+}
 
-export const sendMessageToUser = (receiverId: string, message: any) => {
+export function sendMessageToUser(receiverId: string, message: any) {
   const receiverSocketId = onlineUsers[receiverId];
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("receiveMessage", message);
+  if (receiverSocketId && ioInstance) {
+    ioInstance.to(receiverSocketId).emit("receiveMessage", message);
     console.log(`Message delivered to user ${receiverId}`);
   } else {
     console.log(`User ${receiverId} is offline`);
   }
-};
+}
