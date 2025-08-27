@@ -73,6 +73,7 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
     } catch {
       throw new Error("Invalid submission JSON format");
     }
+
     let challenge: any;
     if (parsedSubmission.date) {
       challenge = await Challenge.findById(userChallenge.challenge);
@@ -83,9 +84,12 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
         throw new Error("Challenge start date or end date is missing");
       }
 
-      const submissionDate = new Date(parsedSubmission.date);
-      const startDate = new Date(challenge.createdAt);
-      const endDate = new Date(challenge.endDate);
+      const normalizeDate = (date: Date) =>
+        new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+      const submissionDate = normalizeDate(new Date(parsedSubmission.date));
+      const startDate = normalizeDate(new Date(challenge.createdAt));
+      const endDate = normalizeDate(new Date(challenge.endDate));
 
       if (isNaN(submissionDate.getTime())) {
         throw new Error("Invalid submission date format");
@@ -97,6 +101,7 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
         );
       }
     }
+
     userChallenge.dailySubmissions.push({
       date: parsedSubmission.date
         ? new Date(parsedSubmission.date)
@@ -113,13 +118,16 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
     }
 
     if (challenge) {
-      const challengeDuration = challenge.duration?.toLowerCase();
-      const requiredDays =
-        challengeDuration === "week"
-          ? 7
-          : challengeDuration === "month"
-          ? 30
-          : null;
+      let requiredDays: number | null = null;
+      const duration = challenge.duration?.toString().toLowerCase();
+
+      if (duration === "week") {
+        requiredDays = 7;
+      } else if (duration === "month") {
+        requiredDays = 30;
+      } else if (!isNaN(Number(duration))) {
+        requiredDays = Number(duration);
+      }
 
       if (requiredDays) {
         const totalSubmissions = userChallenge.dailySubmissions.length;
