@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import ChatBox from "../models/Chat_Box.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+import { sendMessageToUser } from "../webSocket/socket.js";
 // import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
 // Send a message (text only)
@@ -23,6 +24,7 @@ export const sendMessage = async (
       files: req.fileUrls?.files || [],
       messageType: req.body.messageType,
     });
+    sendMessageToUser(receiverId, message);
     let chatBox = await ChatBox.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
@@ -41,6 +43,7 @@ export const sendMessage = async (
     }
 
     await chatBox.save();
+
     // Get sender and receiver details
     const [sender, receiver] = await Promise.all([
       User.findById(senderId).select("name deviceToken"),

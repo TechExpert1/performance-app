@@ -12,18 +12,6 @@ io.on("connection", (socket: Socket) => {
     console.log(`User ${userId} registered with socket ${socket.id}`);
   });
 
-  socket.on("sendMessage", (data: any) => {
-    const { receiverId } = data;
-    const receiverSocketId = onlineUsers[receiverId];
-
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("receiveMessage", data);
-      console.log(`Message sent to ${receiverId}:`, data);
-    } else {
-      console.log(`User ${receiverId} is offline`);
-    }
-  });
-
   socket.on("disconnect", () => {
     for (const [userId, sId] of Object.entries(onlineUsers)) {
       if (sId === socket.id) {
@@ -33,3 +21,13 @@ io.on("connection", (socket: Socket) => {
     }
   });
 });
+
+export const sendMessageToUser = (receiverId: string, message: any) => {
+  const receiverSocketId = onlineUsers[receiverId];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("receiveMessage", message);
+    console.log(`Message delivered to user ${receiverId}`);
+  } else {
+    console.log(`User ${receiverId} is offline`);
+  }
+};
