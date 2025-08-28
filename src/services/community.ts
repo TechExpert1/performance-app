@@ -1,5 +1,6 @@
 import { Request } from "express";
 import Community from "../models/Community.js";
+import User from "../models/User.js";
 import Community_Member from "../models/Community_Member.js";
 import Community_Post from "../models/Community_Post.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
@@ -117,8 +118,11 @@ export const handleGetRequests = async (req: AuthenticatedRequest) => {
   return { requests };
 };
 
-export const getActiveMembersOfCommunity = async (req: Request) => {
+export const getActiveMembersOfCommunity = async (
+  req: AuthenticatedRequest
+) => {
   const communityId = req.params.id;
+  const userId = req.user?.id;
 
   const {
     page = "1",
@@ -133,7 +137,7 @@ export const getActiveMembersOfCommunity = async (req: Request) => {
     status: "approved",
   };
 
-  // Apply additional filters from req.query
+  // Apply extra filters
   for (const key in filters) {
     if (filters[key]) {
       query[key] = filters[key];
@@ -145,17 +149,31 @@ export const getActiveMembersOfCommunity = async (req: Request) => {
   };
 
   const skip = (Number(page) - 1) * Number(limit);
+
+  // Get login user's friends once
+  const loginUser = await User.findById(userId).select("friends");
+  const friendIds = loginUser?.friends?.map((f) => f.toString()) || [];
+
   const [members, total] = await Promise.all([
     Community_Member.find(query)
-      .populate("user")
+      .populate("user") // so we have user info
       .sort(sortOptions)
       .skip(skip)
       .limit(Number(limit)),
     Community_Member.countDocuments(query),
   ]);
 
+  // Add isFriend flag to each member
+  const membersWithFriendFlag = members.map((member) => {
+    const memberUserId = member.user?._id?.toString();
+    return {
+      ...member.toObject(),
+      isFriend: memberUserId ? friendIds.includes(memberUserId) : false,
+    };
+  });
+
   return {
-    data: members,
+    data: membersWithFriendFlag,
     pagination: {
       page: Number(page),
       limit: Number(limit),
