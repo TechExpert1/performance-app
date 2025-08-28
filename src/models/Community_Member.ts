@@ -13,7 +13,7 @@ const communityMemberSchema = new Schema<CommunityMemberDocument>(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "left"],
       default: "pending",
     },
   },

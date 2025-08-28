@@ -57,6 +57,12 @@ router.get(
 );
 
 router.get(
+  "/:communityId/leave",
+  userAuth,
+  communityMemberController.leftCommunity
+);
+
+router.get(
   "/:communityId/status-update/:requestId",
   gymOwnerAuth,
   communityMemberController.updateMemberStatus

@@ -118,6 +118,8 @@ export const handleGetRequests = async (req: AuthenticatedRequest) => {
   return { requests };
 };
 
+import Athlete_User from "../models/Athlete_User.js"; // adjust path
+
 export const getActiveMembersOfCommunity = async (
   req: AuthenticatedRequest
 ) => {
@@ -150,30 +152,45 @@ export const getActiveMembersOfCommunity = async (
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  // Get login user's friends once
   const loginUser = await User.findById(userId).select("friends");
   const friendIds = loginUser?.friends?.map((f) => f.toString()) || [];
 
   const [members, total] = await Promise.all([
     Community_Member.find(query)
-      .populate("user") // so we have user info
+      .populate("user")
       .sort(sortOptions)
       .skip(skip)
       .limit(Number(limit)),
     Community_Member.countDocuments(query),
   ]);
 
-  // Add isFriend flag to each member
-  const membersWithFriendFlag = members.map((member) => {
+  const userIds = members.map((m) => m.user?._id).filter(Boolean);
+  const athleteProfiles = await Athlete_User.find({ userId: { $in: userIds } })
+    .populate("sportsAndSkillLevels.sport")
+    .populate("sportsAndSkillLevels.skillSetLevel");
+
+  const profileMap = new Map(
+    athleteProfiles.map((p) => [p.userId.toString(), p.toObject()])
+  );
+
+  const membersWithFriendAndProfile = members.map((member) => {
+    const memberObj = member.toObject();
     const memberUserId = member.user?._id?.toString();
+
     return {
-      ...member.toObject(),
+      ...memberObj,
       isFriend: memberUserId ? friendIds.includes(memberUserId) : false,
+      user: {
+        ...memberObj.user,
+        athleteProfile: memberUserId
+          ? profileMap.get(memberUserId) || null
+          : null,
+      },
     };
   });
 
   return {
-    data: membersWithFriendFlag,
+    data: membersWithFriendAndProfile,
     pagination: {
       page: Number(page),
       limit: Number(limit),

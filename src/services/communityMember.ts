@@ -92,3 +92,31 @@ export const updateCommunityMemberStatus = async (
     member,
   };
 };
+
+export const leaveCommunity = async (req: AuthenticatedRequest) => {
+  const community = req.params.communityId;
+
+  if (!req.user) {
+    throw new Error("Unauthorized: No user in request.");
+  }
+
+  const member = await Community_Member.findOne({
+    community,
+    user: req.user.id,
+    status: "approved",
+  }).populate<{
+    community: { createdBy: Types.ObjectId };
+  }>("community", "createdBy");
+
+  if (!member) {
+    throw new Error("You are not a member of this community.");
+  }
+
+  member.status = "left";
+  await member.save();
+
+  return {
+    message: "Community left successfully.",
+    member,
+  };
+};
