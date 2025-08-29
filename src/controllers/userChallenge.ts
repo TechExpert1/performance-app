@@ -5,6 +5,7 @@ import {
   removeUserChallenge,
   getUserChallengeById,
   getAllUserChallenges,
+  updateUserChallengeSubmission,
 } from "../services/userChallenge.js";
 
 export const userChallengeController = {
@@ -22,6 +23,17 @@ export const userChallengeController = {
   update: async (req: Request, res: Response) => {
     try {
       const result = await updateUserChallenge(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  updateSubmission: async (req: Request, res: Response) => {
+    try {
+      const result = await updateUserChallengeSubmission(req);
       res.status(200).json(result);
     } catch (err) {
       res

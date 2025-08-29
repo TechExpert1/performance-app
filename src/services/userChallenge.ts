@@ -147,6 +147,29 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
   };
 };
 
+export const updateUserChallengeSubmission = async (
+  req: AuthenticatedRequest
+) => {
+  const { id, submissionId } = req.params;
+  const status = req.body.status;
+  const updated = await UserChallenge.findOneAndUpdate(
+    {
+      _id: id,
+      "dailySubmissions._id": submissionId,
+    },
+    {
+      $set: { "dailySubmissions.$.ownerApprovalStatus": status },
+    },
+    { new: true }
+  );
+
+  if (!updated) {
+    throw new Error("User Challenge or Submission not found");
+  }
+
+  return { message: "Status updated succesfullt", data: updated };
+};
+
 export const removeUserChallenge = async (req: Request) => {
   const removed = await UserChallenge.findByIdAndDelete(req.params.id);
   if (!removed) {
@@ -191,58 +214,6 @@ export const getUserChallengeById = async (req: Request) => {
   };
 };
 
-// export const getAllUserChallenges = async (req: Request) => {
-//   const page = parseInt(req.query.page as string) || 1;
-//   const limit = parseInt(req.query.limit as string) || 10;
-//   const skip = (page - 1) * limit;
-
-//   // Extract and remove pagination and sorting params
-//   const {
-//     page: _page,
-//     limit: _limit,
-//     sortBy = "createdAt",
-//     sortOrder = "desc",
-//     ...filters
-//   } = req.query;
-
-//   const query: Record<string, any> = {};
-
-//   Object.entries(filters).forEach(([key, value]) => {
-//     if (value !== undefined) {
-//       query[key] = value;
-//     }
-//   });
-
-//   // Build sorting object
-//   const sort: Record<string, 1 | -1> = {
-//     [sortBy as string]: sortOrder === "asc" ? 1 : -1,
-//   };
-
-//   const total = await UserChallenge.countDocuments(query);
-//   const data = await UserChallenge.find(query)
-//     .populate("user")
-//     .populate({
-//       path: "challenge",
-//       populate: {
-//         path: "participants",
-//         select: "profileImage",
-//       },
-//     })
-//     .skip(skip)
-//     .limit(limit)
-//     .sort(sort);
-
-//   return {
-//     message: "User challenges fetched successfully",
-//     data,
-//     pagination: {
-//       page,
-//       limit,
-//       totalPages: Math.ceil(total / limit),
-//       totalResults: total,
-//     },
-//   };
-// };
 export const getAllUserChallenges = async (req: Request) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
