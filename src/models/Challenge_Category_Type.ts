@@ -6,19 +6,12 @@ export type ChallengeCategoryTypeDocument = IChallengeCategoryType & Document;
 const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
   {
     name: { type: String, required: true, trim: true },
-    description: { type: String },
-    coachTip: { type: String },
+    entityType: { type: String },
     challengeCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",
       required: true,
     },
-    subCategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Challenge_Sub_Category",
-      required: true,
-    },
-    rules: [{ type: String }],
   },
   { timestamps: true }
 );
