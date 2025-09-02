@@ -12,7 +12,6 @@ const challengeSchema = new Schema<ChallengeDocument>(
     sessionGoals: { type: String },
     completionCount: {
       type: String,
-      enum: ["sessionLog", "attendedClass", "either"],
     },
     duration: { type: String, trim: true },
     type: {
