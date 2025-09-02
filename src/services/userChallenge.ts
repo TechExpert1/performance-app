@@ -49,7 +49,13 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
   if (status) {
     userChallenge.status = status;
   }
+  if (status && status === "cancelled") {
+    userChallenge.status = "cancelled";
 
+    await Challenge.findByIdAndUpdate(userChallenge.challenge, {
+      $pull: { participants: userChallenge.user },
+    });
+  }
   if (
     req.body.submission ||
     (req.fileUrls?.media && req.fileUrls.media.length > 0)

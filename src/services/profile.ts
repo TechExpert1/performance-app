@@ -182,7 +182,6 @@ export const deleteProfile = async (req: AuthenticatedRequest) => {
   }
 };
 
-// Update Profile Image
 export const updateProfileImage = async (req: AuthenticatedRequest) => {
   if (!req.user) throw new Error("User not authenticated");
 
@@ -201,6 +200,7 @@ export const updateProfileImage = async (req: AuthenticatedRequest) => {
 
   return updatedUser;
 };
+
 export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
   if (!req.user) throw new Error("User not authenticated");
 
