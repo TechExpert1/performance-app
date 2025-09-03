@@ -220,6 +220,8 @@ export const getUserChallengeById = async (req: Request) => {
   };
 };
 
+import Athlete_User from "../models/Athlete_User.js"; // adjust path
+
 export const getAllUserChallenges = async (req: Request) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
@@ -234,11 +236,8 @@ export const getAllUserChallenges = async (req: Request) => {
   } = req.query;
 
   const query: Record<string, any> = {};
-
   Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined) {
-      query[key] = value;
-    }
+    if (value !== undefined) query[key] = value;
   });
 
   const sort: Record<string, 1 | -1> = {
@@ -258,9 +257,31 @@ export const getAllUserChallenges = async (req: Request) => {
     })
     .skip(skip)
     .limit(limit)
-    .sort(sort);
+    .sort(sort)
+    .lean();
 
-  // Grouping challenges by status
+  // ✅ Collect all unique userIds
+  const userIds = challenges.map((ch) => ch.user?._id).filter(Boolean);
+
+  // ✅ Fetch all athlete profiles in one go
+  const athleteProfiles = await Athlete_User.find({ userId: { $in: userIds } })
+    .populate("sportsAndSkillLevels.sport")
+    .populate("sportsAndSkillLevels.skillSetLevel")
+    .lean();
+
+  // ✅ Map profiles by userId
+  const athleteMap = new Map(
+    athleteProfiles.map((ap) => [ap.userId.toString(), ap])
+  );
+
+  // ✅ Attach athlete separately in each challenge
+  challenges.forEach((ch) => {
+    if (ch.user?._id) {
+      (ch as any).athlete = athleteMap.get(ch.user._id.toString()) || null;
+    }
+  });
+
+  // ✅ Group challenges by status
   const grouped = {
     active: [] as any[],
     completed: [] as any[],
@@ -269,15 +290,10 @@ export const getAllUserChallenges = async (req: Request) => {
   };
 
   challenges.forEach((ch) => {
-    if (ch.status === "active") {
-      grouped.active.push(ch);
-    } else if (ch.status === "completed") {
-      grouped.completed.push(ch);
-    } else if (ch.status === "cancelled") {
-      grouped.cancelled.push(ch);
-    } else {
-      grouped.incomplete.push(ch);
-    }
+    if (ch.status === "active") grouped.active.push(ch);
+    else if (ch.status === "completed") grouped.completed.push(ch);
+    else if (ch.status === "cancelled") grouped.cancelled.push(ch);
+    else grouped.incomplete.push(ch);
   });
 
   return {
