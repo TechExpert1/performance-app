@@ -37,9 +37,14 @@ export const updateCommunity = async (req: AuthenticatedRequest) => {
   }
   const payload = {
     ...req.body,
-    image: req.fileUrl,
   };
-
+  if (
+    req.fileUrls &&
+    Array.isArray(req.fileUrls.image) &&
+    req.fileUrls.image.length > 0
+  ) {
+    payload.image = req.fileUrls.image[0];
+  }
   const updated = await Community.findByIdAndUpdate(req.params.id, payload, {
     new: true,
   });
@@ -118,7 +123,7 @@ export const handleGetRequests = async (req: AuthenticatedRequest) => {
   return { requests };
 };
 
-import Athlete_User from "../models/Athlete_User.js"; // adjust path
+import Athlete_User from "../models/Athlete_User.js";
 
 export const getActiveMembersOfCommunity = async (
   req: AuthenticatedRequest
