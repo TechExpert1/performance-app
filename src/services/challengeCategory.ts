@@ -85,7 +85,7 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
 export const getAllChallengeCategories = async (req: Request) => {
   try {
     const categoriesWithTypesAndFormats = await ChallengeCategory.aggregate([
-      { $sort: { createdAt: -1 } },
+      { $sort: { sortOrder: 1, createdAt: -1 } },
 
       {
         $lookup: {

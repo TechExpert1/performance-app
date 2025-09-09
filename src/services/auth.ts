@@ -138,13 +138,24 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
 
     await session.commitTransaction();
     session.endSession();
-
+    let athleteDetailObject;
+    if (role === "athlete") {
+      athleteDetailObject = await Athlete_User.findOne({
+        userId: createdUser._id,
+      })
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .lean();
+    }
     return {
       message: "User registered successfully",
       user: createdUser,
       gym: gym || null,
       token: signupToken,
       code: record ? record.code : "Not a gym/club member",
+      ...(athleteDetailObject && {
+        athlete_details: athleteDetailObject,
+      }),
     };
   } catch (error) {
     await session.abortTransaction();
