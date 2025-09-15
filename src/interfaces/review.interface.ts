@@ -15,11 +15,14 @@ export interface IReview {
   coachFeedback?: {
     coach: Types.ObjectId;
     rating: number;
+    comment?: string;
   };
   peerFeedback?: {
     friend: Types.ObjectId;
     rating: number;
+    comment?: string;
   };
+  private?: boolean;
   rating?: number;
   score?: number;
   comment?: string;

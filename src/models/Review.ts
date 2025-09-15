@@ -21,11 +21,14 @@ const reviewSchema = new Schema<ReviewDocument>(
     coachFeedback: {
       coach: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       rating: { type: Number, min: 1, max: 10 },
+      comment: { type: String },
     },
     peerFeedback: {
       friend: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       rating: { type: Number, min: 1, max: 10 },
+      comment: { type: String },
     },
+    private: { type: Boolean },
     score: { type: Number, min: 1, max: 10 },
     rating: { type: Number, min: 1, max: 10 },
     comment: { type: String },
