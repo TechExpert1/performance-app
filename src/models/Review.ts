@@ -15,7 +15,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     sessionType: { type: String, required: true },
     matchType: { type: String },
     matchResult: { type: String },
-    opponent: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    opponent: { type: String },
     clubOrTeam: { type: String },
     media: [{ type: String }],
     coachFeedback: {

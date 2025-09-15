@@ -9,7 +9,7 @@ export interface IReview {
   matchType?: string;
   matchResult?: string;
   tagFriend?: Types.ObjectId;
-  opponent?: Types.ObjectId;
+  opponent?: string;
   clubOrTeam?: string;
   media?: [string];
   coachFeedback?: {
