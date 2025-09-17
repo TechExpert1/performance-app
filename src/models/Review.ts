@@ -29,7 +29,7 @@ const reviewSchema = new Schema<ReviewDocument>(
       comment: { type: String },
     },
     private: { type: Boolean },
-    score: { type: Number },
+    score: { type: String },
     rating: { type: Number, min: 1, max: 10 },
     comment: { type: String },
   },

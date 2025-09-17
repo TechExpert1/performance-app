@@ -24,7 +24,7 @@ export interface IReview {
   };
   private?: boolean;
   rating?: number;
-  score?: number;
+  score?: string;
   comment?: string;
   createdAt?: Date;
   updatedAt?: Date;
