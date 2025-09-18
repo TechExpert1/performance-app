@@ -13,22 +13,35 @@ export const createReview = async (req: AuthenticatedRequest) => {
     return { message: "User information is missing from request." };
   }
 
-  let skill: any = undefined;
-  if (req.body.sessionType === "Skill Practice") {
-    skill = req.body.skill;
+  let skill: any[] | undefined;
 
-    if (typeof skill === "string") {
+  if (req.body.sessionType === "Skill Practice") {
+    let rawSkill = req.body.skill;
+
+    // Parse if it's stringified JSON
+    if (typeof rawSkill === "string") {
       try {
-        const parsed = JSON.parse(skill);
-        skill = Array.isArray(parsed) ? parsed : [parsed];
+        const parsed = JSON.parse(rawSkill);
+        rawSkill = Array.isArray(parsed) ? parsed : [parsed];
       } catch {
-        skill = [skill];
+        throw new Error("Invalid skill data format");
       }
     }
 
-    if (!Array.isArray(skill)) {
-      throw new Error("Skill must be an array of ObjectIds.");
+    if (!Array.isArray(rawSkill)) {
+      throw new Error("Skill must be an array of objects.");
     }
+
+    // ✅ Normalize into correct shape
+    skill = rawSkill.map((s: any) => {
+      if (!s.skillId || !s.skillModel) {
+        throw new Error("Each skill must have skillId and skillModel");
+      }
+      return {
+        skillId: s.skillId,
+        skillModel: s.skillModel,
+      };
+    });
   }
 
   const data = {
@@ -39,6 +52,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
   };
 
   const review = (await Review.create(data)) as { _id: string };
+
   const notifications: any[] = [];
   const pushTasks: Promise<any>[] = [];
 
@@ -93,30 +107,39 @@ export const updateReview = async (req: AuthenticatedRequest) => {
     updateData.media = req.fileUrls.media;
   }
 
-  let skill: any = undefined;
+  let skill: any[] | undefined;
 
-  // ✅ Only parse skill if sessionType is "Skill Practice"
   if (req.body.sessionType === "Skill Practice") {
-    skill = req.body.skill;
+    let rawSkill = req.body.skill;
 
-    if (typeof skill === "string") {
+    if (typeof rawSkill === "string") {
       try {
-        const parsed = JSON.parse(skill);
-        skill = Array.isArray(parsed) ? parsed : [parsed];
+        const parsed = JSON.parse(rawSkill);
+        rawSkill = Array.isArray(parsed) ? parsed : [parsed];
       } catch {
-        skill = [skill];
+        throw new Error("Invalid skill data format");
       }
     }
 
-    if (skill && !Array.isArray(skill)) {
-      throw new Error("Skill must be an array of ObjectIds.");
+    if (!Array.isArray(rawSkill)) {
+      throw new Error("Skill must be an array of objects.");
     }
+
+    skill = rawSkill.map((s: any) => {
+      if (!s.skillId || !s.skillModel) {
+        throw new Error("Each skill must have skillId and skillModel");
+      }
+      return {
+        skillId: s.skillId,
+        skillModel: s.skillModel,
+      };
+    });
   }
 
   updateData = {
     ...updateData,
     ...req.body,
-    ...(skill ? { skill } : {}), // only add if present
+    ...(skill ? { skill } : {}),
   };
 
   const updatedReview = await Review.findByIdAndUpdate(id, updateData, {
@@ -135,7 +158,7 @@ export const getReviewById = async (req: Request) => {
     { path: "user" },
     { path: "sport" },
     { path: "category" },
-    { path: "skill" },
+    { path: "skill.skillId" },
     { path: "opponent" },
     { path: "coachFeedback.coach" },
     { path: "peerFeedback.friend" },
@@ -194,7 +217,7 @@ export const getAllReviews = async (req: Request) => {
       Review.find({
         ...query,
         createdAt: { $gte: startOfWeek.toDate(), $lte: endOfWeek.toDate() },
-      }).populate(["sport", "category", "skill"]),
+      }).populate(["sport", "category", "skill.skillId"]),
     ]);
 
     const groupedMonth: Record<string, any[]> = {};
@@ -266,7 +289,7 @@ export const getAllReviews = async (req: Request) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const data = await Review.find(query)
-      .populate(["sport", "category", "skill"])
+      .populate(["sport", "category", "skill.skillId"])
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit));

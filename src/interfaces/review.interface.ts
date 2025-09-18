@@ -4,7 +4,10 @@ export interface IReview {
   user: Types.ObjectId;
   sport?: Types.ObjectId;
   category?: Types.ObjectId;
-  skill?: Types.ObjectId[];
+  skill?: {
+    skillId: Types.ObjectId;
+    skillModel: "Sport_Category_Skill" | "User_Sport_Category_Skill";
+  }[];
   sessionType: string;
   matchType?: string;
   matchResult?: string;
