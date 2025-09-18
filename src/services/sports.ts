@@ -133,9 +133,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         image: { $first: "$image" },
         createdAt: { $first: "$createdAt" },
         updatedAt: { $first: "$updatedAt" },
-        categories: {
-          $push: "$categories",
-        },
+        categories: { $push: "$categories" },
       },
     },
     {
@@ -155,6 +153,11 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
           },
         },
       },
+    },
+    // ✅ Sort *after grouping*
+    {
+      $sort: { createdAt: 1 },
+      // or $sort: { _id: 1 } if you prefer insertion order
     },
   ]);
 
