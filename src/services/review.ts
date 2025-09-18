@@ -12,27 +12,32 @@ export const createReview = async (req: AuthenticatedRequest) => {
   if (!req.user) {
     return { message: "User information is missing from request." };
   }
-  let skill = req.body.skill;
 
-  if (typeof skill === "string") {
-    try {
-      const parsed = JSON.parse(skill);
-      skill = Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      skill = [skill];
+  let skill: any = undefined;
+  if (req.body.sessionType === "Skill Practice") {
+    skill = req.body.skill;
+
+    if (typeof skill === "string") {
+      try {
+        const parsed = JSON.parse(skill);
+        skill = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        skill = [skill];
+      }
     }
-  }
 
-  if (!Array.isArray(skill)) {
-    throw new Error("Skill must be an array of ObjectIds.");
+    if (!Array.isArray(skill)) {
+      throw new Error("Skill must be an array of ObjectIds.");
+    }
   }
 
   const data = {
     user: req.user.id,
     media: req.fileUrls?.media || [],
-    skill,
+    ...(skill ? { skill } : {}),
     ...req.body,
   };
+
   const review = (await Review.create(data)) as { _id: string };
   const notifications: any[] = [];
   const pushTasks: Promise<any>[] = [];
@@ -43,13 +48,11 @@ export const createReview = async (req: AuthenticatedRequest) => {
 
   const coachId = req.body["coachFeedback.coach"];
   const peerId = req.body["peerFeedback.friend"];
-  // Function to notify a user
+
   const notifyUser = async (userId: string, role: "coach" | "peer") => {
     const roleLabel = role === "coach" ? "a coach" : "a friend";
-
     const message = `${requesterName} has requested a review from you as ${roleLabel}.`;
 
-    // Store in-app notification
     notifications.push({
       user: userId,
       message,
@@ -58,7 +61,6 @@ export const createReview = async (req: AuthenticatedRequest) => {
       isRead: false,
     });
 
-    // Send push notification
     const user = await User.findById(userId).select("deviceToken");
     // if (user?.deviceToken) {
     //   return sendPushNotification(
@@ -70,6 +72,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
     //   );
     // }
   };
+
   if (coachId) pushTasks.push(notifyUser(coachId, "coach"));
   if (peerId) pushTasks.push(notifyUser(peerId, "peer"));
 
@@ -84,34 +87,36 @@ export const createReview = async (req: AuthenticatedRequest) => {
 
 export const updateReview = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
-
   let updateData: any = {};
 
-  // handle media
-  if (req.fileUrls?.media && req.fileUrls?.media.length > 0) {
+  if (req.fileUrls?.media?.length) {
     updateData.media = req.fileUrls.media;
   }
 
-  // handle skill like in createReview
-  let { skill } = req.body;
+  let skill: any = undefined;
 
-  if (typeof skill === "string") {
-    try {
-      const parsed = JSON.parse(skill);
-      skill = Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      skill = [skill];
+  // ✅ Only parse skill if sessionType is "Skill Practice"
+  if (req.body.sessionType === "Skill Practice") {
+    skill = req.body.skill;
+
+    if (typeof skill === "string") {
+      try {
+        const parsed = JSON.parse(skill);
+        skill = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        skill = [skill];
+      }
     }
-  }
 
-  if (skill && !Array.isArray(skill)) {
-    throw new Error("Skill must be an array of ObjectIds.");
+    if (skill && !Array.isArray(skill)) {
+      throw new Error("Skill must be an array of ObjectIds.");
+    }
   }
 
   updateData = {
     ...updateData,
     ...req.body,
-    ...(skill ? { skill } : {}), // overwrite if skill provided
+    ...(skill ? { skill } : {}), // only add if present
   };
 
   const updatedReview = await Review.findByIdAndUpdate(id, updateData, {
