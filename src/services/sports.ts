@@ -229,11 +229,7 @@ export const sportsWithSkillLevel = async (
     ...rawFilters
   } = req.query as Record<string, string>;
 
-  const { sportsTypesId } = req.params;
-
-  const filters: Record<string, any> = {
-    sportsType: sportsTypesId,
-  };
+  const filters: Record<string, any> = {};
 
   Object.entries(rawFilters).forEach(([key, value]) => {
     filters[key] = { $regex: value, $options: "i" };
@@ -242,7 +238,6 @@ export const sportsWithSkillLevel = async (
   const sortOption: Record<string, SortOrder> = {
     [sortBy]: sortOrder === "asc" ? 1 : -1,
   };
-
   try {
     const sports = await Sport.find(filters)
       .populate("sportsType")
