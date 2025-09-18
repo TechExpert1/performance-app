@@ -13,11 +13,13 @@ export const createReview = async (req: AuthenticatedRequest) => {
     return { message: "User information is missing from request." };
   }
   let skill = req.body.skill;
+
   if (typeof skill === "string") {
     try {
-      skill = JSON.parse(skill);
-    } catch (e) {
-      throw new Error("Invalid skill format. Must be an array of IDs.");
+      const parsed = JSON.parse(skill);
+      skill = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      skill = [skill];
     }
   }
 
@@ -85,14 +87,33 @@ export const updateReview = async (req: AuthenticatedRequest) => {
 
   let updateData: any = {};
 
+  // handle media
   if (req.fileUrls?.media && req.fileUrls?.media.length > 0) {
-    updateData.media = req.fileUrls?.media;
+    updateData.media = req.fileUrls.media;
+  }
+
+  // handle skill like in createReview
+  let { skill } = req.body;
+
+  if (typeof skill === "string") {
+    try {
+      const parsed = JSON.parse(skill);
+      skill = Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      skill = [skill];
+    }
+  }
+
+  if (skill && !Array.isArray(skill)) {
+    throw new Error("Skill must be an array of ObjectIds.");
   }
 
   updateData = {
     ...updateData,
     ...req.body,
+    ...(skill ? { skill } : {}), // overwrite if skill provided
   };
+
   const updatedReview = await Review.findByIdAndUpdate(id, updateData, {
     new: true,
   });
