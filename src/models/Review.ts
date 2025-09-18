@@ -7,7 +7,16 @@ const reviewSchema = new Schema<ReviewDocument>(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     sport: { type: mongoose.Schema.Types.ObjectId, ref: "Sport" },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category" },
+    category: {
+      categoryId: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "category.categoryModel",
+      },
+      categoryModel: {
+        type: String,
+        enum: ["Sport_Category", "User_Sport_Category"],
+      },
+    },
     skill: [
       {
         skillId: {

@@ -157,7 +157,7 @@ export const getReviewById = async (req: Request) => {
   const review = await Review.findById(id).populate([
     { path: "user" },
     { path: "sport" },
-    { path: "category" },
+    { path: "category.categoryId" },
     { path: "skill.skillId" },
     { path: "opponent" },
     { path: "coachFeedback.coach" },
@@ -213,11 +213,11 @@ export const getAllReviews = async (req: Request) => {
       Review.find({
         ...query,
         createdAt: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
-      }).populate(["sport", "category", "skill"]),
+      }).populate(["sport", "category.categoryId", "skill.skillId"]),
       Review.find({
         ...query,
         createdAt: { $gte: startOfWeek.toDate(), $lte: endOfWeek.toDate() },
-      }).populate(["sport", "category", "skill.skillId"]),
+      }).populate(["sport", "category.categoryId", "skill.skillId"]),
     ]);
 
     const groupedMonth: Record<string, any[]> = {};
@@ -289,7 +289,7 @@ export const getAllReviews = async (req: Request) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const data = await Review.find(query)
-      .populate(["sport", "category", "skill.skillId"])
+      .populate(["sport", "category.categoryId", "skill.skillId"])
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit));
@@ -309,7 +309,7 @@ export const getAllReviews = async (req: Request) => {
   }
 
   const data = await Review.find(query)
-    .populate(["sport", "category", "skill"])
+    .populate(["sport", "category.categoryId", "skill.skillId"])
     .sort(sortOption);
 
   return {
