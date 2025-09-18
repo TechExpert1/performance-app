@@ -8,10 +8,12 @@ const reviewSchema = new Schema<ReviewDocument>(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     sport: { type: mongoose.Schema.Types.ObjectId, ref: "Sport" },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category" },
-    skill: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Sport_Category_Skill",
-    },
+    skill: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category_Skill",
+      },
+    ],
     sessionType: { type: String, required: true },
     matchType: { type: String },
     matchResult: { type: String },

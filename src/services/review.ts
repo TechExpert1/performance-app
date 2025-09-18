@@ -12,9 +12,23 @@ export const createReview = async (req: AuthenticatedRequest) => {
   if (!req.user) {
     return { message: "User information is missing from request." };
   }
+  let skill = req.body.skill;
+  if (typeof skill === "string") {
+    try {
+      skill = JSON.parse(skill);
+    } catch (e) {
+      throw new Error("Invalid skill format. Must be an array of IDs.");
+    }
+  }
+
+  if (!Array.isArray(skill)) {
+    throw new Error("Skill must be an array of ObjectIds.");
+  }
+
   const data = {
     user: req.user.id,
     media: req.fileUrls?.media || [],
+    skill,
     ...req.body,
   };
   const review = (await Review.create(data)) as { _id: string };
