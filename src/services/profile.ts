@@ -204,7 +204,7 @@ export const updateProfileImage = async (req: AuthenticatedRequest) => {
 export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
   if (!req.user) throw new Error("User not authenticated");
 
-  const { email, name, address, contact } = req.body;
+  const { email, name, address, contact, gym } = req.body;
 
   if (!email) {
     throw new Error("Email is required");
@@ -225,6 +225,7 @@ export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
     address,
     contact,
     code,
+    gym,
   });
   const mailOptions = {
     from: process.env.EMAIL_USER,

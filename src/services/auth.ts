@@ -140,6 +140,8 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       if (record) {
         createdUser.gym = record.gym;
         await createdUser.save({ session });
+        console.log("Record :::::", record);
+        console.log("User :::::", createdUser._id, "Gym:::::", record.gym);
         await Gym_Member.create(
           [{ user: createdUser._id, gym: record.gym, status: "active" }],
           { session }
