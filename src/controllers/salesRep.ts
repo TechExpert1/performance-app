@@ -220,7 +220,8 @@ export const salesRepController = {
         role: user.role,
         status: "active",
       });
-
+      user.gym = gymId;
+      await user.save();
       // Construct Notification Message
       const actorName = req.user?.name || "Someone";
       const actorRole = req.user?.role;

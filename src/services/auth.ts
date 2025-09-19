@@ -131,14 +131,10 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       process.env.JWT_SECRET as string
     );
 
-    // Check if they are in awaiting members
-    const record = await Member_Awaiting.findOne({
-      email: createdUser.email,
-    }).session(session);
-
     await session.commitTransaction();
     session.endSession();
     let athleteDetailObject;
+    let record;
     if (role === "athlete") {
       athleteDetailObject = await Athlete_User.findOne({
         userId: createdUser._id,
@@ -146,6 +142,19 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")
         .lean();
+      record = await Member_Awaiting.findOne({
+        email: createdUser.email,
+      });
+      if (record) {
+        createdUser.gym = record.gym;
+        await createdUser.save();
+        await Gym_Member.create({
+          user: createdUser._id,
+          gym: record.gym,
+          status: "active",
+        });
+        gym = record.gym;
+      }
     }
     return {
       message: "User registered successfully",
