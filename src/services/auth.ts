@@ -35,7 +35,7 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     }
 
     const userData = JSON.parse(req.body.user);
-    let athleteDetails = req.body.athlete_details
+    const athleteDetails = req.body.athlete_details
       ? JSON.parse(req.body.athlete_details)
       : null;
     const gymDetails = req.body.gym_details
@@ -46,7 +46,7 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     userData.password = await bcrypt.hash(userData.password, 10);
     userData.role = role;
 
-    // Set profile image if provided
+    // Set profile image safely
     if (
       req.fileUrls &&
       Array.isArray(req.fileUrls.profile) &&
@@ -66,11 +66,13 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     // Create new user
     const [createdUser] = await User.create([userData], { session });
     let gym;
-    // Handle role-specific details
+
+    // Role-specific details
     if (role === "athlete") {
       if (!athleteDetails) {
         throw new Error("Athlete details are required for role athlete");
       }
+
       const formattedAthleteDetails = {
         ...athleteDetails,
         weight: {
@@ -88,29 +90,37 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
         { session }
       );
     } else if (role === "gymOwner" && gymDetails) {
-      gym = await Gym.create(
+      const [createdGym] = await Gym.create(
         [
           {
             owner: createdUser._id,
             ...gymDetails,
-            proofOfBusiness: req.fileUrls?.proofOfBusiness || [],
-            gymImages: req.fileUrls?.gymImages || [],
-            personalIdentification: req.fileUrls?.personalIdentification || [],
+            proofOfBusiness: Array.isArray(req.fileUrls?.proofOfBusiness)
+              ? req.fileUrls.proofOfBusiness
+              : [],
+            gymImages: Array.isArray(req.fileUrls?.gymImages)
+              ? req.fileUrls.gymImages
+              : [],
+            personalIdentification: Array.isArray(
+              req.fileUrls?.personalIdentification
+            )
+              ? req.fileUrls.personalIdentification
+              : [],
           },
         ],
         { session }
       );
-      gym = gym[0];
+
+      gym = createdGym;
       createdUser.adminStatus = "pending";
       await createdUser.save({ session });
     }
 
-    // If a Bearer token is provided, set createdBy
-    let headerToken = req.headers?.authorization;
-    if (headerToken && headerToken.startsWith("Bearer ")) {
-      const extractedToken = headerToken.split(" ")[1];
+    // Set createdBy from Bearer token
+    const headerToken = req.headers?.authorization;
+    if (headerToken?.startsWith("Bearer ")) {
       const decodedUser = jwt.verify(
-        extractedToken,
+        headerToken.split(" ")[1],
         process.env.JWT_SECRET as string
       ) as AuthenticatedRequest["user"];
 
@@ -119,6 +129,36 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
         await createdUser.save({ session });
       }
     }
+
+    // Handle Member_Awaiting and Gym_Member inside transaction
+    let athleteDetailObject;
+    let record;
+    if (role === "athlete") {
+      record = await Member_Awaiting.findOne({
+        email: createdUser.email,
+      }).session(session);
+      if (record) {
+        createdUser.gym = record.gym;
+        await createdUser.save({ session });
+        await Gym_Member.create(
+          [{ user: createdUser._id, gym: record.gym, status: "active" }],
+          { session }
+        );
+        gym = record.gym;
+      }
+
+      athleteDetailObject = await Athlete_User.findOne({
+        userId: createdUser._id,
+      })
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .session(session)
+        .lean();
+    }
+
+    // Commit transaction after all DB operations
+    await session.commitTransaction();
+    session.endSession();
 
     // Generate token for new user
     const signupToken = jwt.sign(
@@ -131,43 +171,21 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       process.env.JWT_SECRET as string
     );
 
-    await session.commitTransaction();
-    session.endSession();
-    let athleteDetailObject;
-    let record;
-    if (role === "athlete") {
-      athleteDetailObject = await Athlete_User.findOne({
-        userId: createdUser._id,
-      })
-        .populate("sportsAndSkillLevels.sport", "name")
-        .populate("sportsAndSkillLevels.skillSetLevel", "level")
-        .lean();
-      record = await Member_Awaiting.findOne({
-        email: createdUser.email,
-      });
-      if (record) {
-        createdUser.gym = record.gym;
-        await createdUser.save();
-        await Gym_Member.create({
-          user: createdUser._id,
-          gym: record.gym,
-          status: "active",
-        });
-        gym = record.gym;
-      }
-    }
     return {
       message: "User registered successfully",
       user: createdUser,
       gym: gym || null,
       token: signupToken,
       code: record ? record.code : "Not a gym/club member",
-      ...(athleteDetailObject && {
-        athlete_details: athleteDetailObject,
-      }),
+      ...(athleteDetailObject && { athlete_details: athleteDetailObject }),
     };
   } catch (error) {
-    await session.abortTransaction();
+    // Abort only if transaction is active
+    try {
+      await session.abortTransaction();
+    } catch (e) {
+      console.warn("Transaction already committed or aborted");
+    }
     session.endSession();
     console.error("Signup error:", error);
     throw error;
