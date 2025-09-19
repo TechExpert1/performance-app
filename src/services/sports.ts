@@ -121,7 +121,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         from: "sport_category_skills",
         localField: "categories._id",
         foreignField: "category",
-        as: "categories.skills",
+        as: "categories.skills", // this will include all fields, including description
       },
     },
     {
@@ -154,10 +154,8 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         },
       },
     },
-    // ✅ Sort *after grouping*
     {
       $sort: { createdAt: 1 },
-      // or $sort: { _id: 1 } if you prefer insertion order
     },
   ]);
 

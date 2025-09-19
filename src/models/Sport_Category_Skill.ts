@@ -6,6 +6,8 @@ export type SportCategorySkillDocument = ISportCategorySkill & Document;
 const sportCategorySkillSchema = new Schema<SportCategorySkillDocument>(
   {
     name: { type: String, required: true, trim: true },
+    description: { type: String },
+    coachTip: { type: String },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category",
