@@ -97,9 +97,9 @@ export const getChallengeById = async (req: Request) => {
     }
 
     return found;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in getChallengeById:", error);
-    return { message: "An error occurred while fetching the challenge" };
+    throw new Error("Error fetching leaderboard: " + error.message);
   }
 };
 
