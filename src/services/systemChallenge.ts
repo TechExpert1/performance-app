@@ -32,7 +32,7 @@ export const getAllSystemChallenges = async (req: Request) => {
 
   // Fetch all system challenges
   const challenges = await SystemChallenge.find(query)
-    .populate("format")
+    .populate("format categoryType category")
     .sort({ date: -1 })
     .lean();
 
