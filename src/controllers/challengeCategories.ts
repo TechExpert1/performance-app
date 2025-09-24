@@ -3,6 +3,7 @@ import {
   getAllChallengeCategories,
   handleCreateChallenge,
   handleRemoveChallenge,
+  getAllCategories,
   handleCreateType,
   handleRemoveType,
   getAllChallengeCategoriesWithSubsAndExercises,
@@ -36,6 +37,17 @@ export const challengeCategoryController = {
   create: async (req: Request, res: Response) => {
     try {
       const result = await handleCreateChallenge(req);
+      res.status(201).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  index: async (req: Request, res: Response) => {
+    try {
+      const result = await getAllCategories(req);
       res.status(201).json(result);
     } catch (err) {
       res

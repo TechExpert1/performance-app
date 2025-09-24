@@ -168,6 +168,22 @@ export const handleCreateChallenge = async (req: Request) => {
   }
 };
 
+export const getAllCategories = async (req: Request) => {
+  try {
+    let query = {};
+
+    if (req.query.type === "performanceChallenges") {
+      query = { name: { $ne: "Attendance Based" } };
+    }
+
+    const data = await ChallengeCategory.find(query);
+    return data;
+  } catch (error) {
+    console.error("Error in getting categories:", error);
+    throw error;
+  }
+};
+
 export const handleRemoveChallenge = async (req: Request) => {
   try {
     const categoryId = req.params.id;

@@ -9,6 +9,7 @@ router.post(
   uploadMultipleToS3,
   challengeCategoryController.create
 );
+router.get("/", challengeCategoryController.index);
 router.delete("/:id", challengeCategoryController.remove);
 router.post("/:categoryId/types", challengeCategoryController.createType);
 router.delete(
