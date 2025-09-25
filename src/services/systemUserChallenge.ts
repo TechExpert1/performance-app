@@ -156,23 +156,31 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
       {
         $match: {
           user: userId,
+          status: "completed", // ✅ only completed challenges
         },
       },
       {
         $lookup: {
-          from: "challenge_categories",
-          localField: "category",
+          from: "system_challenges", // join with challenge collection
+          localField: "challenge",
+          foreignField: "_id",
+          as: "challengeDetails",
+        },
+      },
+      { $unwind: "$challengeDetails" },
+      {
+        $lookup: {
+          from: "challenge_categories", // join with categories
+          localField: "challengeDetails.category",
           foreignField: "_id",
           as: "categoryDetails",
         },
       },
-      {
-        $unwind: "$categoryDetails",
-      },
+      { $unwind: "$categoryDetails" },
       {
         $group: {
-          _id: "$categoryDetails.name",
-          count: { $sum: 1 },
+          _id: "$categoryDetails.name", // group by category name
+          count: { $sum: 1 }, // count challenges per category
         },
       },
     ]);
@@ -180,7 +188,7 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
     const formatted = result.reduce((acc, curr) => {
       acc[curr._id] = curr.count;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     return {
       data: formatted,
