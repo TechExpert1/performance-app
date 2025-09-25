@@ -1,6 +1,7 @@
 import { Request } from "express";
 import mongoose from "mongoose";
 import SystemUserChallenge from "../models/System_User_Challenge.js";
+import ChallengeCategory from "../models/Challenge_Category.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 
 export const createSystemUserChallenge = async (req: AuthenticatedRequest) => {
@@ -152,16 +153,24 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
 
     const userId = new mongoose.Types.ObjectId(req.user.id);
 
+    // ✅ Step 1: get all category names (excluding "Attendance Based")
+    const categories = await ChallengeCategory.find(
+      { name: { $ne: "Attendance Based" } },
+      "name"
+    ).lean();
+    const categoryNames = categories.map((c) => c.name);
+
+    // ✅ Step 2: aggregate completed challenges by category
     const result = await SystemUserChallenge.aggregate([
       {
         $match: {
           user: userId,
-          status: "completed", // ✅ only completed challenges
+          status: "completed",
         },
       },
       {
         $lookup: {
-          from: "system_challenges", // join with challenge collection
+          from: "system_challenges",
           localField: "challenge",
           foreignField: "_id",
           as: "challengeDetails",
@@ -170,7 +179,7 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
       { $unwind: "$challengeDetails" },
       {
         $lookup: {
-          from: "challenge_categories", // join with categories
+          from: "challenge_categories",
           localField: "challengeDetails.category",
           foreignField: "_id",
           as: "categoryDetails",
@@ -179,19 +188,30 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
       { $unwind: "$categoryDetails" },
       {
         $group: {
-          _id: "$categoryDetails.name", // group by category name
-          count: { $sum: 1 }, // count challenges per category
+          _id: "$categoryDetails.name",
+          count: { $sum: 1 },
         },
       },
     ]);
 
-    const formatted = result.reduce((acc, curr) => {
-      acc[curr._id] = curr.count;
-      return acc;
-    }, {} as Record<string, number>);
+    // ✅ Step 3: merge results
+    const counts: Record<string, number> = {};
+    categoryNames.forEach((name) => {
+      const found = result.find((r) => r._id === name);
+      counts[name] = found ? found.count : 0;
+    });
+
+    // ✅ Step 4: enforce order (Strength → Power → Speed → Endurance)
+    const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
+    const orderedCounts: Record<string, number> = {};
+    orderedCategories.forEach((cat) => {
+      if (counts[cat] !== undefined) {
+        orderedCounts[cat] = counts[cat];
+      }
+    });
 
     return {
-      data: formatted,
+      data: orderedCounts,
     };
   } catch (error) {
     throw error;
