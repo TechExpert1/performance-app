@@ -210,9 +210,7 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
       }
     });
 
-    return {
-      data: orderedCounts,
-    };
+    return orderedCounts;
   } catch (error) {
     throw error;
   }
