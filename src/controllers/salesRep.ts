@@ -152,7 +152,10 @@ export const salesRepController = {
 
   getGymMembers: async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const gymMembers = await GymMember.find({ gym: req.params.gymId })
+      const gymMembers = await GymMember.find({
+        gym: req.params.gymId,
+        status: "active",
+      })
         .select("user")
         .populate({
           path: "user",
