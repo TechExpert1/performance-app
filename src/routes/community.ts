@@ -56,6 +56,12 @@ router.get(
   communityMemberController.join
 );
 
+router.post(
+  "/:communityId/members",
+  gymOwnerAuth,
+  communityMemberController.addMembers
+);
+
 router.get(
   "/:communityId/leave",
   userAuth,

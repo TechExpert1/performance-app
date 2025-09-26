@@ -45,6 +45,52 @@ export const joinCommunityRequest = async (req: AuthenticatedRequest) => {
   }
 };
 
+export const handleAddMembers = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User information is missing from request.");
+    }
+
+    const { communityId } = req.params;
+    const { members } = req.body; // expecting an array of userIds
+
+    if (!Array.isArray(members) || members.length === 0) {
+      throw new Error("Members array is required and should not be empty.");
+    }
+
+    // Prepare bulk insert data
+    const newMembers = members.map((memberId: string) => ({
+      community: communityId,
+      user: memberId,
+      status: "approved",
+    }));
+
+    // Insert while avoiding duplicates
+    const addedMembers = [];
+    for (const member of newMembers) {
+      const exists = await Community_Member.findOne({
+        community: communityId,
+        user: member.user,
+      });
+
+      if (!exists) {
+        const created = await Community_Member.create(member);
+        addedMembers.push(created);
+      }
+    }
+
+    return {
+      message: "Members added successfully.",
+      members: addedMembers,
+    };
+  } catch (error) {
+    console.error("Error in handleAddMembers:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to add members."
+    );
+  }
+};
+
 export const updateCommunityMemberStatus = async (
   req: AuthenticatedRequest
 ) => {
