@@ -86,10 +86,18 @@ export const handleShow = async (req: Request) => {
 // ✅ Index
 export const handleIndex = async (req: Request) => {
   try {
-    const { userId } = req.query;
-    if (!userId) throw new Error("userId is required in query params");
+    const { user, challengeCategory, subCategory } = req.query;
+    if (!(user && challengeCategory && subCategory)) {
+      throw new Error(
+        "user, challenge category and sub-category are required "
+      );
+    }
 
-    const exercises = await UserPerformanceExercise.find({ user: userId })
+    const exercises = await UserPerformanceExercise.find({
+      user,
+      challengeCategory,
+      subCategory,
+    })
       .populate("challengeCategory")
       .populate("subCategory")
       .sort({ createdAt: -1 })
