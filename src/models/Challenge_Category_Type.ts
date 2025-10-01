@@ -7,10 +7,16 @@ const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
   {
     name: { type: String, required: true, trim: true },
     entityType: { type: String },
+    description: { type: String },
+    coachTip: { type: String },
     challengeCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",
       required: true,
+    },
+    subCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Challenge_Sub_Category",
     },
   },
   { timestamps: true }
