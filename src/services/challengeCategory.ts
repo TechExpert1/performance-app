@@ -57,6 +57,7 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
               $project: {
                 _id: 1,
                 name: 1,
+                loggingFields: 1,
                 exercises: 1,
               },
             },
