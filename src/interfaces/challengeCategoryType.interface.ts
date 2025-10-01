@@ -7,6 +7,7 @@ export interface IChallengeCategoryType {
   entityType: string;
   challengeCategory: Types.ObjectId;
   subCategory: Types.ObjectId;
+  user: Types.ObjectId;
   rules: [{ type: String }];
   createdAt?: Date;
   updatedAt?: Date;

@@ -1,6 +1,6 @@
 import { Request } from "express";
 
-import ChallengeCategoryExercise from "../models/Challenge_Category_Type.js";
+import ChallengeCategoryExercise from "../models/Challenge_Category_Exercise.js";
 import ChallengeCategoryFormat from "../models/Challenge_Category_Format.js";
 import ChallengeCategory from "../models/Challenge_Category.js";
 
@@ -226,7 +226,7 @@ export const handleCreateType = async (req: Request) => {
     const { categoryId } = req.params;
 
     if (!name) {
-      throw new Error("Type name is required");
+      throw new Error("Exercise name is required");
     }
 
     const category = await ChallengeCategory.findById(categoryId);
@@ -240,7 +240,9 @@ export const handleCreateType = async (req: Request) => {
     });
 
     if (existingType) {
-      throw new Error("Type with this name already exists for this category");
+      throw new Error(
+        "Exercise with this name already exists for this category"
+      );
     }
 
     const newType = await ChallengeCategoryExercise.create({
