@@ -8,6 +8,6 @@ router.post("/", userAuth, UserPerformanceExerciseController.create);
 router.put("/:id", UserPerformanceExerciseController.update);
 router.delete("/:id", UserPerformanceExerciseController.delete);
 router.get("/:id", UserPerformanceExerciseController.show);
-router.get("/", userAuth, UserPerformanceExerciseController.index);
+router.get("/", UserPerformanceExerciseController.index);
 
 export default router;
