@@ -85,6 +85,8 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
 
 export const getAllChallengeCategories = async (req: Request) => {
   try {
+    const { entityType } = req.query;
+
     const categoriesWithTypesAndFormats = await ChallengeCategory.aggregate([
       { $sort: { sortOrder: 1, createdAt: -1 } },
 
@@ -109,9 +111,17 @@ export const getAllChallengeCategories = async (req: Request) => {
       {
         $addFields: {
           types: {
-            $sortArray: {
-              input: "$types",
-              sortBy: { createdAt: -1 },
+            $filter: {
+              input: {
+                $sortArray: {
+                  input: "$types",
+                  sortBy: { createdAt: -1 },
+                },
+              },
+              as: "type",
+              cond: entityType
+                ? { $eq: ["$$type.entityType", entityType] }
+                : true,
             },
           },
           formats: {
