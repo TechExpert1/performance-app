@@ -8,7 +8,15 @@ export const gymOwnerAuth = (
   next: NextFunction
 ): void => {
   try {
-    const token = req.headers.token as string;
+    let token = req.headers.token as string;
+
+    // If token not found in req.headers.token, check Authorization header
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
 
     if (!token) {
       res.status(401).json({ message: "Unauthorized: No token provided" });

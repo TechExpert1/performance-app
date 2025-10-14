@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 // import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
+import Gym from "../models/Gym.js";
 export const createCoach = async (req: AuthenticatedRequest) => {
   try {
     if (!req.user) {
@@ -98,7 +99,7 @@ export const removeCoach = async (req: AuthenticatedRequest) => {
 // Get Coach by ID
 export const getCoachById = async (req: Request) => {
   try {
-    const coach = await User.findById(req.params.id).populate("gymOwner");
+    const coach = await User.findById(req.params.id).populate("createdBy");
     if (!coach) throw new Error("Coach not found");
 
     return coach;
@@ -235,6 +236,85 @@ export const getAllCoachs = async (req: Request) => {
     }
   } catch (error) {
     console.error("Error in getAllCoachs:", error);
+    throw error;
+  }
+};
+
+export const getMyCoaches = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("Gym owner authentication required");
+    }
+
+    // Find all gyms owned by this gym owner
+    const ownedGyms = await Gym.find({ owner: req.user.id }).select('_id');
+    const gymIds = ownedGyms.map(gym => gym._id);
+
+    if (gymIds.length === 0) {
+      return {
+        data: [],
+        pagination: null,
+      };
+    }
+
+    const {
+      page,
+      limit,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as Record<string, string>;
+
+    const sortOptions: Record<string, SortOrder> = {
+      [sortBy]: sortOrder === "asc" ? 1 : -1,
+    };
+
+    // Find coaches that are associated with the gym owner's gyms
+    // Coaches can be linked via User.gym field or Gym_Member records
+    const query = {
+      role: "coach",
+      $or: [
+        { gym: { $in: gymIds } }, // Direct gym reference on User
+        { _id: { $in: await mongoose.model('Gym_Member').find({ 
+          gym: { $in: gymIds }, 
+          role: "coach",
+          status: "active" 
+        }).distinct('user') } } // Via Gym_Member
+      ]
+    };
+
+    let coaches, total;
+
+    // If pagination is requested
+    if (page || limit) {
+      const pageNum = Number(page) || 1;
+      const limitNum = Number(limit) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      [coaches, total] = await Promise.all([
+        User.find(query).sort(sortOptions).skip(skip).limit(limitNum),
+        User.countDocuments(query),
+      ]);
+
+      return {
+        data: coaches,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalResults: total,
+        },
+      };
+    } else {
+      // Return all coaches without pagination
+      coaches = await User.find(query).sort(sortOptions);
+
+      return {
+        data: coaches,
+        pagination: null,
+      };
+    }
+  } catch (error) {
+    console.error("Error in getMyCoaches:", error);
     throw error;
   }
 };

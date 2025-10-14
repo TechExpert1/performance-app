@@ -7,6 +7,7 @@ import {
   getAllCoachs,
   handleAssignMember,
   getAllMembers,
+  getMyCoaches,
 } from "../services/coach.js";
 
 export const CoachController = {
@@ -79,6 +80,17 @@ export const CoachController = {
   getAll: async (req: Request, res: Response) => {
     try {
       const result = await getAllCoachs(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getMyCoaches: async (req: Request, res: Response) => {
+    try {
+      const result = await getMyCoaches(req as any);
       res.status(200).json(result);
     } catch (err) {
       res
