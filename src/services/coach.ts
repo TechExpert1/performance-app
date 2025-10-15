@@ -139,6 +139,7 @@ export const getAllMembers = async (req: Request) => {
 
     const [members, total] = await Promise.all([
       User.find({ coach: coachId })
+        .select('name email profileImage phoneNumber role gym coach createdAt updatedAt')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 }),
