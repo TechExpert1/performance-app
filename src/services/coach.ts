@@ -15,6 +15,7 @@ export const createCoach = async (req: AuthenticatedRequest) => {
     const data = {
       ...req.body,
       profileImage: (req as any).fileUrls?.profile?.[0] || "",
+      createdBy: req.user.id, // Set the creator
     };
     const existingUser = await User.findOne({ email: req.body.email });
     if (existingUser) {
@@ -78,16 +79,35 @@ export const removeCoach = async (req: AuthenticatedRequest) => {
 
     const { id } = req.params;
 
-    const removed = await User.findOneAndDelete({
-      _id: id,
-      gymOwner: req.user.id,
-    });
-
-    if (!removed) {
-      throw new Error(
-        "Coach not found or you're not authorized to delete this coach"
-      );
+    // Find the coach first to verify ownership
+    const coach = await User.findById(id);
+    
+    if (!coach) {
+      throw new Error("Coach not found");
     }
+
+    if (coach.role !== 'coach') {
+      throw new Error("This user is not a coach");
+    }
+
+    // SuperAdmin can delete any coach
+    if (req.user.role === 'superAdmin') {
+      await User.findByIdAndDelete(id);
+      return { message: "Coach removed successfully" };
+    }
+
+    // For gym owners and other roles, check if they created this coach or own the gym
+    const ownedGyms = await Gym.find({ owner: req.user.id }).select('_id').lean();
+    const gymIds = ownedGyms.map((gym: any) => gym._id.toString());
+    
+    const isOwner = coach.createdBy?.toString() === req.user.id || 
+                    (coach.gym && gymIds.includes(coach.gym.toString()));
+
+    if (!isOwner) {
+      throw new Error("You're not authorized to delete this coach");
+    }
+
+    await User.findByIdAndDelete(id);
 
     return { message: "Coach removed successfully" };
   } catch (error) {
