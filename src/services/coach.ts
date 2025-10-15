@@ -260,6 +260,118 @@ export const getAllCoachs = async (req: Request) => {
   }
 };
 
+export const getGymMembersWithCoachAssignment = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("Authentication required");
+    }
+
+    const { coachId } = req.query;
+    const {
+      page,
+      limit,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as Record<string, string>;
+
+    if (!coachId || typeof coachId !== 'string') {
+      throw new Error("coachId query parameter is required");
+    }
+
+    // Find all gyms owned by or associated with the authenticated user
+    let gymIds: string[] = [];
+    
+    if (req.user.role === 'gymOwner') {
+      const ownedGyms = await Gym.find({ owner: req.user.id }).select('_id').lean();
+      gymIds = ownedGyms.map((gym: any) => gym._id.toString());
+    } else if (req.user.role === 'coach') {
+      // If the user is a coach, get their associated gym
+      const coach = await User.findById(req.user.id).select('gym');
+      if (coach?.gym) {
+        gymIds = [coach.gym.toString()];
+      }
+    } else if (req.user.role === 'superAdmin' || req.user.role === 'salesRep') {
+      // Admin can see all gyms
+      const allGyms = await Gym.find().select('_id').lean();
+      gymIds = allGyms.map((gym: any) => gym._id.toString());
+    }
+
+    if (gymIds.length === 0) {
+      return {
+        data: [],
+        pagination: null,
+      };
+    }
+
+    const sortOptions: Record<string, SortOrder> = {
+      [sortBy]: sortOrder === "asc" ? 1 : -1,
+    };
+
+    // Get all gym members (athletes) from the gyms
+    const gymMemberRecords = await mongoose.model('Gym_Member').find({
+      gym: { $in: gymIds },
+      role: 'athlete',
+      status: 'active'
+    }).select('user gym').lean();
+
+    const userIds = gymMemberRecords.map((record: any) => record.user);
+
+    let members, total;
+
+    // If pagination is requested
+    if (page || limit) {
+      const pageNum = Number(page) || 1;
+      const limitNum = Number(limit) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      [members, total] = await Promise.all([
+        User.find({ _id: { $in: userIds } })
+          .sort(sortOptions)
+          .skip(skip)
+          .limit(limitNum)
+          .select('name email profileImage phoneNumber role gym coach')
+          .lean(),
+        User.countDocuments({ _id: { $in: userIds } }),
+      ]);
+    } else {
+      members = await User.find({ _id: { $in: userIds } })
+        .sort(sortOptions)
+        .select('name email profileImage phoneNumber role gym coach')
+        .lean();
+      total = members.length;
+    }
+
+    // Add assignedTo flag based on whether the member is assigned to the specified coach
+    const membersWithAssignment = members.map((member: any) => ({
+      ...member,
+      assignedTo: member.coach?.toString() === coachId
+    }));
+
+    if (page || limit) {
+      const pageNum = Number(page) || 1;
+      const limitNum = Number(limit) || 10;
+
+      return {
+        data: membersWithAssignment,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalResults: total,
+        },
+      };
+    } else {
+      return {
+        data: membersWithAssignment,
+        pagination: null,
+      };
+    }
+  } catch (error) {
+    console.error("Error in getGymMembersWithCoachAssignment:", error);
+    throw error;
+  }
+};
+
 export const getMyCoaches = async (req: AuthenticatedRequest) => {
   try {
     if (!req.user) {

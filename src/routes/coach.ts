@@ -24,6 +24,7 @@ router.delete("/:id", gymOwnerAuth, CoachController.remove);
 router.post("/:id/assign-member", gymOwnerAuth, CoachController.assignMember);
 router.post("/add-gym-member", gymOwnerAuth, salesRepController.addGymMember);
 router.get("/my-coaches", gymOwnerAuth, CoachController.getMyCoaches);
+router.get("/gym-members", gymOwnerAuth, CoachController.getGymMembersWithCoachAssignment);
 router.get("/:id", CoachController.getById);
 router.get("/:id/get-members", CoachController.getMembers);
 router.get("/", CoachController.getAll);

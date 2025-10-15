@@ -8,6 +8,7 @@ import {
   handleAssignMember,
   getAllMembers,
   getMyCoaches,
+  getGymMembersWithCoachAssignment,
 } from "../services/coach.js";
 
 export const CoachController = {
@@ -91,6 +92,17 @@ export const CoachController = {
   getMyCoaches: async (req: Request, res: Response) => {
     try {
       const result = await getMyCoaches(req as any);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getGymMembersWithCoachAssignment: async (req: Request, res: Response) => {
+    try {
+      const result = await getGymMembersWithCoachAssignment(req as any);
       res.status(200).json(result);
     } catch (err) {
       res
