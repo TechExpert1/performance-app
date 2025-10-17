@@ -142,9 +142,12 @@ export const getAllMembers = async (req: Request) => {
         .select('name email profileImage phoneNumber role gym coach createdAt updatedAt')
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 }),
+        .sort({ createdAt: -1 })
+        .lean(),
       User.countDocuments({ coach: coachId }),
     ]);
+
+    console.log('Sample member:', members[0]); // Debug log to see what's being returned
 
     return {
       members,
@@ -342,10 +345,10 @@ export const getGymMembersWithCoachAssignment = async (req: AuthenticatedRequest
       total = members.length;
     }
 
-    // Add assignedTo flag based on whether the member is assigned to the specified coach
+    // Add assignedTo flag based on whether the member has any coach assigned
     const membersWithAssignment = members.map((member: any) => ({
       ...member,
-      assignedTo: member.coach?.toString() === coachId
+      assignedTo: !!member.coach // true if member has any coach assigned
     }));
 
     if (page || limit) {
