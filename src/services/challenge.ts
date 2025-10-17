@@ -177,6 +177,28 @@ export const getChallengeById = async (req: Request) => {
       throw new Error("Challenge not found.");
     }
 
+    // If a user query parameter is present, try to locate the corresponding User_Challenge
+    const userId = (req.query.user as string) || (req.query.userId as string);
+    if (userId) {
+      const userChallenge = await UserChallenge.findOne({
+        user: userId,
+        challenge: found._id,
+      }).lean();
+
+      if (userChallenge) {
+        // Return challenge data but with root _id replaced by the User_Challenge id
+        const obj = found.toObject();
+        return {
+          ...obj,
+          challengeId: obj._id, // keep original challenge id
+          _id: userChallenge._id,
+          status: userChallenge.status,
+          dailySubmissions: userChallenge.dailySubmissions || [],
+          userChallenge: userChallenge,
+        } as any;
+      }
+    }
+
     return found;
   } catch (error: any) {
     console.error("Error in getChallengeById:", error);
@@ -240,9 +262,32 @@ export const getAllChallenges = async (req: Request) => {
     };
   });
 
+  // If a user query param is provided, replace challenge root _id with the corresponding User_Challenge _id
+  const userId = (req.query.user as string) || (req.query.userId as string);
+  let finalData = dataWithDaysLeft;
+  if (userId) {
+    const enhanced: any[] = [];
+    for (const ch of dataWithDaysLeft) {
+      const uc = await UserChallenge.findOne({ user: userId, challenge: ch._id }).lean();
+      if (uc) {
+        enhanced.push({
+          ...ch,
+          challengeId: ch._id,
+          _id: uc._id,
+          status: uc.status,
+          dailySubmissions: uc.dailySubmissions || [],
+          userChallenge: uc,
+        });
+      } else {
+        enhanced.push(ch);
+      }
+    }
+    finalData = enhanced;
+  }
+
   return {
     message: "Challenges fetched successfully",
-    data: dataWithDaysLeft,
+    data: finalData,
     pagination: {
       page: pageNum,
       limit: limitNum,
