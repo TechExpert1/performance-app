@@ -142,15 +142,21 @@ export const getAllMembers = async (req: Request) => {
         .select('name email profileImage phoneNumber role gym coach createdAt updatedAt')
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 })
-        .lean(),
+        .sort({ createdAt: -1 }),
       User.countDocuments({ coach: coachId }),
     ]);
 
-    console.log('Sample member:', members[0]); // Debug log to see what's being returned
+    // Convert to plain objects and ensure profileImage is always present
+    const membersData = members.map(member => {
+      const obj = member.toObject();
+      return {
+        ...obj,
+        profileImage: obj.profileImage || null
+      };
+    });
 
     return {
-      members,
+      members: membersData,
       total,
       page,
       limit,

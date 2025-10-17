@@ -3,6 +3,28 @@ import { IChallenge } from "../interfaces/challenge.interface";
 
 export type ChallengeDocument = IChallenge & Document;
 
+const dailySubmissionSchema = new Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    date: { type: Date },
+    time: { type: String },
+    reps: { type: String },
+    distance: { type: String },
+    mediaUrl: { type: String },
+    ownerApprovalStatus: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending",
+    },
+    note: { type: String },
+  },
+  { timestamps: true }
+);
+
 const challengeSchema = new Schema<ChallengeDocument>(
   {
     name: { type: String, required: true, trim: true },
@@ -41,6 +63,10 @@ const challengeSchema = new Schema<ChallengeDocument>(
         ref: "User",
       },
     ],
+    dailySubmissions: {
+      type: [dailySubmissionSchema],
+      default: [],
+    },
   },
   { timestamps: true }
 );

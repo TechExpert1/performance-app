@@ -6,6 +6,7 @@ import {
   getChallengeById,
   getAllChallenges,
   handleGetLeaderBoard,
+  updateChallengeSubmission,
 } from "../services/challenge.js";
 
 export const challengeController = {
@@ -67,6 +68,17 @@ export const challengeController = {
   getLeaderBoard: async (req: Request, res: Response) => {
     try {
       const result = await handleGetLeaderBoard(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  updateSubmission: async (req: Request, res: Response) => {
+    try {
+      const result = await updateChallengeSubmission(req);
       res.status(200).json(result);
     } catch (err) {
       res

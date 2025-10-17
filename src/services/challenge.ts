@@ -62,6 +62,83 @@ export const updateChallenge = async (
     };
   }
 
+  // Handle submissions to challenge
+  if (
+    req.body.submission ||
+    (req.fileUrls?.media && req.fileUrls.media.length > 0)
+  ) {
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) {
+      throw new Error("Challenge not found");
+    }
+
+    let parsedSubmission: {
+      date?: string;
+      note?: string;
+      time?: string;
+      reps?: string;
+      distance?: string;
+    } = {};
+
+    try {
+      if (typeof req.body.submission === "string") {
+        parsedSubmission = JSON.parse(req.body.submission);
+      } else if (
+        typeof req.body.submission === "object" &&
+        req.body.submission !== null
+      ) {
+        parsedSubmission = req.body.submission;
+      }
+    } catch {
+      throw new Error("Invalid submission JSON format");
+    }
+
+    // Validate submission date
+    if (parsedSubmission.date) {
+      if (!challenge?.createdAt || !challenge.endDate) {
+        throw new Error("Challenge start date or end date is missing");
+      }
+
+      const normalizeDate = (date: Date) =>
+        new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+      const submissionDate = normalizeDate(new Date(parsedSubmission.date));
+      const startDate = normalizeDate(new Date(challenge.createdAt));
+      const endDate = normalizeDate(new Date(challenge.endDate));
+
+      if (isNaN(submissionDate.getTime())) {
+        throw new Error("Invalid submission date format");
+      }
+
+      if (submissionDate < startDate || submissionDate > endDate) {
+        throw new Error(
+          "Submission date must be between the challenge start date and end date"
+        );
+      }
+    }
+
+    // Add submission to challenge
+    challenge.dailySubmissions.push({
+      user: new mongoose.Types.ObjectId(req.user!.id),
+      date: parsedSubmission.date
+        ? new Date(parsedSubmission.date)
+        : new Date(),
+      mediaUrl: req.fileUrls?.media?.[0] || "",
+      note: parsedSubmission.note || "",
+      time: parsedSubmission.time || "",
+      reps: parsedSubmission.reps || "",
+      distance: parsedSubmission.distance || "",
+      ownerApprovalStatus: "pending",
+    } as any);
+
+    await challenge.save();
+
+    return {
+      message: "Submission added to challenge successfully",
+      challenge,
+    };
+  }
+
   const updated = await Challenge.findByIdAndUpdate(req.params.id, data, {
     new: true,
   });
@@ -90,7 +167,11 @@ export const getChallengeById = async (req: Request) => {
       .populate("exercise")
       .populate("participants")
       .populate("format")
-      .populate("type");
+      .populate("type")
+      .populate({
+        path: "dailySubmissions.user",
+        select: "name email profileImage",
+      });
 
     if (!found) {
       throw new Error("Challenge not found.");
@@ -138,6 +219,10 @@ export const getAllChallenges = async (req: Request) => {
     .populate("format")
     .populate("type")
     .populate("participants")
+    .populate({
+      path: "dailySubmissions.user",
+      select: "name email profileImage",
+    })
     .skip(skip)
     .limit(limitNum)
     .sort({ [sortBy]: sortDirection });
@@ -224,4 +309,28 @@ export const handleGetLeaderBoard = async (req: Request) => {
   } catch (error: any) {
     throw new Error("Error fetching leaderboard: " + error.message);
   }
+};
+
+export const updateChallengeSubmission = async (
+  req: AuthenticatedRequest
+) => {
+  const { id, submissionId } = req.params;
+  const status = req.body.status;
+  
+  const updated = await Challenge.findOneAndUpdate(
+    {
+      _id: id,
+      "dailySubmissions._id": submissionId,
+    },
+    {
+      $set: { "dailySubmissions.$.ownerApprovalStatus": status },
+    },
+    { new: true }
+  );
+
+  if (!updated) {
+    throw new Error("Challenge or Submission not found");
+  }
+
+  return { message: "Status updated successfully", data: updated };
 };

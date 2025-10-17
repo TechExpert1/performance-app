@@ -19,6 +19,7 @@ router.patch(
   challengeController.update
 );
 router.delete("/:id", gymOwnerAuth, challengeController.remove);
+router.patch("/:id/submissions/:submissionId", gymOwnerAuth, challengeController.updateSubmission);
 router.get("/:id", challengeController.getById);
 router.get("/:id/leader-board", challengeController.getLeaderBoard);
 router.get("/", challengeController.getAll);
