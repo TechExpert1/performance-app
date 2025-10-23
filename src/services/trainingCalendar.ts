@@ -216,13 +216,11 @@ export const getAllTrainingCalendars = async (req: Request) => {
     );
 
     // Step 5: Fetch full training documents
-    const allTrainings = await TrainingCalendar.find({
-      _id: { $in: attendedTrainingIds },
-    })
-      .populate(["user", "attendees", "sport", "category", "skill"])
-      .sort(sortOption);
-
-    // Step 6: Group by current month
+  const allTrainings = await TrainingCalendar.find({
+    _id: { $in: attendedTrainingIds },
+  })
+    .populate(["user", "sport", "category", "skill"])
+    .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
     for (let i = 1; i <= daysInMonth; i++) {
@@ -334,7 +332,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
   }
 
   const dataQuery = TrainingCalendar.find(query)
-    .populate(["user", "attendees", "sport", "category", "skill"])
+    .populate(["user", "sport", "category", "skill"])
     .sort(sortOption);
 
   if (page && limit) {
