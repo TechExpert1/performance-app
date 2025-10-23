@@ -8,7 +8,8 @@ export interface ITrainingCalendar {
   sport?: Types.ObjectId;
   category?: Types.ObjectId;
   gym?: Types.ObjectId;
-  skill?: Types.ObjectId;
+  skill?: Types.ObjectId; // Deprecated, kept for backward compatibility
+  skills?: Types.ObjectId[]; // New: array of skill IDs
   trainingScope?: string;
   date: Date;
   startTime?: string;

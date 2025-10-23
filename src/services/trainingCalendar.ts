@@ -110,6 +110,7 @@ export const getTrainingCalendarById = async (req: Request) => {
     "sport",
     "category",
     "skill",
+    "skills",
     "gym",
   ]);
 
@@ -219,7 +220,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
   const allTrainings = await TrainingCalendar.find({
     _id: { $in: attendedTrainingIds },
   })
-    .populate(["user", "sport", "category", "skill"])
+    .populate(["user", "sport", "category", "skill", "skills"])
     .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
@@ -332,7 +333,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
   }
 
   const dataQuery = TrainingCalendar.find(query)
-    .populate(["user", "sport", "category", "skill"])
+    .populate(["user", "sport", "category", "skill", "skills"])
     .sort(sortOption);
 
   if (page && limit) {

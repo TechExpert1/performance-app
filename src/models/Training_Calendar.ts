@@ -20,6 +20,12 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category_Skill",
     },
+    skills: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category_Skill",
+      },
+    ],
     trainingScope: { type: String, enum: ["self", "gym"], default: "self" },
     date: { type: Date },
     startTime: { type: String },
