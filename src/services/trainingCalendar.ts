@@ -20,11 +20,11 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     throw new Error("User not authenticated");
   }
 
-  const { recurrence, date, trainingScope, gym: gymId, attendees } = req.body;
+  const { recurrence, date, trainingScope, gym: gymId, attendees, ...restBody } = req.body;
 
   const data: any = {
     user: req.user.id,
-    ...req.body,
+    ...restBody,
   };
 
   // Set recurrence end date
