@@ -99,6 +99,7 @@ export const trainingCalendarController = {
         {
           $set: {
             status: "pending",
+            checkInStatus: "checked-in",
           },
         },
         {
@@ -163,7 +164,10 @@ export const trainingCalendarController = {
 
       const updated = await TrainingMember.findByIdAndUpdate(
         req.params.id,
-        { status: req.query.status || "approved" },
+        {
+          status: req.query.status || "approved",
+          checkInStatus: req.query.status === "rejected" ? "not-checked-in" : "checked-in",
+        },
         { new: true }
       );
       if (req.query.status == "rejected") {

@@ -4,7 +4,8 @@ export interface ITrainingMember extends Document {
   _id: mongoose.Types.ObjectId;
   user: mongoose.Types.ObjectId;
   training: mongoose.Types.ObjectId;
-  status: String;
+  status: String; // "approved", "pending", "rejected"
+  checkInStatus: String; // "invited", "checked-in"
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,11 @@ const TrainingMemberSchema = new Schema<ITrainingMember>(
       type: String,
       enum: ["approved", "pending", "rejected"],
       default: "pending",
+    },
+    checkInStatus: {
+      type: String,
+      enum: ["not-checked-in", "checked-in"],
+      default: "not-checked-in",
     },
   },
   {
