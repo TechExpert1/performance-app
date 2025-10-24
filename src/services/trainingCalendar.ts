@@ -123,9 +123,12 @@ export const getTrainingCalendarById = async (req: Request) => {
   })
     .populate("user");
 
+  // Filter out attendees with null user (user account was deleted)
+  const validAttendees = attendees.filter(a => a.user !== null);
+
   return {
     ...entry.toObject(),
-    attendees,
+    attendees: validAttendees,
   };
 };
 
