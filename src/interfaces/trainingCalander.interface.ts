@@ -17,6 +17,7 @@ export interface ITrainingCalendar {
   recurrence?: string;
   recurrenceEndDate?: Date;
   recurrenceStatus?: string;
+  classLimit?: Number; // Maximum number of attendees (optional, null = unlimited)
   note?: string;
   createdAt?: Date;
   updatedAt?: Date;

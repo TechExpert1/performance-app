@@ -38,6 +38,11 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
       enum: ["active", "in-active"],
       default: "in-active",
     },
+    classLimit: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
     note: { type: String },
   },
   { timestamps: true }
