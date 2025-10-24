@@ -120,9 +120,7 @@ export const getTrainingCalendarById = async (req: Request) => {
 
   const attendees = await Training_Member.find({
     training: id,
-    status: "approved",
   })
-    .select("user")
     .populate("user");
 
   return {
