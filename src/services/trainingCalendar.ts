@@ -44,6 +44,7 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
       user: userId,
       training: created._id,
       status: "approved",
+      checkInStatus: "not-checked-in",
     }));
 
     await TrainingMember.insertMany(memberDocs);
@@ -85,7 +86,31 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     await Notification.insertMany(notifications);
   }
 
-  return { message: "Training calendar created", data: created };
+  // Fetch the created training with populated fields and attendees
+  const createdTraining = await TrainingCalendar.findById(created._id).populate([
+    "user",
+    "coach",
+    "sport",
+    "category",
+    "skill",
+    "skills",
+    "gym",
+  ]);
+
+  const trainingAttendees = await Training_Member.find({
+    training: created._id,
+  }).populate("user");
+
+  // Filter out attendees with null user (deleted user accounts)
+  const validAttendees = trainingAttendees.filter(a => a.user !== null);
+
+  return {
+    message: "Training calendar created",
+    data: {
+      ...createdTraining?.toObject(),
+      attendees: validAttendees,
+    },
+  };
 };
 
 export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
