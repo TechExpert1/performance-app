@@ -152,35 +152,17 @@ export const salesRepController = {
 
   getGymMembers: async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { page = 1, limit = 20, status = "active" } = req.query;
-      const gymId = req.params.gymId;
-
-      const skip = (Number(page) - 1) * Number(limit);
-
-      const query: any = { gym: gymId };
-      if (status) {
-        query.status = status;
-      }
-
-      const gymMembers = await GymMember.find(query)
-        .skip(skip)
-        .limit(Number(limit))
+      const gymMembers = await GymMember.find({
+        gym: req.params.gymId,
+        status: "active",
+      })
+        .select("user")
         .populate({
           path: "user",
-          select: "name email profileImage role phoneNumber",
+          select: "name email profileImage role",
         });
-
-      const totalMembers = await GymMember.countDocuments(query);
-
       res.status(200).json({
-        message: "Gym members fetched successfully",
-        data: gymMembers,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          totalMembers,
-          totalPages: Math.ceil(totalMembers / Number(limit)),
-        },
+        gymMembers,
       });
       return;
     } catch (error) {
