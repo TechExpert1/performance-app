@@ -12,7 +12,9 @@ import { transporter } from "../utils/nodeMailer.js";
 
 // Get Profile
 export const getProfile = async (req: Request) => {
-  const user = await User.findById(req.params.id).populate("gym friends");
+  const user = await User.findById(req.params.id)
+    .populate("gym friends")
+    .lean();
   if (!user) throw new Error("User not found");
 
   // Initialize linked data
@@ -107,7 +109,8 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
   // Update the main User model
   const updatedUser = await User.findByIdAndUpdate(userId, userData, {
     new: true,
-  });
+    runValidators: true,
+  }).lean();
 
   if (!updatedUser) {
     throw new Error("Failed to update user profile");
@@ -123,8 +126,8 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
     updatedAthlete = await Athlete_User.findOneAndUpdate(
       { userId },
       athlete_details,
-      { new: true }
-    );
+      { new: true, runValidators: true }
+    ).lean();
 
     if (!updatedAthlete) {
       throw new Error("Failed to update athlete profile");
