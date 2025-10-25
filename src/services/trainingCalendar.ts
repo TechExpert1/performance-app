@@ -12,7 +12,6 @@ import { monthMap } from "../utils/commonConst.js";
 import SportCategorySkill from "../models/Sport_Category_Skill.js";
 import Notification from "../models/Notification.js";
 // import { sendPushNotification } from "../config/firebase.js";
-import TrainingMember from "../models/Training_Member.js";
 dayjs.extend(isoWeek);
 
 export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
@@ -20,20 +19,28 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     throw new Error("User not authenticated");
   }
 
-  const { recurrence, date, trainingScope, gym: gymId, attendees, ...restBody } = req.body;
+  const { attendees, ...trainingData } = req.body;
 
   const data: any = {
     user: req.user.id,
-    ...restBody,
+    ...trainingData,
   };
 
-  // Set recurrence end date
-  if (recurrence && date) {
-    const baseDate = dayjs(date);
-    if (recurrence === "weekly") {
+  // Set recurrence end date if recurrence is specified
+  if (data.recurrence && data.date) {
+    const baseDate = dayjs(data.date);
+    if (data.recurrence === "weekly") {
       data.recurrenceEndDate = baseDate.add(7, "day").toDate();
-    } else if (recurrence === "monthly") {
+    } else if (data.recurrence === "monthly") {
       data.recurrenceEndDate = baseDate.add(1, "month").toDate();
+    }
+  }
+
+  // Get gym from user's gym membership if not provided
+  if (!data.gym && data.trainingScope === "gym") {
+    const user = await User.findById(req.user.id).select("gym");
+    if (user?.gym) {
+      data.gym = user.gym;
     }
   }
 
@@ -47,10 +54,14 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
       checkInStatus: "not-checked-in",
     }));
 
-    await TrainingMember.insertMany(memberDocs);
+    console.log("Creating Training_Member records with attendee IDs:", attendees);
+    console.log("Member docs before insert:", memberDocs);
+    const insertedMembers = await Training_Member.insertMany(memberDocs);
+    console.log("Inserted Training_Member records:", insertedMembers.length);
+    console.log("Inserted member IDs:", insertedMembers.map(m => m._id));
   }
   if (
-    trainingScope === "gym" &&
+    data.trainingScope === "gym" &&
     Array.isArray(attendees) &&
     attendees.length > 0
   ) {
@@ -97,12 +108,35 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     "gym",
   ]);
 
+  console.log("Fetching Training_Member for training:", created._id);
   const trainingAttendees = await Training_Member.find({
     training: created._id,
   }).populate("user");
+  console.log("Found Training_Member records:", trainingAttendees.length);
+  console.log("Raw attendees data:", trainingAttendees.map(a => ({ userId: (a.user as any)?._id, userName: (a.user as any)?.name, isNull: a.user === null })));
 
-  // Filter out attendees with null user (deleted user accounts)
-  const validAttendees = trainingAttendees.filter(a => a.user !== null);
+  // Return attendees - map to include both user data and raw user ID
+  const validAttendees = trainingAttendees.map(a => {
+    const attendeeObj: any = {
+      _id: a._id,
+      training: a.training,
+      status: a.status,
+      checkInStatus: a.checkInStatus,
+      createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
+    };
+    
+    // If user was populated successfully, include it
+    if (a.user && typeof a.user === "object") {
+      attendeeObj.user = a.user;
+    } else {
+      // If populate failed, at least include the user ID reference
+      attendeeObj.userId = a.user;
+    }
+    
+    return attendeeObj;
+  });
+  console.log("Attendees to return:", validAttendees.length);
 
   return {
     message: "Training calendar created",
@@ -246,7 +280,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
   const allTrainings = await TrainingCalendar.find({
     _id: { $in: attendedTrainingIds },
   })
-    .populate(["user", "sport", "category", "skill", "skills"])
+    .populate(["user", "coach", "sport", "category", "skill", "skills", "gym"])
     .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
@@ -359,7 +393,7 @@ export const getAllTrainingCalendars = async (req: Request) => {
   }
 
   const dataQuery = TrainingCalendar.find(query)
-    .populate(["user", "sport", "category", "skill", "skills"])
+    .populate(["user", "coach", "sport", "category", "skill", "skills", "gym"])
     .sort(sortOption);
 
   if (page && limit) {
