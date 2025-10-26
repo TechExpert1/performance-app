@@ -365,6 +365,22 @@ export const getAllTrainingCalendars = async (req: Request) => {
     }
   }
 
+  // If user parameter is provided, include trainings where user is an attendee
+  if (user) {
+    // Find all trainings where this user is an attendee
+    const userTrainingMembers = await Training_Member.find({
+      user: user,
+    }).select("training");
+
+    const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
+
+    // Modify query to include trainings where user is creator OR attendee
+    query.$or = [
+      { user: user }, // Trainings created by user
+      { _id: { $in: attendeeTrainingIds } }, // Trainings where user is attendee
+    ];
+  }
+
   const dataQuery = TrainingCalendar.find(query)
     .populate(["user", "coach", "sport", "category", "skill", "skills", "gym"])
     .sort(sortOption);
