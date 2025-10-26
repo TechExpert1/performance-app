@@ -172,7 +172,7 @@ export const deleteTrainingCalendar = async (req: Request) => {
   return { message: "Training calendar deleted successfully" };
 };
 
-export const getAllTrainingCalendars = async (req: Request) => {
+export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   const {
     page,
     limit,
@@ -365,20 +365,31 @@ export const getAllTrainingCalendars = async (req: Request) => {
     }
   }
 
-  // If user parameter is provided, include trainings where user is an attendee
-  if (user) {
-    // Find all trainings where this user is an attendee
-    const userTrainingMembers = await Training_Member.find({
-      user: user,
-    }).select("training");
+  // Automatically use authenticated user's ID if not explicitly provided
+  const userId = user || req.user?.id;
 
-    const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
+  // Role-based filtering
+  if (userId) {
+    const userDoc = await User.findById(userId).select("role");
+    const userRole = userDoc?.role;
 
-    // Modify query to include trainings where user is creator OR attendee
-    query.$or = [
-      { user: user }, // Trainings created by user
-      { _id: { $in: attendeeTrainingIds } }, // Trainings where user is attendee
-    ];
+    // For gym owner: Only show trainings they created
+    if (userRole === "gymOwner") {
+      query.user = userId;
+    } else {
+      // For athlete, coach, etc: Show trainings they created + trainings where they're attendees
+      const userTrainingMembers = await Training_Member.find({
+        user: userId,
+      }).select("training");
+
+      const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
+
+      // Include trainings where user is creator OR attendee
+      query.$or = [
+        { user: userId }, // Trainings created by user
+        { _id: { $in: attendeeTrainingIds } }, // Trainings where user is attendee
+      ];
+    }
   }
 
   const dataQuery = TrainingCalendar.find(query)

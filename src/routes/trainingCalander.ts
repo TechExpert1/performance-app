@@ -20,5 +20,5 @@ router.post("/", userAuth, trainingCalendarController.create);
 router.patch("/:id", trainingCalendarController.update);
 router.delete("/:id", trainingCalendarController.remove);
 router.get("/:id", trainingCalendarController.getById);
-router.get("/", trainingCalendarController.getAll);
+router.get("/", userAuth, trainingCalendarController.getAll);
 export default router;

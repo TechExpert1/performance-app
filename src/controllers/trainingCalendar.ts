@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../middlewares/user.js";
 import {
   createTrainingCalendar,
   updateTrainingCalendar,
@@ -48,7 +49,7 @@ export const trainingCalendarController = {
     }
   },
 
-  getAll: async (req: Request, res: Response) => {
+  getAll: async (req: AuthenticatedRequest, res: Response) => {
     try {
       const result = await getAllTrainingCalendars(req);
       res.status(200).json(result);

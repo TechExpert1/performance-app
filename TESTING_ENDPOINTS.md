@@ -209,6 +209,14 @@ https://performance-app-production.up.railway.app/api/v1
 ### 5. Get All Training Calendars (with pagination and filtering)
 **Endpoint:** `GET /training-calander?page=1&limit=10&month=october&year=2025`
 
+**Headers:**
+```json
+{
+  "Authorization": "Bearer YOUR_TOKEN",
+  "Content-Type": "application/json"
+}
+```
+
 **Query Parameters:**
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 10)
@@ -216,6 +224,18 @@ https://performance-app-production.up.railway.app/api/v1
 - `year` (optional): Year (e.g., 2025)
 - `sortBy` (optional): Field to sort by (default: createdAt)
 - `sortOrder` (optional): asc or desc (default: desc)
+- `user` (optional): Override user ID (not needed - uses Bearer token automatically)
+
+**⭐ Automatic User Detection (Role-Based):**
+- ✅ No need to pass `user` as query parameter
+- ✅ System automatically uses authenticated user's ID from Bearer token
+- ✅ Results depend on user role:
+
+**Role-Based Filtering:**
+- **Gym Owner**: Only trainings they created (not attendee trainings)
+  - Returns: Trainings where `user: gymOwnerId`
+- **Athlete/Coach**: Trainings they created + trainings they're invited to
+  - Returns: Trainings where they're creator OR attendee (in Training_Member table)
 
 **Response:**
 ```json
