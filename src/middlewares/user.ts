@@ -16,7 +16,14 @@ export const userAuth = (
   next: NextFunction
 ) => {
   try {
-    const token = req.headers.token as string;
+    // Extract token from Authorization header (Bearer token) or fallback to token header
+    let token = req.headers.authorization as string;
+    if (token && token.startsWith("Bearer ")) {
+      token = token.slice(7); // Remove "Bearer " prefix
+    } else {
+      token = req.headers.token as string; // Fallback for legacy header
+    }
+
     if (!token) {
       res.status(401).json({ message: "Unauthorized: No token provided" });
       return;

@@ -185,7 +185,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
     ...filters
   } = req.query as Record<string, string>;
 
-  const query: Record<string, any> = {};
+  let query: Record<string, any> = {};
 
   // Apply dynamic filters
   for (const key in filters) {
@@ -373,9 +373,12 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
     const userDoc = await User.findById(userId).select("role");
     const userRole = userDoc?.role;
 
+    console.log("User role:", userRole, "User ID:", userId);
+
     // For gym owner: Only show trainings they created
     if (userRole === "gymOwner") {
       query.user = userId;
+      console.log("Gym owner query:", JSON.stringify(query, null, 2));
     } else {
       // For athlete, coach, etc: Show trainings they created + trainings where they're attendees
       const userTrainingMembers = await Training_Member.find({
@@ -383,12 +386,31 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
       }).select("training");
 
       const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
+      
+      console.log("Attendee training IDs count:", attendeeTrainingIds.length);
 
-      // Include trainings where user is creator OR attendee
-      query.$or = [
+      // Build the $or condition separately
+      const orConditions = [
         { user: userId }, // Trainings created by user
         { _id: { $in: attendeeTrainingIds } }, // Trainings where user is attendee
       ];
+
+      // If there are other filters (like date), we need to combine them properly
+      if (Object.keys(query).length > 0) {
+        // Move existing query conditions into $and with $or
+        const existingConditions = { ...query };
+        query = {
+          $and: [
+            existingConditions,
+            { $or: orConditions }
+          ]
+        };
+      } else {
+        // No other conditions, just use $or
+        query.$or = orConditions;
+      }
+      
+      console.log("Athlete/Coach query:", JSON.stringify(query, null, 2));
     }
   }
 

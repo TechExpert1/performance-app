@@ -460,3 +460,46 @@ export const getMyCoaches = async (req: AuthenticatedRequest) => {
     throw error;
   }
 };
+
+// Get gym athletes for authenticated gym owner
+export const getGymAthletes = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Get gym owner's gym
+    const gymOwner = await User.findById(req.user.id).select("gym");
+    if (!gymOwner || !gymOwner.gym) {
+      return {
+        message: "Gym not found for this gym owner",
+        gymMembers: [],
+      };
+    }
+
+    const GymMember = (await import("../models/Gym_Member.js")).default;
+
+    // Fetch only active athletes from this gym
+    const gymMembers = await GymMember.find({
+      gym: gymOwner.gym,
+      status: "active",
+    })
+      .select("user")
+      .populate({
+        path: "user",
+        select: "name email profileImage role",
+        match: { role: "athlete" }, // Filter to only athletes
+      })
+      .lean();
+
+    // Filter out null users (non-athletes will be null due to populate match)
+    const athletesOnly = gymMembers.filter((member) => member.user !== null);
+
+    return {
+      gymMembers: athletesOnly,
+    };
+  } catch (error) {
+    console.error("Error in getGymAthletes:", error);
+    throw error;
+  }
+};
