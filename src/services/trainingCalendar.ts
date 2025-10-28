@@ -122,15 +122,84 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
 
 export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
-  const updateData = req.body;
+  const { attendees, ...updateData } = req.body;
 
+  // Update the training calendar
   const updated = await TrainingCalendar.findByIdAndUpdate(id, updateData, {
     new: true,
   });
 
   if (!updated) return { message: "Training calendar not found" };
 
-  return { message: "Training calendar updated", data: updated };
+  // Handle attendees update if provided
+  if (attendees !== undefined) {
+    // Remove all existing attendees for this training
+    await Training_Member.deleteMany({ training: id });
+
+    // Add new attendees if provided
+    if (Array.isArray(attendees) && attendees.length > 0) {
+      const memberDocs = attendees.map((userId: string) => ({
+        user: userId,
+        training: id,
+        status: "approved",
+        checkInStatus: "not-checked-in",
+      }));
+
+      await Training_Member.insertMany(memberDocs);
+
+      // Send notifications if it's a gym training
+      if (
+        updateData.trainingScope === "gym" ||
+        updated.trainingScope === "gym"
+      ) {
+        const user = await User.findById(req.user?.id);
+        const message = `Your training has been updated by ${
+          user?.name || "gym Owner"
+        }.`;
+
+        const notificationTasks = attendees.map(async (userId: string) => {
+          const notification = {
+            user: userId,
+            message,
+            entityType: "training_calendar",
+            entityId: id,
+            isRead: false,
+          };
+
+          return notification;
+        });
+
+        const notifications = await Promise.all(notificationTasks);
+        await Notification.insertMany(notifications);
+      }
+    }
+  }
+
+  // Fetch updated training with populated fields and attendees
+  const updatedTraining = await TrainingCalendar.findById(id).populate([
+    "user",
+    "coach",
+    "sport",
+    "category",
+    "skill",
+    "skills",
+    "gym",
+  ]);
+
+  const trainingAttendees = await Training_Member.find({
+    training: id,
+  }).populate("user");
+
+  // Filter out attendees with null user (deleted user accounts)
+  const validAttendees = trainingAttendees.filter(a => a.user !== null);
+
+  return {
+    message: "Training calendar updated",
+    data: {
+      ...updatedTraining?.toObject(),
+      attendees: validAttendees,
+    },
+  };
 };
 
 export const getTrainingCalendarById = async (req: Request) => {

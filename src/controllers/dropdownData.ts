@@ -11,9 +11,39 @@ export const getDropdownController = {
         .populate("sportsType", "name")
         .lean();
 
+      // Custom sort order
+      const sportOrder = [
+        "Brazilian jiu jitsu (bjj)",
+        "boxing",
+        "reformer pilates",
+        "yoga",
+        "weight lifting",
+        "weight training",
+      ];
+
+      const sortedSports = sports.sort((a, b) => {
+        const indexA = sportOrder.indexOf(a.name);
+        const indexB = sportOrder.indexOf(b.name);
+
+        // If both are in the order list, sort by that order
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        // If only a is in the order list, it comes first
+        if (indexA !== -1) {
+          return -1;
+        }
+        // If only b is in the order list, it comes first
+        if (indexB !== -1) {
+          return 1;
+        }
+        // If neither is in the order list, maintain alphabetical order
+        return a.name.localeCompare(b.name);
+      });
+
       res.status(200).json({
         message: "Sports fetched successfully",
-        data: sports,
+        data: sortedSports,
       });
     } catch (err) {
       res.status(500).json({
