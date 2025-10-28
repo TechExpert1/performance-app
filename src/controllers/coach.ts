@@ -10,6 +10,9 @@ import {
   getMyCoaches,
   getGymMembersWithCoachAssignment,
   getGymAthletes,
+  getAthleteSportReviews,
+  getAthleteSkillTraining,
+  getAthletePhysicalPerformance,
 } from "../services/coach.js";
 
 export const CoachController = {
@@ -115,6 +118,39 @@ export const CoachController = {
   getGymAthletes: async (req: Request, res: Response) => {
     try {
       const result = await getGymAthletes(req as any);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getAthleteSportReviews: async (req: Request, res: Response) => {
+    try {
+      const result = await getAthleteSportReviews(req as any);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getAthleteSkillTraining: async (req: Request, res: Response) => {
+    try {
+      const result = await getAthleteSkillTraining(req as any);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getAthletePhysicalPerformance: async (req: Request, res: Response) => {
+    try {
+      const result = await getAthletePhysicalPerformance(req as any);
       res.status(200).json(result);
     } catch (err) {
       res

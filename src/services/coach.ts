@@ -503,3 +503,394 @@ export const getGymAthletes = async (req: AuthenticatedRequest) => {
     throw error;
   }
 };
+
+// Get sport reviews for a gym member athlete (filtered by sport, month, year)
+export const getAthleteSportReviews = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { athleteId } = req.params;
+    const { sport, month, year } = req.query as Record<string, string>;
+
+    // Verify gym owner has access to this athlete
+    const gymOwner = await User.findById(req.user.id).select("gym");
+    if (!gymOwner || !gymOwner.gym) {
+      throw new Error("Gym not found for this gym owner");
+    }
+
+    const GymMember = (await import("../models/Gym_Member.js")).default;
+    const athleteMember = await GymMember.findOne({
+      user: athleteId,
+      gym: gymOwner.gym,
+      status: "active",
+    });
+
+    if (!athleteMember) {
+      throw new Error("Athlete not found in your gym");
+    }
+
+    // Build query
+    const query: any = { user: athleteId };
+
+    if (sport) {
+      query.sport = sport;
+    }
+
+    // Filter by month and year if provided
+    if (month && year) {
+      const monthMap: Record<string, number> = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+      };
+      const monthIndex = monthMap[month.toLowerCase()];
+      const numericYear = Number(year);
+
+      if (monthIndex !== undefined && !isNaN(numericYear)) {
+        const startDate = new Date(numericYear, monthIndex, 1);
+        const endDate = new Date(numericYear, monthIndex + 1, 0, 23, 59, 59);
+        query.createdAt = { $gte: startDate, $lte: endDate };
+      }
+    }
+
+    const Review = (await import("../models/Review.js")).default;
+    const reviews = await Review.find(query)
+      .populate("sport")
+      .populate("coachFeedback.coach", "name email profileImage")
+      .populate("peerFeedback.friend", "name email profileImage")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    // Group reviews by date and calculate daily averages
+    const reviewsByDate: Record<string, any> = {};
+
+    reviews.forEach((review) => {
+      const reviewDate = review.createdAt ? new Date(review.createdAt) : new Date();
+      const date = reviewDate.toISOString().split("T")[0];
+      
+      if (!reviewsByDate[date]) {
+        reviewsByDate[date] = {
+          date,
+          personalReviews: [],
+          peerReviews: [],
+          coachReviews: [],
+        };
+      }
+
+      // Personal review (athlete's self-rating)
+      if (review.rating) {
+        reviewsByDate[date].personalReviews.push({
+          rating: review.rating > 10 ? review.rating / 2 : review.rating / 2, // Convert 1-10 to 1-5 scale
+          comment: review.comment,
+        });
+      }
+
+      // Peer review
+      if (review.peerFeedback?.rating) {
+        reviewsByDate[date].peerReviews.push({
+          rating: review.peerFeedback.rating > 10 ? review.peerFeedback.rating / 2 : review.peerFeedback.rating / 2,
+          comment: review.peerFeedback.comment,
+          friend: review.peerFeedback.friend,
+        });
+      }
+
+      // Coach review
+      if (review.coachFeedback?.rating) {
+        reviewsByDate[date].coachReviews.push({
+          rating: review.coachFeedback.rating > 10 ? review.coachFeedback.rating / 2 : review.coachFeedback.rating / 2,
+          comment: review.coachFeedback.comment,
+          coach: review.coachFeedback.coach,
+        });
+      }
+    });
+
+    // Calculate daily averages
+    const dailyReviews = Object.values(reviewsByDate).map((day: any) => {
+      const personalAvg = day.personalReviews.length > 0
+        ? day.personalReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / day.personalReviews.length
+        : 0;
+
+      const peerAvg = day.peerReviews.length > 0
+        ? day.peerReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / day.peerReviews.length
+        : 0;
+
+      const coachAvg = day.coachReviews.length > 0
+        ? day.coachReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / day.coachReviews.length
+        : 0;
+
+      return {
+        date: day.date,
+        personalReview: parseFloat(personalAvg.toFixed(1)),
+        peerReview: parseFloat(peerAvg.toFixed(1)),
+        coachReview: parseFloat(coachAvg.toFixed(1)),
+      };
+    });
+
+    return {
+      message: "Sport reviews fetched successfully",
+      data: dailyReviews,
+    };
+  } catch (error) {
+    console.error("Error in getAthleteSportReviews:", error);
+    throw error;
+  }
+};
+
+// Get skill training data for a gym member athlete (filtered by time period and sport)
+export const getAthleteSkillTraining = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { athleteId } = req.params;
+    const { sport, timePeriod, startDate, endDate } = req.query as Record<string, string>;
+
+    // Verify gym owner has access to this athlete
+    const gymOwner = await User.findById(req.user.id).select("gym");
+    if (!gymOwner || !gymOwner.gym) {
+      throw new Error("Gym not found for this gym owner");
+    }
+
+    const GymMember = (await import("../models/Gym_Member.js")).default;
+    const athleteMember = await GymMember.findOne({
+      user: athleteId,
+      gym: gymOwner.gym,
+      status: "active",
+    });
+
+    if (!athleteMember) {
+      throw new Error("Athlete not found in your gym");
+    }
+
+    // Calculate date range based on timePeriod
+    let queryStartDate: Date;
+    let queryEndDate: Date = new Date();
+
+    if (startDate && endDate) {
+      queryStartDate = new Date(startDate);
+      queryEndDate = new Date(endDate);
+    } else if (timePeriod) {
+      const days = parseInt(timePeriod);
+      queryStartDate = new Date();
+      queryStartDate.setDate(queryStartDate.getDate() - days);
+    } else {
+      // Default to 7 days
+      queryStartDate = new Date();
+      queryStartDate.setDate(queryStartDate.getDate() - 7);
+    }
+
+    // Query Training_Member to find trainings the athlete attended
+    const Training_Member = (await import("../models/Training_Member.js")).default;
+    const TrainingCalendar = (await import("../models/Training_Calendar.js")).default;
+
+    const trainingMembers = await Training_Member.find({
+      user: athleteId,
+      status: { $ne: "rejected" }, // Include approved and pending, exclude rejected
+    }).select("training");
+
+    console.log("Training members found:", trainingMembers.length);
+
+    const trainingIds = trainingMembers.map((tm) => tm.training);
+
+    console.log("Training IDs:", trainingIds.length);
+
+    // Get trainings with skill data
+    const trainings = await TrainingCalendar.find({
+      _id: { $in: trainingIds },
+      date: { $gte: queryStartDate, $lte: queryEndDate },
+      ...(sport && { sport }),
+    })
+      .populate("skill", "name")
+      .populate("skills", "name")
+      .populate("sport", "name")
+      .lean();
+
+    console.log("Trainings found:", trainings.length);
+
+    // Count skill occurrences
+    const skillCounts: Record<string, { name: string; count: number }> = {};
+
+    trainings.forEach((training) => {
+      // Handle single skill
+      if (training.skill && typeof training.skill === "object" && "name" in training.skill) {
+        const skillName = (training.skill as any).name;
+        if (!skillCounts[skillName]) {
+          skillCounts[skillName] = { name: skillName, count: 0 };
+        }
+        skillCounts[skillName].count++;
+      }
+
+      // Handle multiple skills
+      if (Array.isArray(training.skills)) {
+        training.skills.forEach((skill: any) => {
+          if (skill && typeof skill === "object" && "name" in skill) {
+            const skillName = skill.name;
+            if (!skillCounts[skillName]) {
+              skillCounts[skillName] = { name: skillName, count: 0 };
+            }
+            skillCounts[skillName].count++;
+          }
+        });
+      }
+    });
+
+    console.log("Skill counts:", skillCounts);
+
+    // Calculate percentages
+    const totalCount = Object.values(skillCounts).reduce((sum, skill) => sum + skill.count, 0);
+    const skillPercentages = Object.values(skillCounts).map((skill) => ({
+      skill: skill.name,
+      percentage: totalCount > 0 ? parseFloat(((skill.count / totalCount) * 100).toFixed(1)) : 0,
+      count: skill.count,
+    }));
+
+    return {
+      message: "Skill training data fetched successfully",
+      data: {
+        timePeriod: timePeriod || "7",
+        startDate: queryStartDate.toISOString(),
+        endDate: queryEndDate.toISOString(),
+        skills: skillPercentages,
+      },
+    };
+  } catch (error) {
+    console.error("Error in getAthleteSkillTraining:", error);
+    throw error;
+  }
+};
+
+// Get physical performance data for a gym member athlete (for graphs 3 & 4)
+export const getAthletePhysicalPerformance = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { athleteId } = req.params;
+    const { month, year, exercise } = req.query as Record<string, string>;
+
+    // Verify gym owner has access to this athlete
+    const gymOwner = await User.findById(req.user.id).select("gym");
+    if (!gymOwner || !gymOwner.gym) {
+      throw new Error("Gym not found for this gym owner");
+    }
+
+    const GymMember = (await import("../models/Gym_Member.js")).default;
+    const athleteMember = await GymMember.findOne({
+      user: athleteId,
+      gym: gymOwner.gym,
+      status: "active",
+    });
+
+    if (!athleteMember) {
+      throw new Error("Athlete not found in your gym");
+    }
+
+    // Build date query
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (month && year) {
+      const monthMap: Record<string, number> = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+      };
+      const monthIndex = monthMap[month.toLowerCase()];
+      const numericYear = Number(year);
+
+      if (monthIndex !== undefined && !isNaN(numericYear)) {
+        startDate = new Date(numericYear, monthIndex, 1);
+        endDate = new Date(numericYear, monthIndex + 1, 0, 23, 59, 59);
+      }
+    }
+
+    const PhysicalPerformance = (await import("../models/Physical_Performance.js")).default;
+    const PerformanceSet = (await import("../models/Physical_Performance_Set.js")).default;
+
+    // Get performances
+    const performanceQuery: any = { user: athleteId };
+    if (startDate && endDate) {
+      performanceQuery.date = { $gte: startDate, $lte: endDate };
+    }
+
+    const performances = await PhysicalPerformance.find(performanceQuery).lean();
+    const performanceIds = performances.map((p) => p._id);
+
+    // Get performance sets
+    const setQuery: any = { performance: { $in: performanceIds } };
+    if (exercise) {
+      setQuery.exercise = exercise;
+    }
+
+    const performanceSets = await PerformanceSet.find(setQuery)
+      .populate("exercise", "name")
+      .populate("category", "name")
+      .populate("subCategory", "name")
+      .lean();
+
+    // Group by exercise and date for graphing
+    const exerciseData: Record<string, any[]> = {};
+
+    performanceSets.forEach((set) => {
+      const performance = performances.find((p) => p._id.toString() === set.performance?.toString());
+      if (!performance) return;
+
+      const exerciseName = (set.exercise as any)?.name || "Unknown";
+      const date = new Date(performance.date).toISOString().split("T")[0];
+
+      if (!exerciseData[exerciseName]) {
+        exerciseData[exerciseName] = [];
+      }
+
+      // Calculate max weight or best performance from variations
+      set.variation.forEach((v: any) => {
+        exerciseData[exerciseName].push({
+          date,
+          weight: v.weight || 0,
+          reps: v.reps || 0,
+          sets: v.sets || 0,
+          duration: v.duration || 0,
+          distance: v.distance || 0,
+          rpe: v.rpe || 0,
+        });
+      });
+    });
+
+    // For attendance tracking (graph 4)
+    const Training_Member = (await import("../models/Training_Member.js")).default;
+    
+    const attendanceQuery: any = { user: athleteId, status: "approved" };
+    
+    const trainingMembers = await Training_Member.find(attendanceQuery)
+      .populate({
+        path: "training",
+        select: "date",
+        ...(startDate && endDate && {
+          match: { date: { $gte: startDate, $lte: endDate } }
+        })
+      })
+      .lean();
+
+    const attendedDates = trainingMembers
+      .filter((tm) => tm.training)
+      .map((tm: any) => new Date(tm.training.date).toISOString().split("T")[0]);
+
+    const attendanceCount = attendedDates.length;
+
+    return {
+      message: "Physical performance data fetched successfully",
+      data: {
+        exercises: exerciseData,
+        attendance: {
+          daysAttended: attendanceCount,
+          dates: attendedDates,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error in getAthletePhysicalPerformance:", error);
+    throw error;
+  }
+};

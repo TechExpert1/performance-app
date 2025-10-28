@@ -9,7 +9,23 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
 ) => {
   try {
     const categories = await ChallengeCategory.aggregate([
-      { $sort: { createdAt: -1 } },
+      // Sort by custom order: Strength, Power, Speed, Endurance
+      {
+        $addFields: {
+          sortOrder: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$name", "Strength"] }, then: 1 },
+                { case: { $eq: ["$name", "Power"] }, then: 2 },
+                { case: { $eq: ["$name", "Speed"] }, then: 3 },
+                { case: { $eq: ["$name", "Endurance"] }, then: 4 },
+              ],
+              default: 999,
+            },
+          },
+        },
+      },
+      { $sort: { sortOrder: 1 } },
 
       // lookup subcategories
       {
@@ -47,7 +63,6 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
                       },
                     },
                   },
-                  { $sort: { createdAt: -1 } },
                   { $project: { _id: 1, name: 1, rules: 1 } },
                 ],
                 as: "exercises",
@@ -72,6 +87,13 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
           name: 1,
           image: 1,
           subCategories: 1,
+        },
+      },
+
+      // Filter out "Attendance Based" category
+      {
+        $match: {
+          name: { $ne: "Attendance Based" },
         },
       },
     ]);

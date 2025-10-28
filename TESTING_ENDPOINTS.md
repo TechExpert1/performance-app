@@ -492,6 +492,147 @@ Get your token by logging in:
 
 ---
 
+## 🏋️ Athlete Performance Analytics (Gym Owner)
+
+### 1. Get Athlete Sport Reviews
+**Endpoint:** `GET /coaches/athletes/:athleteId/sport-reviews?sport=SPORT_ID&month=march&year=2025`
+
+**Authentication:** Requires `gymOwnerAuth` (Bearer token)
+
+**Headers:**
+```json
+{
+  "Authorization": "Bearer YOUR_GYM_OWNER_TOKEN",
+  "Content-Type": "application/json"
+}
+```
+
+**Query Parameters:**
+- `sport` (optional): Sport ID to filter by
+- `month` (optional): Month name (january-december)
+- `year` (optional): Year (e.g., 2025)
+
+**Description:**
+Returns daily aggregated reviews (personal, peer, and coach) for an athlete on a 1-5 scale for each day they had reviews.
+
+**Response:**
+```json
+{
+  "message": "Sport reviews fetched successfully",
+  "data": [
+    {
+      "date": "2025-03-14",
+      "personalReview": 3.5,
+      "peerReview": 4.2,
+      "coachReview": 3.8
+    },
+    {
+      "date": "2025-03-15",
+      "personalReview": 3.0,
+      "peerReview": 0,
+      "coachReview": 4.5
+    }
+  ]
+}
+```
+
+---
+
+### 2. Get Athlete Skill Training
+**Endpoint:** `GET /coaches/athletes/:athleteId/skill-training?sport=SPORT_ID&timePeriod=7`
+
+**Authentication:** Requires `gymOwnerAuth` (Bearer token)
+
+**Headers:**
+```json
+{
+  "Authorization": "Bearer YOUR_GYM_OWNER_TOKEN",
+  "Content-Type": "application/json"
+}
+```
+
+**Query Parameters:**
+- `sport` (optional): Sport ID to filter by
+- `timePeriod` (optional): Number of days to look back (default: 7)
+- `startDate` (optional): Start date (YYYY-MM-DD)
+- `endDate` (optional): End date (YYYY-MM-DD)
+
+**Description:**
+Returns skill training distribution as percentages showing which skills the athlete has trained on during the specified time period.
+
+**Response:**
+```json
+{
+  "message": "Skill training data fetched successfully",
+  "data": {
+    "timePeriod": "7",
+    "startDate": "2025-10-21T00:00:00.000Z",
+    "endDate": "2025-10-28T00:00:00.000Z",
+    "skills": [
+      {
+        "skill": "Leg Locks",
+        "percentage": 50.0,
+        "count": 5
+      },
+      {
+        "skill": "Takedowns",
+        "percentage": 20.0,
+        "count": 2
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 3. Get Athlete Physical Performance
+**Endpoint:** `GET /coaches/athletes/:athleteId/physical-performance?month=april&year=2025&exercise=EXERCISE_ID`
+
+**Authentication:** Requires `gymOwnerAuth` (Bearer token)
+
+**Headers:**
+```json
+{
+  "Authorization": "Bearer YOUR_GYM_OWNER_TOKEN",
+  "Content-Type": "application/json"
+}
+```
+
+**Query Parameters:**
+- `month` (optional): Month name (january-december)
+- `year` (optional): Year (e.g., 2025)
+- `exercise` (optional): Specific exercise ID to filter by
+
+**Description:**
+Returns physical performance metrics (e.g., Back Squat with weight progression) and attendance data for graphing.
+
+**Response:**
+```json
+{
+  "message": "Physical performance data fetched successfully",
+  "data": {
+    "exercises": {
+      "Back Squat": [
+        {
+          "date": "2025-02-06",
+          "weight": 80,
+          "reps": 5,
+          "sets": 3,
+          "rpe": 7
+        }
+      ]
+    },
+    "attendance": {
+      "daysAttended": 8,
+      "dates": ["2025-04-01", "2025-04-03", "2025-04-05"]
+    }
+  }
+}
+```
+
+---
+
 ## ⚠️ Important Notes
 
 1. **Valid User IDs**: When creating attendees, ensure you use valid User IDs that exist in your database
@@ -502,5 +643,187 @@ Get your token by logging in:
 6. **Profile Caching**: All profile data uses `.lean()` to ensure fresh database data
 
 ---
+
+## 📋 Dropdown/Reference Data APIs
+
+### Get All Sports
+**Endpoint:** `GET /dropdown-data/sports`
+
+**Headers:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Description:**
+Returns a list of all active sports with their IDs. Use these IDs for filtering or creating trainings.
+
+**Response:**
+```json
+{
+  "message": "Sports fetched successfully",
+  "data": [
+    {
+      "_id": "6877ce55e42c26ccd8e0b9b3",
+      "name": "Boxing"
+    },
+    {
+      "_id": "6877ce55e42c26ccd8e0b9b4",
+      "name": "Rugby"
+    },
+    {
+      "_id": "6877ce55e42c26ccd8e0b9b5",
+      "name": "Football"
+    }
+  ]
+}
+```
+
+---
+
+### Get Sport by ID
+**Endpoint:** `GET /dropdown-data/sports/:id`
+
+**Headers:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Sport fetched successfully",
+  "data": {
+    "_id": "6877ce55e42c26ccd8e0b9b3",
+    "name": "Boxing",
+    "sportsType": {
+      "_id": "68771234567890abcdef1234",
+      "name": "Combat Sports"
+    }
+  }
+}
+```
+
+---
+
+### Get All Exercises
+**Endpoint:** `GET /dropdown-data/exercises`
+
+**Headers:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Description:**
+Returns a list of all exercises with their categories and subcategories.
+
+**Response:**
+```json
+{
+  "message": "Exercises fetched successfully",
+  "data": [
+    {
+      "_id": "68f21e7b2de1e16fbc8936d3",
+      "name": "Back Squat",
+      "description": "Weighted squat exercise",
+      "challengeCategory": {
+        "_id": "68f1234567890abcdef12345",
+        "name": "Strength"
+      },
+      "subCategory": {
+        "_id": "68f1234567890abcdef12346",
+        "name": "Lower Body"
+      }
+    },
+    {
+      "_id": "68f21e7b2de1e16fbc8936d4",
+      "name": "Deadlift",
+      "description": "Deadlift exercise",
+      "challengeCategory": {
+        "_id": "68f1234567890abcdef12345",
+        "name": "Strength"
+      },
+      "subCategory": {
+        "_id": "68f1234567890abcdef12347",
+        "name": "Full Body"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### Get Exercise by ID
+**Endpoint:** `GET /dropdown-data/exercises/:id`
+
+**Headers:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Exercise fetched successfully",
+  "data": {
+    "_id": "68f21e7b2de1e16fbc8936d3",
+    "name": "Back Squat",
+    "description": "Weighted squat exercise",
+    "coachTip": "Keep your back straight and chest up",
+    "challengeCategory": {
+      "_id": "68f1234567890abcdef12345",
+      "name": "Strength"
+    },
+    "subCategory": {
+      "_id": "68f1234567890abcdef12346",
+      "name": "Lower Body"
+    }
+  }
+}
+```
+
+---
+
+### Get Exercises by Category
+**Endpoint:** `GET /dropdown-data/exercises/category/:categoryId`
+
+**Headers:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Description:**
+Returns all exercises that belong to a specific challenge category.
+
+**Response:**
+```json
+{
+  "message": "Exercises fetched successfully",
+  "data": [
+    {
+      "_id": "68f21e7b2de1e16fbc8936d3",
+      "name": "Back Squat",
+      "description": "Weighted squat exercise",
+      "subCategory": {
+        "_id": "68f1234567890abcdef12346",
+        "name": "Lower Body"
+      }
+    }
+  ]
+}
+```
+
+---
+
 
 Generated: 2025-10-25
