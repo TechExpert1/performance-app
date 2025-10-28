@@ -31,7 +31,11 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
     startTime: { type: String },
     finishTime: { type: String },
     gym: { type: mongoose.Schema.Types.ObjectId, ref: "Gym" },
-    recurrence: { type: String, enum: ["weekly", "monthly"], default: null },
+    recurrence: { 
+      type: String, 
+      enum: ["weekly", "monthly", null, ""], 
+      default: null 
+    },
     recurrenceEndDate: { type: Date },
     recurrenceStatus: {
       type: String,

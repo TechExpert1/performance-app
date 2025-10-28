@@ -26,6 +26,11 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     ...trainingData,
   };
 
+  // Clean up recurrence field - convert empty string to null
+  if (data.recurrence === "" || data.recurrence === undefined) {
+    data.recurrence = null;
+  }
+
   // Set recurrence end date if recurrence is specified
   if (data.recurrence && data.date) {
     const baseDate = dayjs(data.date);
@@ -123,6 +128,11 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
 export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
   const { attendees, ...updateData } = req.body;
+
+  // Clean up recurrence field - convert empty string to null
+  if (updateData.recurrence === "" || updateData.recurrence === undefined) {
+    updateData.recurrence = null;
+  }
 
   // Update the training calendar
   const updated = await TrainingCalendar.findByIdAndUpdate(id, updateData, {
