@@ -26,9 +26,14 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     ...trainingData,
   };
 
-  // Clean up recurrence field - convert empty string to null
-  if (data.recurrence === "" || data.recurrence === undefined) {
+  // Normalize recurrence field - convert empty string, "none", or undefined to null
+  if (data.recurrence === "" || data.recurrence === "none" || data.recurrence === undefined) {
     data.recurrence = null;
+  }
+
+  // Normalize recurrenceStatus - convert "inactive" to "in-active"
+  if (data.recurrenceStatus === "inactive") {
+    data.recurrenceStatus = "in-active";
   }
 
   // Set recurrence end date if recurrence is specified
@@ -129,9 +134,14 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
   const { id } = req.params;
   const { attendees, ...updateData } = req.body;
 
-  // Clean up recurrence field - convert empty string to null
-  if (updateData.recurrence === "" || updateData.recurrence === undefined) {
+  // Normalize recurrence field - convert empty string, "none", or undefined to null
+  if (updateData.recurrence === "" || updateData.recurrence === "none" || updateData.recurrence === undefined) {
     updateData.recurrence = null;
+  }
+
+  // Normalize recurrenceStatus - convert "inactive" to "in-active"
+  if (updateData.recurrenceStatus === "inactive") {
+    updateData.recurrenceStatus = "in-active";
   }
 
   // Update the training calendar
