@@ -16,6 +16,12 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category",
     },
+    categories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category",
+      },
+    ],
     skill: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport_Category_Skill",

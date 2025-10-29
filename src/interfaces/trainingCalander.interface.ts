@@ -6,7 +6,8 @@ export interface ITrainingCalendar {
   coach?: Types.ObjectId;
   trainingName?: string;
   sport?: Types.ObjectId;
-  category?: Types.ObjectId;
+  category?: Types.ObjectId; // Deprecated, kept for backward compatibility
+  categories?: Types.ObjectId[]; // New: array of category IDs
   gym?: Types.ObjectId;
   skill?: Types.ObjectId; // Deprecated, kept for backward compatibility
   skills?: Types.ObjectId[]; // New: array of skill IDs

@@ -109,6 +109,7 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     "coach",
     "sport",
     "category",
+    "categories",
     "skill",
     "skills",
     "gym",
@@ -201,6 +202,7 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
     "coach",
     "sport",
     "category",
+    "categories",
     "skill",
     "skills",
     "gym",
@@ -230,6 +232,7 @@ export const getTrainingCalendarById = async (req: Request) => {
     "coach",
     "sport",
     "category",
+    "categories",
     "skill",
     "skills",
     "gym",
@@ -342,7 +345,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   const allTrainings = await TrainingCalendar.find({
     _id: { $in: attendedTrainingIds },
   })
-    .populate(["user", "coach", "sport", "category", "skill", "skills", "gym"])
+    .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
     .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
@@ -504,7 +507,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   }
 
   const dataQuery = TrainingCalendar.find(query)
-    .populate(["user", "coach", "sport", "category", "skill", "skills", "gym"])
+    .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
     .sort(sortOption);
 
   if (page && limit) {
