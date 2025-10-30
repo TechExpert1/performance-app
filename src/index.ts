@@ -32,6 +32,7 @@ import userSportRoutes from "./routes/userSportCategory.js";
 import chatRoutes from "./routes/chat.js";
 import userSubscriptionRoutes from "./routes/userSubscription.js";
 import UserPerformanceExerciseRoutes from "./routes/userPerformanceExercise.js";
+import journalRoutes from "./routes/journal.js";
 import { registerSocketHandlers } from "./webSocket/socket.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
@@ -91,6 +92,7 @@ app.use("/dropdowns", dropdownRoutes);
 app.use("/dropdown-data", dropdownDataRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
+app.use("/journals", journalRoutes);
 // app.listen(PORT);
 const server = createServer(app);
 

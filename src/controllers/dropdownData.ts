@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import Sports from "../models/Sports.js";
 import ChallengeCategoryExercise from "../models/Challenge_Category_Exercise.js";
+import Review from "../models/Review.js";
+import SportCategory from "../models/Sport_Category.js";
 
 export const getDropdownController = {
   // Get all sports with basic info
@@ -146,6 +148,65 @@ export const getDropdownController = {
     } catch (err) {
       res.status(500).json({
         message: "Error fetching exercises",
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  },
+
+  // Get journals dropdown options for filters
+  getJournalsFilterDropdowns: async (req: Request, res: Response) => {
+    try {
+      // Get unique sports from reviews
+      const sports = await Sports.find()
+        .select("_id name image")
+        .lean();
+
+      // Get unique session types from reviews
+      const sessionTypes = await Review.distinct("sessionType", { sessionType: { $exists: true, $ne: null } });
+
+      // Get unique match types from reviews
+      const matchTypes = await Review.distinct("matchType", { matchType: { $exists: true, $ne: null } });
+
+      // Get unique categories from reviews
+      const categories = await SportCategory.find()
+        .select("_id name")
+        .lean();
+
+      // Get unique skills from Sport_Category_Skill
+      const SportCategorySkill = require("../models/Sport_Category_Skill.js").default;
+      const skills = await SportCategorySkill.find()
+        .select("_id name")
+        .lean();
+
+      res.status(200).json({
+        message: "Journal filter dropdowns fetched successfully",
+        data: {
+          sports: sports.map((sport: any) => ({
+            _id: sport._id,
+            name: sport.name,
+            image: sport.image,
+          })),
+          sessionTypes: sessionTypes.filter((st: string) => st && st.trim()).map((st: string) => ({
+            value: st,
+            label: st,
+          })),
+          matchTypes: matchTypes.filter((mt: string) => mt && mt.trim()).map((mt: string) => ({
+            value: mt,
+            label: mt,
+          })),
+          categories: categories.map((cat: any) => ({
+            _id: cat._id,
+            name: cat.name,
+          })),
+          skills: skills.map((skill: any) => ({
+            _id: skill._id,
+            name: skill.name,
+          })),
+        },
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: "Error fetching journal filter dropdowns",
         error: err instanceof Error ? err.message : "Unknown error",
       });
     }
