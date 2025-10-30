@@ -9,6 +9,7 @@ import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
 import Gym_Member from "../models/Gym_Member.js";
 import { transporter } from "../utils/nodeMailer.js";
+import { kgToLb, cmToInches } from "../utils/functions.js";
 
 // Get Profile
 export const getProfile = async (req: Request) => {
@@ -238,4 +239,335 @@ export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
   };
   await transporter.sendMail(mailOptions);
   return awaitingMember;
+};
+
+// Update Athlete Profile - My Account Screen
+export const updateAthleteProfile = async (req: AuthenticatedRequest) => {
+  if (!req.user || !req.user.id) {
+    throw new Error("User not authenticated");
+  }
+
+  const userId = req.user.id;
+  const {
+    // Personal Information
+    name,
+    email,
+    phoneNumber,
+    dob,
+    gender,
+    nationality,
+    // Athlete Details
+    height,
+    weight,
+    sportsAndSkillLevels,
+  } = req.body;
+
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Check if email is being updated and if it already exists
+  if (email && email !== user.email) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      throw new Error("Email already in use");
+    }
+  }
+
+  // Prepare user update data
+  const userUpdateData: any = {};
+  if (name) userUpdateData.name = name;
+  if (email) userUpdateData.email = email;
+  if (phoneNumber) userUpdateData.phoneNumber = phoneNumber;
+  if (dob) userUpdateData.dob = dob;
+  if (gender) userUpdateData.gender = gender;
+  if (nationality) userUpdateData.nationality = nationality;
+
+  // Update User
+  const updatedUser = await User.findByIdAndUpdate(userId, userUpdateData, {
+    new: true,
+    runValidators: true,
+  }).lean();
+
+  if (!updatedUser) {
+    throw new Error("Failed to update user information");
+  }
+
+  // Update Athlete Details
+  let updatedAthlete = null;
+  if (user.role === "athlete") {
+    const athleteUpdateData: any = {};
+
+    if (height || weight) {
+      if (height) {
+        athleteUpdateData["height.cm"] = height;
+        athleteUpdateData["height.inches"] = cmToInches(height);
+      }
+      if (weight) {
+        athleteUpdateData["weight.kg"] = weight;
+        athleteUpdateData["weight.lbs"] = kgToLb(weight);
+      }
+    }
+
+    if (sportsAndSkillLevels && Array.isArray(sportsAndSkillLevels)) {
+      athleteUpdateData.sportsAndSkillLevels = sportsAndSkillLevels;
+    }
+
+    if (Object.keys(athleteUpdateData).length > 0) {
+      updatedAthlete = await Athlete_User.findOneAndUpdate(
+        { userId },
+        athleteUpdateData,
+        { new: true, runValidators: true }
+      )
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .lean();
+
+      if (!updatedAthlete) {
+        throw new Error("Failed to update athlete details");
+      }
+    }
+  }
+
+  return {
+    message: "Athlete profile updated successfully",
+    data: {
+      user: updatedUser,
+      athleteDetails: updatedAthlete,
+    },
+  };
+};
+
+// Update Gym Owner Profile - Personal Information + Gym Information + Identity Verification
+export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
+  if (!req.user || !req.user.id) {
+    throw new Error("User not authenticated");
+  }
+
+  const userId = req.user.id;
+  const {
+    // Personal Information
+    name,
+    email,
+    phoneNumber,
+    dob,
+    gender,
+    nationality,
+    // Gym Information
+    gymName,
+    address,
+    registration,
+    cnic,
+    sport,
+    // Delete file keys
+    deletePersonalIdentification,
+    deleteProofOfBusiness,
+    deleteGymImages,
+  } = req.body;
+
+  // Check if user exists and is gym owner
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.role !== "gymOwner") {
+    throw new Error("Only gym owners can update gym profile");
+  }
+
+  // Check if email is being updated and if it already exists
+  if (email && email !== user.email) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      throw new Error("Email already in use");
+    }
+  }
+
+  // Prepare user update data
+  const userUpdateData: any = {};
+  if (name) userUpdateData.name = name;
+  if (email) userUpdateData.email = email;
+  if (phoneNumber) userUpdateData.phoneNumber = phoneNumber;
+  if (dob) userUpdateData.dob = dob;
+  if (gender) userUpdateData.gender = gender;
+  if (nationality) userUpdateData.nationality = nationality;
+
+  // Update User
+  const updatedUser = await User.findByIdAndUpdate(userId, userUpdateData, {
+    new: true,
+    runValidators: true,
+  }).lean();
+
+  if (!updatedUser) {
+    throw new Error("Failed to update personal information");
+  }
+
+  // Fetch existing gym to handle file deletions and appends
+  let existingGym = await Gym.findOne({ owner: userId });
+  if (!existingGym) {
+    throw new Error("Gym not found for this owner");
+  }
+
+  // Prepare update data
+  const gymUpdateData: any = {};
+  if (gymName) gymUpdateData.name = gymName;
+  if (address) gymUpdateData.address = address;
+  if (registration) gymUpdateData.registration = registration;
+  if (cnic) gymUpdateData.cnic = cnic;
+  if (sport && Array.isArray(sport)) gymUpdateData.sport = sport;
+
+  // Handle file deletions (remove specific URLs from arrays)
+  if (deletePersonalIdentification) {
+    const urlsToDelete = Array.isArray(deletePersonalIdentification)
+      ? deletePersonalIdentification
+      : [deletePersonalIdentification];
+    gymUpdateData.personalIdentification = (
+      existingGym.personalIdentification || []
+    ).filter((url: string) => !urlsToDelete.includes(url));
+  }
+
+  if (deleteProofOfBusiness) {
+    const urlsToDelete = Array.isArray(deleteProofOfBusiness)
+      ? deleteProofOfBusiness
+      : [deleteProofOfBusiness];
+    gymUpdateData.proofOfBusiness = (existingGym.proofOfBusiness || []).filter(
+      (url: string) => !urlsToDelete.includes(url)
+    );
+  }
+
+  if (deleteGymImages) {
+    const urlsToDelete = Array.isArray(deleteGymImages)
+      ? deleteGymImages
+      : [deleteGymImages];
+    gymUpdateData.gymImages = (existingGym.gymImages || []).filter(
+      (url: string) => !urlsToDelete.includes(url)
+    );
+  }
+
+  // Handle new file uploads (append to existing, not replace)
+  if ((req as any).fileUrls) {
+    if ((req as any).fileUrls.personalIdentification) {
+      const existingIds = existingGym.personalIdentification || [];
+      gymUpdateData.personalIdentification = [
+        ...existingIds,
+        ...(req as any).fileUrls.personalIdentification,
+      ];
+    }
+    if ((req as any).fileUrls.proofOfBusiness) {
+      const existingProof = existingGym.proofOfBusiness || [];
+      gymUpdateData.proofOfBusiness = [
+        ...existingProof,
+        ...(req as any).fileUrls.proofOfBusiness,
+      ];
+    }
+    if ((req as any).fileUrls.gymImages) {
+      const existingImages = existingGym.gymImages || [];
+      gymUpdateData.gymImages = [
+        ...existingImages,
+        ...(req as any).fileUrls.gymImages,
+      ];
+    }
+  }
+
+  let updatedGym = null;
+  if (Object.keys(gymUpdateData).length > 0) {
+    updatedGym = await Gym.findOneAndUpdate(
+      { owner: userId },
+      gymUpdateData,
+      { new: true, runValidators: true }
+    )
+      .populate("sport", "name")
+      .lean();
+
+    if (!updatedGym) {
+      throw new Error("Failed to update gym information");
+    }
+  } else {
+    // Fetch existing gym if no updates
+    updatedGym = await Gym.findOne({ owner: userId })
+      .populate("sport", "name")
+      .lean();
+  }
+
+  return {
+    message: "Gym owner profile updated successfully",
+    data: {
+      user: updatedUser,
+      gymDetails: updatedGym,
+    },
+  };
+};
+
+// Get Authenticated User Profile
+export const getAuthenticatedUserProfile = async (
+  req: AuthenticatedRequest
+) => {
+  if (!req.user || !req.user.id) {
+    throw new Error("User not authenticated");
+  }
+
+  const userId = req.user.id;
+
+  // Fetch user with all relations
+  const user = await User.findById(userId)
+    .populate("gym friends")
+    .select(
+      "name email phoneNumber gender dob nationality role profileImage createdAt updatedAt gym"
+    )
+    .lean();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  let linkedProfile: any = null;
+  let profileType = "";
+
+  // If athlete - get athlete details
+  if (user.role === "athlete") {
+    linkedProfile = await Athlete_User.findOne({ userId })
+      .populate({
+        path: "sportsAndSkillLevels.sport",
+        select: "name",
+      })
+      .populate({
+        path: "sportsAndSkillLevels.skillSetLevel",
+        select: "level",
+      })
+      .lean();
+    profileType = "athleteDetails";
+  }
+
+  // If gym owner - get gym details
+  if (user.role === "gymOwner") {
+    linkedProfile = await Gym.findOne({ owner: userId })
+      .populate("sport", "name")
+      .lean();
+    profileType = "gymDetails";
+  }
+
+  // If coach - get gym details (coaches belong to a gym)
+  if (user.role === "coach") {
+    if (user.gym) {
+      linkedProfile = await Gym.findById(user.gym)
+        .populate("sport", "name")
+        .lean();
+      profileType = "gymDetails";
+    }
+  }
+
+  const response: any = {
+    user,
+  };
+
+  if (linkedProfile) {
+    response[profileType] = linkedProfile;
+  }
+
+  return {
+    message: "User profile retrieved successfully",
+    data: response,
+  };
 };

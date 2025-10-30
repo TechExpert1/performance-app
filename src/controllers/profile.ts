@@ -6,6 +6,9 @@ import {
   updateProfileImage,
   handleGetProfile,
   addGymMemberProfile,
+  updateAthleteProfile,
+  updateGymOwnerProfile,
+  getAuthenticatedUserProfile,
 } from "../services/profile.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import User from "../models/User.js";
@@ -244,6 +247,42 @@ export const ProfileController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
       return;
+    }
+  },
+
+  updateAthleteProfile: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const result = await updateAthleteProfile(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  updateGymOwnerProfile: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const result = await updateGymOwnerProfile(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getAuthenticatedProfile: async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const result = await getAuthenticatedUserProfile(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
     }
   },
 };
