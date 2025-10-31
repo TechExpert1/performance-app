@@ -24,6 +24,38 @@ declare global {
 const uploadPath = path.resolve("./temp-uploads");
 fs.mkdirSync(uploadPath, { recursive: true });
 
+// Cleanup old temp files on startup and periodically
+const cleanupOldTempFiles = () => {
+  try {
+    const files = fs.readdirSync(uploadPath);
+    const now = Date.now();
+    const maxAge = 60 * 60 * 1000; // 1 hour
+
+    files.forEach((file) => {
+      const filePath = path.join(uploadPath, file);
+      const stat = fs.statSync(filePath);
+      const age = now - stat.mtimeMs;
+
+      if (age > maxAge) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️  Cleaned up old temp file: ${file} (age: ${Math.round(age / 1000)}s)`);
+        } catch (err) {
+          console.error(`Failed to cleanup temp file ${file}:`, err);
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Error during temp file cleanup:", err);
+  }
+};
+
+// Run cleanup on startup
+cleanupOldTempFiles();
+
+// Run cleanup every 30 minutes
+setInterval(cleanupOldTempFiles, 30 * 60 * 1000);
+
 const storage = multer.diskStorage({
   destination: (
     req: Request,
@@ -144,15 +176,18 @@ export const uploadMultipleToS3 = async (
 
     if (!files || files.length === 0) {
       req.fileUrls = {};
+      // Clean up: reset files array to prevent accumulation
+      req.files = undefined;
       return next();
     }
 
     const fileUrls: { [fieldname: string]: string[] } = {};
+    const failedFiles: string[] = [];
 
     for (const file of files) {
       try {
         const fileContent = fs.readFileSync(file.path);
-        const fileName = `uploads/${Date.now()}-${file.originalname}`;
+        const fileName = `uploads/${Date.now()}-${Math.random()}-${file.originalname}`;
 
         const params = {
           Bucket: process.env.AWS_BUCKET_NAME!,
@@ -170,31 +205,46 @@ export const uploadMultipleToS3 = async (
         }
         fileUrls[file.fieldname].push(fileUrl);
 
-        // Clean up temp file after successful upload
-        fs.unlinkSync(file.path);
+        console.log(`✅ Uploaded: ${file.fieldname}/${file.originalname}`);
       } catch (fileErr) {
-        // Log individual file error but continue processing other files
-        console.error(`Failed to upload file ${file.originalname}:`, fileErr);
-        // Try to clean up temp file even if upload failed
+        console.error(`❌ Failed to upload file ${file.originalname}:`, fileErr);
+        failedFiles.push(file.originalname);
+      } finally {
+        // ALWAYS cleanup temp file - use finally to guarantee execution
         try {
           if (file.path && fs.existsSync(file.path)) {
             fs.unlinkSync(file.path);
+            console.log(`✅ Cleaned up temp file: ${file.path}`);
           }
         } catch (unlinkErr) {
-          console.error(`Failed to delete temp file ${file.path}:`, unlinkErr);
+          console.error(`❌ Failed to delete temp file ${file.path}:`, unlinkErr);
         }
-        // Continue processing next file instead of stopping
       }
     }
 
-    // Always set fileUrls (even if empty) and call next()
-    // This ensures the middleware chain continues
+    // Set fileUrls even if empty
     req.fileUrls = fileUrls;
+    
+    // Clean up the files array to prevent memory leaks on 3rd+ requests
+    req.files = undefined;
+
+    // Log summary
+    if (failedFiles.length > 0) {
+      console.warn(`⚠️ uploadMultipleToS3: ${failedFiles.length} file(s) failed: ${failedFiles.join(", ")}`);
+    } else {
+      console.log(`✅ uploadMultipleToS3: All ${Object.keys(fileUrls).length} files uploaded successfully`);
+    }
+
     return next();
   } catch (err) {
-    console.error("Dynamic Upload Error (non-recoverable):", err);
-    // Don't send response here - pass to global error handler
-    // This prevents middleware chain interruption
+    console.error("💥 uploadMultipleToS3: Critical error", {
+      error: err instanceof Error ? err.message : "Unknown error",
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    
+    // Clean up files array on critical error too
+    req.files = undefined;
+    
     return next(err);
   }
 };

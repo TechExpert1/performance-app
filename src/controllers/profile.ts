@@ -259,7 +259,20 @@ export const ProfileController = {
       }
 
       const result = await updateAthleteProfile(req);
+      
+      // Send response
       res.status(200).json(result);
+      
+      // Clean up request object after response to prevent state accumulation
+      // This is critical for the 3rd+ request to work
+      setImmediate(() => {
+        try {
+          (req as any).fileUrls = undefined;
+          (req as any).files = undefined;
+        } catch (e) {
+          console.warn("Error cleaning up request object:", e);
+        }
+      });
     } catch (err) {
       console.error("Error updating athlete profile:", err);
       res
@@ -277,7 +290,20 @@ export const ProfileController = {
       }
 
       const result = await updateGymOwnerProfile(req);
+      
+      // Send response
       res.status(200).json(result);
+      
+      // Clean up request object after response to prevent state accumulation
+      // This is critical for the 3rd+ request to work
+      setImmediate(() => {
+        try {
+          (req as any).fileUrls = undefined;
+          (req as any).files = undefined;
+        } catch (e) {
+          console.warn("Error cleaning up request object:", e);
+        }
+      });
     } catch (err) {
       console.error("Error updating gym owner profile:", err);
       res
