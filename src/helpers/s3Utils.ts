@@ -150,34 +150,51 @@ export const uploadMultipleToS3 = async (
     const fileUrls: { [fieldname: string]: string[] } = {};
 
     for (const file of files) {
-      const fileContent = fs.readFileSync(file.path);
-      const fileName = `uploads/${Date.now()}-${file.originalname}`;
+      try {
+        const fileContent = fs.readFileSync(file.path);
+        const fileName = `uploads/${Date.now()}-${file.originalname}`;
 
-      const params = {
-        Bucket: process.env.AWS_BUCKET_NAME!,
-        Key: fileName,
-        Body: fileContent,
-        ContentType: file.mimetype,
-      };
+        const params = {
+          Bucket: process.env.AWS_BUCKET_NAME!,
+          Key: fileName,
+          Body: fileContent,
+          ContentType: file.mimetype,
+        };
 
-      await s3.send(new PutObjectCommand(params));
+        await s3.send(new PutObjectCommand(params));
 
-      const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+        const fileUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
 
-      if (!fileUrls[file.fieldname]) {
-        fileUrls[file.fieldname] = [];
+        if (!fileUrls[file.fieldname]) {
+          fileUrls[file.fieldname] = [];
+        }
+        fileUrls[file.fieldname].push(fileUrl);
+
+        // Clean up temp file after successful upload
+        fs.unlinkSync(file.path);
+      } catch (fileErr) {
+        // Log individual file error but continue processing other files
+        console.error(`Failed to upload file ${file.originalname}:`, fileErr);
+        // Try to clean up temp file even if upload failed
+        try {
+          if (file.path && fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        } catch (unlinkErr) {
+          console.error(`Failed to delete temp file ${file.path}:`, unlinkErr);
+        }
+        // Continue processing next file instead of stopping
       }
-      fileUrls[file.fieldname].push(fileUrl);
-
-      fs.unlinkSync(file.path);
     }
 
+    // Always set fileUrls (even if empty) and call next()
+    // This ensures the middleware chain continues
     req.fileUrls = fileUrls;
-    next();
+    return next();
   } catch (err) {
-    console.error("Dynamic Upload Error:", err);
-    res.status(500).json({
-      error: err instanceof Error ? err.message : "Upload failed",
-    });
+    console.error("Dynamic Upload Error (non-recoverable):", err);
+    // Don't send response here - pass to global error handler
+    // This prevents middleware chain interruption
+    return next(err);
   }
 };

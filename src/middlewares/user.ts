@@ -25,10 +25,12 @@ export const userAuth = (
     }
 
     if (!token) {
+      console.warn("userAuth: No token provided in headers");
       res.status(401).json({ message: "Unauthorized: No token provided" });
       return;
     }
 
+    // Verify token signature (doesn't check expiry if no exp claim)
     const user = jwt.verify(token, process.env.JWT_SECRET as string);
     req.user = user as AuthenticatedRequest["user"];
     if (
@@ -39,6 +41,7 @@ export const userAuth = (
         req.user.role !== "athlete" &&
         req.user.role !== "coach")
     ) {
+      console.warn(`userAuth: Invalid role - ${req.user?.role}`);
       res.status(403).json({
         message: `Forbidden: Need an valid token for accessing resource`,
       });
@@ -46,6 +49,10 @@ export const userAuth = (
     }
     next();
   } catch (err) {
+    console.error("userAuth: JWT verification failed", {
+      error: err instanceof Error ? err.message : "Unknown error",
+      headers: req.headers,
+    });
     res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
   }
 };

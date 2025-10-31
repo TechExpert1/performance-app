@@ -252,9 +252,16 @@ export const ProfileController = {
 
   updateAthleteProfile: async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Verify user is authenticated before attempting update
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ error: "User not authenticated" });
+        return;
+      }
+
       const result = await updateAthleteProfile(req);
       res.status(200).json(result);
     } catch (err) {
+      console.error("Error updating athlete profile:", err);
       res
         .status(422)
         .json({ error: err instanceof Error ? err.message : "Unknown error" });
@@ -263,9 +270,16 @@ export const ProfileController = {
 
   updateGymOwnerProfile: async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Verify user is authenticated before attempting update
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ error: "User not authenticated" });
+        return;
+      }
+
       const result = await updateGymOwnerProfile(req);
       res.status(200).json(result);
     } catch (err) {
+      console.error("Error updating gym owner profile:", err);
       res
         .status(422)
         .json({ error: err instanceof Error ? err.message : "Unknown error" });

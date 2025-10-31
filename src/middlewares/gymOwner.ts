@@ -19,6 +19,7 @@ export const gymOwnerAuth = (
     }
 
     if (!token) {
+      console.warn("gymOwnerAuth: No token provided in headers");
       res.status(401).json({ message: "Unauthorized: No token provided" });
       return;
     }
@@ -32,6 +33,7 @@ export const gymOwnerAuth = (
         req.user.role !== "superAdmin" &&
         req.user.role !== "salesRep")
     ) {
+      console.warn(`gymOwnerAuth: Invalid role - ${req.user?.role}`);
       res.status(403).json({
         message: `Forbidden: Gym Owner or Admin access or salesRep required, cant access with ${req?.user?.role} account`,
       });
@@ -39,6 +41,10 @@ export const gymOwnerAuth = (
     }
     next();
   } catch (err) {
+    console.error("gymOwnerAuth: JWT verification failed", {
+      error: err instanceof Error ? err.message : "Unknown error",
+      headers: req.headers,
+    });
     res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
   }
 };

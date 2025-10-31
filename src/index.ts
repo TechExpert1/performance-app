@@ -93,6 +93,37 @@ app.use("/dropdown-data", dropdownDataRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
 app.use("/journals", journalRoutes);
+
+// Global error handler middleware (must be after all routes)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Global Error Handler:", err);
+  
+  // If response already sent, skip
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  // Default to 500 server error
+  let statusCode = err.status || err.statusCode || 500;
+  let message = err.message || "Internal Server Error";
+
+  // Handle specific error types
+  if (err.name === "CastError") {
+    statusCode = 400;
+    message = "Invalid ID format";
+  }
+
+  if (err.name === "ValidationError") {
+    statusCode = 422;
+    message = err.message;
+  }
+
+  res.status(statusCode).json({
+    error: message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+});
+
 // app.listen(PORT);
 const server = createServer(app);
 
