@@ -3,6 +3,7 @@ import Sports from "../models/Sports.js";
 import ChallengeCategoryExercise from "../models/Challenge_Category_Exercise.js";
 import Review from "../models/Review.js";
 import SportCategory from "../models/Sport_Category.js";
+import SportCategorySkill from "../models/Sport_Category_Skill.js";
 
 export const getDropdownController = {
   // Get all sports with basic info
@@ -173,7 +174,6 @@ export const getDropdownController = {
         .lean();
 
       // Get unique skills from Sport_Category_Skill
-      const SportCategorySkill = require("../models/Sport_Category_Skill.js").default;
       const skills = await SportCategorySkill.find()
         .select("_id name")
         .lean();
