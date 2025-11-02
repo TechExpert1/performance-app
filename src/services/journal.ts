@@ -22,6 +22,7 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
     maxReviewScore,
     matchType,
     userId,
+    search,
   } = req.query;
 
   const pageNum = parseInt(page as string, 10);
@@ -82,15 +83,15 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
     }
   }
 
+  // Store search term for post-population filtering
+  const searchTerm = search && typeof search === "string" ? search.trim() : "";
+
   const sortOption: Record<string, SortOrder> = {
     [sortBy as string]: sortOrder === "asc" ? 1 : -1,
   };
 
-  // Get total count
-  const total = await Review.countDocuments(query);
-
-  // Get paginated data
-  const reviews = await Review.find(query)
+  // Get all matching reviews (without pagination if searching populated fields)
+  let reviews = await Review.find(query)
     .populate([
       {
         path: "user",
@@ -116,12 +117,47 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
       },
     ])
     .sort(sortOption)
-    .skip((pageNum - 1) * limitNum)
-    .limit(limitNum)
     .lean();
 
+  // Post-population filtering - search ALL fields
+  if (searchTerm) {
+    const lowerSearch = searchTerm.toLowerCase();
+    reviews = reviews.filter((review: any) => {
+      // Text fields
+      const opponentMatch = review.opponent?.toLowerCase().includes(lowerSearch);
+      const clubTeamMatch = review.clubOrTeam?.toLowerCase().includes(lowerSearch);
+      const matchResultMatch = review.matchResult?.toLowerCase().includes(lowerSearch);
+      const commentMatch = review.comment?.toLowerCase().includes(lowerSearch);
+      const sessionTypeMatch = review.sessionType?.toLowerCase().includes(lowerSearch);
+      const matchTypeMatch = review.matchType?.toLowerCase().includes(lowerSearch);
+      const coachCommentMatch = review.coachFeedback?.comment?.toLowerCase().includes(lowerSearch);
+      const peerCommentMatch = review.peerFeedback?.comment?.toLowerCase().includes(lowerSearch);
+      
+      // Populated fields
+      const sportMatch = review.sport?.name?.toLowerCase().includes(lowerSearch);
+      const userMatch = review.user?.name?.toLowerCase().includes(lowerSearch);
+      const categoryMatch = review.category?.categoryId?.name?.toLowerCase().includes(lowerSearch);
+      const skillMatch = Array.isArray(review.skill) && review.skill.some((s: any) => 
+        s.skillId?.name?.toLowerCase().includes(lowerSearch)
+      );
+      const coachNameMatch = review.coachFeedback?.coach?.name?.toLowerCase().includes(lowerSearch);
+      const peerNameMatch = review.peerFeedback?.friend?.name?.toLowerCase().includes(lowerSearch);
+      
+      // Return true if ANY field matches
+      return opponentMatch || clubTeamMatch || matchResultMatch || commentMatch || 
+             sessionTypeMatch || matchTypeMatch || coachCommentMatch || peerCommentMatch ||
+             sportMatch || userMatch || categoryMatch || skillMatch || coachNameMatch || peerNameMatch;
+    });
+  }
+
+  // Get total after filtering
+  const total = reviews.length;
+
+  // Apply pagination after filtering
+  const paginatedReviews = reviews.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+
   // Transform data to match the journal format expected by frontend
-  const journals = reviews.map((review: any) => ({
+  const journals = paginatedReviews.map((review: any) => ({
     _id: review._id,
     date: review.createdAt,
     sport: review.sport,
