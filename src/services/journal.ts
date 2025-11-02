@@ -131,7 +131,9 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
     opponent: review.opponent,
     clubOrTeam: review.clubOrTeam,
     category: review.category?.categoryId,
-    skills: review.skill?.map((s: any) => s.skillId) || [],
+    skills: Array.isArray(review.skill)
+      ? review.skill.map((s: any) => s.skillId)
+      : [],
     
     // Personal Feedback
     personalFeedback: review.rating || review.comment ? {
