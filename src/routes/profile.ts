@@ -6,20 +6,6 @@ import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 
 const router = express.Router();
 
-// Profile Routes
-router.get("/:id", ProfileController.get);
-router.get(
-  "/:receiverId/friend-request",
-  userAuth,
-  ProfileController.sendFriendRequest
-);
-router.get(
-  "/:id/update-friend-request",
-  userAuth,
-  ProfileController.updateFriendRequestStatus
-);
-router.get("/:id/notifications", ProfileController.getNotifications);
-
 // Get authenticated user's own profile
 router.get(
   "/me/profile",
@@ -27,19 +13,11 @@ router.get(
   ProfileController.getAuthenticatedProfile
 );
 
-router.patch("/:id", userAuth, ProfileController.update);
-router.delete("/:id", userAuth, ProfileController.delete);
-router.post(
-  "/add-gym-awaiting-member",
-  gymOwnerAuth,
-  ProfileController.addGymAwaitingMember
-);
-router.patch(
-  "/:id/profile-image-update",
+// Update Preferences - Change Units Screen (for both athletes and gym owners)
+router.put(
+  "/update-preferences",
   userAuth,
-  newMulterUpload,
-  uploadMultipleToS3,
-  ProfileController.updateImage
+  ProfileController.updatePreferences
 );
 
 // Athlete Profile Update - My Account Screen
@@ -58,11 +36,34 @@ router.put(
   ProfileController.updateGymOwnerProfile
 );
 
-// Update Preferences - Change Units Screen (for both athletes and gym owners)
-router.put(
-  "/update-preferences",
+// Add gym member
+router.post(
+  "/add-gym-awaiting-member",
+  gymOwnerAuth,
+  ProfileController.addGymAwaitingMember
+);
+
+// Profile Routes with :id parameter (must come after specific routes)
+router.get("/:id", ProfileController.get);
+router.get(
+  "/:receiverId/friend-request",
   userAuth,
-  ProfileController.updatePreferences
+  ProfileController.sendFriendRequest
+);
+router.get(
+  "/:id/update-friend-request",
+  userAuth,
+  ProfileController.updateFriendRequestStatus
+);
+router.get("/:id/notifications", ProfileController.getNotifications);
+router.patch("/:id", userAuth, ProfileController.update);
+router.delete("/:id", userAuth, ProfileController.delete);
+router.patch(
+  "/:id/profile-image-update",
+  userAuth,
+  newMulterUpload,
+  uploadMultipleToS3,
+  ProfileController.updateImage
 );
 
 export default router;
