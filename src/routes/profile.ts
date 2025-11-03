@@ -13,18 +13,18 @@ router.get(
   ProfileController.getAuthenticatedProfile
 );
 
-// Update Preferences - Change Units Screen (for both athletes and gym owners)
-router.put(
-  "/update-preferences",
-  userAuth,
-  ProfileController.updatePreferences
-);
-
 // Athlete Profile Update - My Account Screen
 router.put(
   "/athlete/update-profile",
   userAuth,
   ProfileController.updateAthleteProfile
+);
+
+// Update Preferences - Change Units Screen (for both athletes and gym owners)
+router.put(
+  "/athlete/update-preferences",
+  userAuth,
+  ProfileController.updatePreferences
 );
 
 // Gym Owner Profile Update - Personal Information + Gym Information + Identity Verification
