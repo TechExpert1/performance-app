@@ -58,4 +58,11 @@ router.put(
   ProfileController.updateGymOwnerProfile
 );
 
+// Update Preferences - Change Units Screen (for both athletes and gym owners)
+router.put(
+  "/update-preferences",
+  userAuth,
+  ProfileController.updatePreferences
+);
+
 export default router;

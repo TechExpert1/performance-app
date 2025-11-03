@@ -8,6 +8,7 @@ import {
   addGymMemberProfile,
   updateAthleteProfile,
   updateGymOwnerProfile,
+  updatePreferences,
   getAuthenticatedUserProfile,
 } from "../services/profile.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
@@ -318,6 +319,20 @@ export const ProfileController = {
   ) => {
     try {
       const result = await getAuthenticatedUserProfile(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  updatePreferences: async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const result = await updatePreferences(req);
       res.status(200).json(result);
     } catch (err) {
       res

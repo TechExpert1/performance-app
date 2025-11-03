@@ -13,6 +13,7 @@ const userSchema = new Schema<UserDocument>(
     preference: {
       height: { type: String, default: "cm" },
       weight: { type: String, default: "kg" },
+      distance: { type: String, default: "km" },
     },
     gender: {
       type: String,

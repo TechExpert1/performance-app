@@ -340,6 +340,75 @@ export const updateAthleteProfile = async (req: AuthenticatedRequest) => {
   };
 };
 
+// Update Preferences - Change Units Screen (for both athletes and gym owners)
+export const updatePreferences = async (req: AuthenticatedRequest) => {
+  if (!req.user || !req.user.id) {
+    throw new Error("User not authenticated");
+  }
+
+  const userId = req.user.id;
+  const { preference } = req.body;
+
+  // Validate preference object exists
+  if (!preference || typeof preference !== "object") {
+    throw new Error("Preference object is required");
+  }
+
+  const { height, weight, distance } = preference;
+
+  // Validate at least one preference is provided
+  if (!height && !weight && !distance) {
+    throw new Error("At least one preference must be provided");
+  }
+
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Prepare preference updates
+  const userUpdateData: any = {};
+
+  if (height) {
+    if (!["cm", "inches"].includes(height)) {
+      throw new Error("Invalid height preference. Must be 'cm' or 'inches'");
+    }
+    userUpdateData["preference.height"] = height;
+  }
+
+  if (weight) {
+    if (!["kg", "lbs"].includes(weight)) {
+      throw new Error("Invalid weight preference. Must be 'kg' or 'lbs'");
+    }
+    userUpdateData["preference.weight"] = weight;
+  }
+
+  if (distance) {
+    if (!["km", "miles"].includes(distance)) {
+      throw new Error("Invalid distance preference. Must be 'km' or 'miles'");
+    }
+    userUpdateData["preference.distance"] = distance;
+  }
+
+  // Update User preferences
+  const updatedUser = await User.findByIdAndUpdate(userId, userUpdateData, {
+    new: true,
+    runValidators: true,
+  })
+    .select("name email role preference")
+    .lean();
+
+  if (!updatedUser) {
+    throw new Error("Failed to update preferences");
+  }
+
+  return {
+    message: "Preferences updated successfully",
+    data: updatedUser,
+  };
+};
+
 // Update Gym Owner Profile - Personal Information + Gym Information + Identity Verification
 export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
   if (!req.user || !req.user.id) {
@@ -500,6 +569,7 @@ export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
   };
 };
 
+// Update Gym Owner Preferences - Change Units Screen
 // Get Authenticated User Profile
 export const getAuthenticatedUserProfile = async (
   req: AuthenticatedRequest

@@ -9,6 +9,7 @@ export interface IUser {
   preference: {
     height: string;
     weight: string;
+    distance: string;
   };
   deviceToken?: string;
   gender?: "male" | "female" | "other";

@@ -3,6 +3,7 @@ import Review from "../models/Review.js";
 import User from "../models/User.js";
 // import { sendPushNotification } from "../config/firebase.js";
 import Notification from "../models/Notification.js";
+import FeedbackRequest from "../models/Feedback_Request.js";
 import { SortOrder } from "mongoose";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import dayjs from "dayjs";
@@ -10,9 +11,10 @@ import isoWeek from "dayjs/plugin/isoWeek.js";
 dayjs.extend(isoWeek);
 export const createReview = async (req: AuthenticatedRequest) => {
   if (!req.user) {
-    return { message: "User information is missing from request." };
+    throw new Error("User not authenticated");
   }
 
+  const userId = req.user.id;
   let skill: any[] | undefined;
 
   if (req.body.sessionType === "Skill Practice") {
@@ -45,15 +47,16 @@ export const createReview = async (req: AuthenticatedRequest) => {
   }
 
   const data = {
-    user: req.user.id,
+    user: userId,
     media: req.fileUrls?.media || [],
     ...(skill ? { skill } : {}),
     ...req.body,
   };
 
-  const review = (await Review.create(data)) as { _id: string };
+  const review = (await Review.create(data)) as any;
 
   const notifications: any[] = [];
+  const feedbackRequests: any[] = [];
   const pushTasks: Promise<any>[] = [];
 
   const entityType = "review";
@@ -63,19 +66,31 @@ export const createReview = async (req: AuthenticatedRequest) => {
   const coachId = req.body["coachFeedback.coach"];
   const peerId = req.body["peerFeedback.friend"];
 
-  const notifyUser = async (userId: string, role: "coach" | "peer") => {
+  const notifyUser = async (recipientId: string, role: "coach" | "peer") => {
     const roleLabel = role === "coach" ? "a coach" : "a friend";
     const message = `${requesterName} has requested a review from you as ${roleLabel}.`;
 
     notifications.push({
-      user: userId,
+      user: recipientId,
       message,
       entityType,
       entityId,
       isRead: false,
     });
 
-    const user = await User.findById(userId).select("deviceToken");
+    // Create feedback request
+    feedbackRequests.push({
+      requester: userId,
+      recipient: recipientId,
+      review: review._id,
+      sport: req.body.sport,
+      skills: skill || [],
+      status: "pending",
+      type: role,
+      requestMessage: req.body.comment || message,
+    });
+
+    const user = await User.findById(recipientId).select("deviceToken");
     // if (user?.deviceToken) {
     //   return sendPushNotification(
     //     user.deviceToken,
@@ -94,6 +109,10 @@ export const createReview = async (req: AuthenticatedRequest) => {
 
   if (notifications.length > 0) {
     await Notification.insertMany(notifications);
+  }
+
+  if (feedbackRequests.length > 0) {
+    await FeedbackRequest.insertMany(feedbackRequests);
   }
 
   return { message: "Review created successfully", data: review };

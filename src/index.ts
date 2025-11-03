@@ -33,6 +33,7 @@ import chatRoutes from "./routes/chat.js";
 import userSubscriptionRoutes from "./routes/userSubscription.js";
 import UserPerformanceExerciseRoutes from "./routes/userPerformanceExercise.js";
 import journalRoutes from "./routes/journal.js";
+import feedbackRequestRoutes from "./routes/feedbackRequest.js";
 import { registerSocketHandlers } from "./webSocket/socket.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
@@ -93,6 +94,7 @@ app.use("/dropdown-data", dropdownDataRoutes);
 app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
 app.use("/journals", journalRoutes);
+app.use("/feedback-requests", feedbackRequestRoutes);
 
 // Global error handler middleware (must be after all routes)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
