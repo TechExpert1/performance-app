@@ -25,7 +25,7 @@ const feedbackRequestSchema = new Schema<FeedbackRequestDocument>(
     sport: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport",
-      required: true,
+      required: false,
     },
     skills: [
       {

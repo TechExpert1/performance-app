@@ -83,7 +83,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
       requester: userId,
       recipient: recipientId,
       review: review._id,
-      sport: req.body.sport,
+      sport: req.body.sport || review.sport,
       skills: skill || [],
       status: "pending",
       type: role,
