@@ -4,6 +4,7 @@ import Member_Awaiting from "../models/Member_Awaiting.js";
 import Athlete_User from "../models/Athlete_User.js";
 import Gym from "../models/Gym.js";
 import Friend_Request from "../models/Friend_Request.js";
+import FriendRequest from "../models/Friend_Request.js";
 import Notification from "../models/Notification.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { Request } from "express";
@@ -641,3 +642,46 @@ export const getAuthenticatedUserProfile = async (
     data: response,
   };
 };
+
+// Get Friends List and Friend Requests in one API
+export const getFriendsAndRequests = async (req: AuthenticatedRequest) => {
+  if (!req.user || !req.user.id) {
+    throw new Error("User not authenticated");
+  }
+
+  const userId = req.user.id;
+
+  // Get user with populated friends
+  const user = await User.findById(userId)
+    .populate({
+      path: "friends",
+      select: "name email profileImage role",
+    })
+    .select("friends")
+    .lean();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Get received friend requests (pending only)
+  const receivedRequests = await FriendRequest.find({
+    receiver: userId,
+    status: "pending",
+  })
+    .populate({
+      path: "sender",
+      select: "name email profileImage role",
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return {
+    message: "Friends and requests retrieved successfully",
+    data: {
+      friends: user.friends || [],
+      requests: receivedRequests,
+    },
+  };
+};
+

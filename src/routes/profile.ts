@@ -13,6 +13,13 @@ router.get(
   ProfileController.getAuthenticatedProfile
 );
 
+// Get Friends List and Received Friend Requests
+router.get(
+  "/me/friends",
+  userAuth,
+  ProfileController.getFriendsAndRequests
+);
+
 // Update Preferences - Change Units Screen (for both athletes and gym owners)
 // MUST be before /:id routes to avoid conflicts
 router.put(

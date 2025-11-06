@@ -10,6 +10,7 @@ import {
   updateGymOwnerProfile,
   updatePreferences,
   getAuthenticatedUserProfile,
+  getFriendsAndRequests,
 } from "../services/profile.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import User from "../models/User.js";
@@ -333,6 +334,20 @@ export const ProfileController = {
   ) => {
     try {
       const result = await updatePreferences(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res
+        .status(422)
+        .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  getFriendsAndRequests: async (
+    req: AuthenticatedRequest,
+    res: Response
+  ) => {
+    try {
+      const result = await getFriendsAndRequests(req);
       res.status(200).json(result);
     } catch (err) {
       res
