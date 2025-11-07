@@ -94,14 +94,23 @@ export const ProfileController = {
         return;
       }
 
+      const senderId = user.id.toString();
+      const targetId = receiverId.toString();
+
+      console.log('Friend Request Debug:', {
+        senderId,
+        targetId,
+        areEqual: senderId === targetId
+      });
+
       // Check if user is trying to send request to themselves
-      if (user.id === receiverId) {
+      if (senderId === targetId) {
         res.status(400).json({ message: "You cannot send a friend request to yourself" });
         return;
       }
 
-      const sender = await User.findById(user.id);
-      const receiver = await User.findById(receiverId);
+      const sender = await User.findById(senderId);
+      const receiver = await User.findById(targetId);
 
       if (!sender || !receiver) {
         res.status(404).json({ message: "Sender or receiver not found" });
@@ -109,7 +118,7 @@ export const ProfileController = {
       }
 
       // Check if they are already friends
-      if (sender.friends?.some(friendId => friendId.toString() === receiverId)) {
+      if (sender.friends?.some(friendId => friendId.toString() === targetId)) {
         res.status(400).json({ message: "You are already friends with this user" });
         return;
       }
