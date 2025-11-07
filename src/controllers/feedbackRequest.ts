@@ -103,6 +103,14 @@ export const getFeedbackRequestDetails = async (
   } catch (error: any) {
     console.error("Error fetching feedback request details:", error);
     
+    if (error.message === "Invalid feedback request ID") {
+      res.status(400).json({
+        status: false,
+        message: error.message,
+      });
+      return;
+    }
+
     if (error.message === "Feedback request not found") {
       res.status(404).json({
         status: false,
@@ -141,6 +149,14 @@ export const submitFeedbackForRequest = async (
   } catch (error: any) {
     console.error("Error submitting feedback:", error);
     
+    if (error.message === "Invalid feedback request ID") {
+      res.status(400).json({
+        status: false,
+        message: error.message,
+      });
+      return;
+    }
+
     if (error.message === "Feedback request not found") {
       res.status(404).json({
         status: false,
@@ -152,7 +168,8 @@ export const submitFeedbackForRequest = async (
     if (
       error.message === "Only the recipient can submit feedback" ||
       error.message === "Feedback has already been submitted for this request" ||
-      error.message.includes("required")
+      error.message.includes("required") ||
+      error.message.includes("between 1 and 10")
     ) {
       res.status(400).json({
         status: false,

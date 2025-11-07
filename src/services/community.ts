@@ -3,6 +3,8 @@ import Community from "../models/Community.js";
 import User from "../models/User.js";
 import Community_Member from "../models/Community_Member.js";
 import Community_Post from "../models/Community_Post.js";
+import FriendRequest from "../models/Friend_Request.js";
+import Athlete_User from "../models/Athlete_User.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { SortOrder } from "mongoose";
 export const createCommunity = async (req: AuthenticatedRequest) => {
@@ -123,8 +125,6 @@ export const handleGetRequests = async (req: AuthenticatedRequest) => {
   return { requests };
 };
 
-import Athlete_User from "../models/Athlete_User.js";
-
 export const getActiveMembersOfCommunity = async (
   req: AuthenticatedRequest
 ) => {
@@ -174,6 +174,23 @@ export const getActiveMembersOfCommunity = async (
     .populate("sportsAndSkillLevels.sport")
     .populate("sportsAndSkillLevels.skillSetLevel");
 
+  // Get pending friend requests between current user and member users
+  const pendingRequests = await FriendRequest.find({
+    $or: [
+      { sender: userId, receiver: { $in: userIds }, status: "pending" },
+      { receiver: userId, sender: { $in: userIds }, status: "pending" }
+    ]
+  }).lean();
+
+  // Create sets for quick lookup
+  const requestedUserIds = new Set(
+    pendingRequests.map(req => 
+      req.sender.toString() === userId 
+        ? req.receiver.toString() 
+        : req.sender.toString()
+    )
+  );
+
   const profileMap = new Map(
     athleteProfiles.map((p) => [p.userId.toString(), p.toObject()])
   );
@@ -185,6 +202,7 @@ export const getActiveMembersOfCommunity = async (
     return {
       ...memberObj,
       isFriend: memberUserId ? friendIds.includes(memberUserId) : false,
+      inRequested: memberUserId ? requestedUserIds.has(memberUserId) : false,
       user: {
         ...memberObj.user,
         athleteProfile: memberUserId

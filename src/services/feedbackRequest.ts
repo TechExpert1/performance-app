@@ -167,6 +167,11 @@ export const getRequestDetails = async (req: AuthenticatedRequest) => {
 
   const { id } = req.params;
 
+  // Validate ObjectId format
+  if (!id || id === ":" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+    throw new Error("Invalid feedback request ID");
+  }
+
   const request = await FeedbackRequest.findById(id)
     .populate({
       path: "requester",
@@ -263,6 +268,11 @@ export const submitFeedback = async (req: AuthenticatedRequest) => {
 
   const { id } = req.params;
   const { feedbackRating, feedbackComment } = req.body;
+
+  // Validate ObjectId format
+  if (!id || id === ":" || !/^[0-9a-fA-F]{24}$/.test(id)) {
+    throw new Error("Invalid feedback request ID");
+  }
 
   // Validate rating
   if (!feedbackRating || feedbackRating < 1 || feedbackRating > 10) {
