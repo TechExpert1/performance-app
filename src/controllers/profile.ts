@@ -94,11 +94,23 @@ export const ProfileController = {
         return;
       }
 
+      // Check if user is trying to send request to themselves
+      if (user.id === receiverId) {
+        res.status(400).json({ message: "You cannot send a friend request to yourself" });
+        return;
+      }
+
       const sender = await User.findById(user.id);
       const receiver = await User.findById(receiverId);
 
       if (!sender || !receiver) {
         res.status(404).json({ message: "Sender or receiver not found" });
+        return;
+      }
+
+      // Check if they are already friends
+      if (sender.friends?.some(friendId => friendId.toString() === receiverId)) {
+        res.status(400).json({ message: "You are already friends with this user" });
         return;
       }
 
