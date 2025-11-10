@@ -4,8 +4,10 @@ export interface IUser {
   name: string;
   stripeCustomerId: string;
   email: string;
-  password: string;
+  password?: string;
   phoneNumber?: string;
+  authProvider?: "email" | "google" | "apple";
+  authProviderId?: string;
   preference: {
     height: string;
     weight: string;

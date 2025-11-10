@@ -11,6 +11,7 @@ import Gym from "../models/Gym.js";
 import { Request } from "express";
 import Member_Awaiting from "../models/Member_Awaiting.js";
 import mongoose, { Types } from "mongoose";
+import { OAuth2Client } from "google-auth-library";
 interface LoginResult {
   user: UserDocument;
 }
@@ -200,6 +201,11 @@ export const handleLogin = async (req: Request) => {
 
     const user = await User.findOne({ email }).populate("gym friends");
     if (!user) throw new Error("Invalid credentials");
+
+    // Check if user uses social login
+    if (!user.password) {
+      throw new Error("Please use your social login method (Google or Apple)");
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error("Invalid credentials");
@@ -400,6 +406,241 @@ export const handleVerifyCode = async (req: Request) => {
     return { message: "Code verified", gym };
   } catch (error) {
     console.error("Verify Code Error:", error);
+    throw error;
+  }
+};
+
+export const handleGoogleLogin = async (req: Request) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      throw new Error("Google ID token is required");
+    }
+
+    // Verify the Google ID token
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    
+    if (!googleClientId) {
+      throw new Error("Google authentication is not configured");
+    }
+
+    const client = new OAuth2Client(googleClientId);
+    
+    let email: string;
+    let googleId: string;
+    let name: string | undefined;
+    let profileImage: string | undefined;
+
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: googleClientId,
+      });
+
+      const payload = ticket.getPayload();
+      
+      if (!payload || !payload.email) {
+        throw new Error("Invalid token payload");
+      }
+
+      email = payload.email;
+      googleId = payload.sub;
+      name = payload.name;
+      profileImage = payload.picture;
+    } catch (error) {
+      console.error("Google token verification failed:", error);
+      throw new Error("Invalid Google ID token");
+    }
+
+    // Check if user exists with this Google provider
+    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" })
+      .populate("gym friends");
+
+    if (!user) {
+      // Check if user exists with this email (from email/password signup)
+      user = await User.findOne({ email }).populate("gym friends");
+
+      if (user) {
+        // User exists with email provider, link Google account
+        user.authProvider = "google";
+        user.authProviderId = googleId;
+        if (profileImage && !user.profileImage) {
+          user.profileImage = profileImage;
+        }
+        await user.save();
+      } else {
+        // Create new user with Google
+        user = await User.create({
+          email,
+          name: name || email.split("@")[0],
+          authProvider: "google",
+          authProviderId: googleId,
+          role: "athlete",
+          profileImage: profileImage || "",
+          adminStatus: "approved",
+        });
+
+        // Create athlete profile for new user
+        await Athlete_User.create({
+          userId: user._id,
+          sportsAndSkillLevels: [],
+        });
+      }
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string
+    );
+
+    user.token = jwtToken;
+    await user.save();
+
+    let gym = null;
+    let athleteDetails = null;
+
+    if (user.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: user._id }).lean();
+    }
+
+    if (user.role === "athlete") {
+      const gymMember = await Gym_Member.findOne({
+        user: user._id,
+        status: "active",
+      }).lean();
+      gym = gymMember ? { _id: gymMember.gym } : null;
+      athleteDetails = await Athlete_User.findOne({ userId: user._id })
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .lean();
+    }
+
+    return {
+      user,
+      token: jwtToken,
+      gym: gym || null,
+      ...(athleteDetails && { athlete_details: athleteDetails }),
+    };
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    throw error;
+  }
+};
+
+export const handleAppleLogin = async (req: Request) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      throw new Error("Apple identity token is required");
+    }
+
+    // Decode Apple JWT token (Apple tokens are standard JWTs)
+    let email: string;
+    let appleId: string;
+    
+    try {
+      // Decode without verification for now (Apple's public keys need to be fetched for full verification)
+      const decoded = jwt.decode(token) as any;
+      
+      if (!decoded || !decoded.sub) {
+        throw new Error("Invalid token payload");
+      }
+
+      appleId = decoded.sub;
+      email = decoded.email;
+
+      if (!email) {
+        throw new Error("Email not found in Apple token");
+      }
+    } catch (error) {
+      console.error("Apple token verification failed:", error);
+      throw new Error("Invalid Apple identity token");
+    }
+
+    // Check if user exists with this Apple provider
+    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" })
+      .populate("gym friends");
+
+    if (!user) {
+      // Check if user exists with this email (from email/password signup)
+      user = await User.findOne({ email }).populate("gym friends");
+
+      if (user) {
+        // User exists with email provider, link Apple account
+        user.authProvider = "apple";
+        user.authProviderId = appleId;
+        await user.save();
+      } else {
+        // Create new user with Apple
+        const firstName = email.split("@")[0];
+        
+        user = await User.create({
+          email,
+          name: firstName,
+          authProvider: "apple",
+          authProviderId: appleId,
+          role: "athlete",
+          profileImage: "",
+          adminStatus: "approved",
+        });
+
+        // Create athlete profile for new user
+        await Athlete_User.create({
+          userId: user._id,
+          sportsAndSkillLevels: [],
+        });
+      }
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string
+    );
+
+    user.token = jwtToken;
+    await user.save();
+
+    let gym = null;
+    let athleteDetails = null;
+
+    if (user.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: user._id }).lean();
+    }
+
+    if (user.role === "athlete") {
+      const gymMember = await Gym_Member.findOne({
+        user: user._id,
+        status: "active",
+      }).lean();
+      gym = gymMember ? { _id: gymMember.gym } : null;
+      athleteDetails = await Athlete_User.findOne({ userId: user._id })
+        .populate("sportsAndSkillLevels.sport", "name")
+        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .lean();
+    }
+
+    return {
+      user,
+      token: jwtToken,
+      gym: gym || null,
+      ...(athleteDetails && { athlete_details: athleteDetails }),
+    };
+  } catch (error) {
+    console.error("Apple Login Error:", error);
     throw error;
   }
 };

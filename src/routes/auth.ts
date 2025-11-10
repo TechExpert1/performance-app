@@ -6,6 +6,8 @@ import {
   resetPassword,
   verifyOtp,
   verifyCode,
+  googleLogin,
+  appleLogin,
 } from "../controllers/auth.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 import { validateUser } from "../validations/signup.js";
@@ -29,6 +31,8 @@ router.post(
   signup
 );
 router.post("/login", login);
+router.post("/google-login", googleLogin);
+router.post("/apple-login", appleLogin);
 router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/otp-verification", verifyOtp);
 router.post("/reset-password", resetPassword);

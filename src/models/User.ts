@@ -7,9 +7,11 @@ const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    password: { type: String },
     phoneNumber: { type: String },
     deviceToken: { type: String },
+    authProvider: { type: String, enum: ["email", "google", "apple"], default: "email" },
+    authProviderId: { type: String },
     preference: {
       height: { type: String, default: "cm" },
       weight: { type: String, default: "kg" },

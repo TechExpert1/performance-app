@@ -6,6 +6,8 @@ import {
   handleVerifyOtp,
   handleResetPassword,
   handleVerifyCode,
+  handleGoogleLogin,
+  handleAppleLogin,
 } from "../services/auth.js";
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
@@ -84,6 +86,38 @@ export const verifyCode = async (
 ): Promise<void> => {
   try {
     const result = await handleVerifyCode(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
+
+export const googleLogin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await handleGoogleLogin(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
+
+export const appleLogin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await handleAppleLogin(req);
     res.status(200).json(result);
   } catch (err) {
     if (err instanceof Error) {
