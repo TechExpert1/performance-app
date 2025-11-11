@@ -29,6 +29,13 @@ export const LoginAdmin = async (req: Request, res: Response) => {
       res.status(400).json({ message: "No such admin exists" });
       return;
     }
+    
+    // Check if user has a password (not using social login)
+    if (!userExists.password) {
+      res.status(400).json({ message: "Please use your social login method" });
+      return;
+    }
+    
     const comparePassword = await bcrypt.compare(password, userExists.password);
     if (!comparePassword) {
       res.status(400).json({ message: "Incorrect password" });
