@@ -454,12 +454,11 @@ export const handleGoogleLogin = async (req: Request) => {
     }
 
     // Check if user exists with this Google provider
-    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" })
-      .populate("gym friends");
+    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" });
 
     if (!user) {
       // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email }).populate("gym friends");
+      user = await User.findOne({ email });
 
       if (user) {
         // User exists with email provider, link Google account
@@ -503,27 +502,34 @@ export const handleGoogleLogin = async (req: Request) => {
     user.token = jwtToken;
     await user.save();
 
+    // Populate user with gym and friends like normal login
+    const populatedUser = await User.findById(user._id).populate("gym friends");
+    
+    if (!populatedUser) {
+      throw new Error("User not found after save");
+    }
+
     let gym = null;
     let athleteDetails = null;
 
-    if (user.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: user._id }).lean();
+    if (populatedUser.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
     }
 
-    if (user.role === "athlete") {
+    if (populatedUser.role === "athlete") {
       const gymMember = await Gym_Member.findOne({
-        user: user._id,
+        user: populatedUser._id,
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
-      athleteDetails = await Athlete_User.findOne({ userId: user._id })
+      athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")
         .lean();
     }
 
     return {
-      user,
+      user: populatedUser,
       token: jwtToken,
       gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
@@ -566,12 +572,11 @@ export const handleAppleLogin = async (req: Request) => {
     }
 
     // Check if user exists with this Apple provider
-    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" })
-      .populate("gym friends");
+    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" });
 
     if (!user) {
       // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email }).populate("gym friends");
+      user = await User.findOne({ email });
 
       if (user) {
         // User exists with email provider, link Apple account
@@ -614,27 +619,34 @@ export const handleAppleLogin = async (req: Request) => {
     user.token = jwtToken;
     await user.save();
 
+    // Populate user with gym and friends like normal login
+    const populatedUser = await User.findById(user._id).populate("gym friends");
+    
+    if (!populatedUser) {
+      throw new Error("User not found after save");
+    }
+
     let gym = null;
     let athleteDetails = null;
 
-    if (user.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: user._id }).lean();
+    if (populatedUser.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
     }
 
-    if (user.role === "athlete") {
+    if (populatedUser.role === "athlete") {
       const gymMember = await Gym_Member.findOne({
-        user: user._id,
+        user: populatedUser._id,
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
-      athleteDetails = await Athlete_User.findOne({ userId: user._id })
+      athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")
         .lean();
     }
 
     return {
-      user,
+      user: populatedUser,
       token: jwtToken,
       gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
