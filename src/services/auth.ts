@@ -390,16 +390,22 @@ export const sendResetOTPSMS = async (
       throw new Error("Twilio phone number is not configured");
     }
 
-    await client.messages.create({
+    const message = await client.messages.create({
       body: `Your password reset OTP code is: ${otp}. This code will expire in 10 minutes.`,
       from: twilioPhoneNumber,
       to: phoneNumber,
     });
 
-    console.log(`SMS sent successfully to ${phoneNumber}`);
-  } catch (error) {
+    console.log(`SMS sent successfully to ${phoneNumber}. Message SID: ${message.sid}`);
+  } catch (error: any) {
     console.error("Error sending SMS:", error);
-    throw new Error("Failed to send SMS. Please try again.");
+    console.error("Twilio error details:", {
+      code: error.code,
+      message: error.message,
+      moreInfo: error.moreInfo,
+      status: error.status
+    });
+    throw new Error(`Failed to send SMS: ${error.message || "Please try again."}`);
   }
 };
 
