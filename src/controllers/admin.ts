@@ -530,7 +530,9 @@ export const getPendingGymOwner = async (req: Request, res: Response) => {
     const users = await User.find({
       role: "gymOwner",
       adminStatus: "pending",
-    }).populate("gym friends");
+    })
+      .sort({ createdAt: -1 })
+      .populate("gym friends");
 
     const data = await Promise.all(
       users.map(async (user) => {

@@ -26,6 +26,7 @@ const userSchema = new Schema<UserDocument>(
       enum: ["pending", "approved", "rejected"],
       default: "approved",
     },
+    firstTimeLogin: { type: Boolean, default: false },
     resetOTP: { type: String },
     token: { type: String },
     nationality: { type: String },

@@ -209,6 +209,10 @@ export const handleLogin = async (req: Request) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error("Invalid credentials");
+    
+    // Track first time login status for gym owners
+    const isFirstTimeLogin = user.role === "gymOwner" && user.firstTimeLogin === true;
+    
     const token = jwt.sign(
       {
         id: user._id,
@@ -219,6 +223,12 @@ export const handleLogin = async (req: Request) => {
       process.env.JWT_SECRET as string
     );
     user.token = token;
+    
+    // Set firstTimeLogin to false after first login for gym owners
+    if (isFirstTimeLogin) {
+      user.firstTimeLogin = false;
+    }
+    
     await user.save();
     let gym = null;
     let athleteDetails = null;
@@ -244,6 +254,7 @@ export const handleLogin = async (req: Request) => {
       token,
       gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
+      ...(user.role === "gymOwner" && user.adminStatus === "approved" && { firstTimeLogin: isFirstTimeLogin }),
     };
   } catch (error) {
     console.error("Login Error:", error);

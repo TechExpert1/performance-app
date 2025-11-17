@@ -108,6 +108,15 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
     userData.password = await bcrypt.hash(userData.password, 10);
   }
 
+  // If gym owner is being approved, set firstTimeLogin to true
+  if (
+    targetUser.role === "gymOwner" &&
+    userData.adminStatus === "approved" &&
+    targetUser.adminStatus !== "approved"
+  ) {
+    userData.firstTimeLogin = true;
+  }
+
   // Update the main User model
   const updatedUser = await User.findByIdAndUpdate(userId, userData, {
     new: true,

@@ -18,6 +18,7 @@ export interface IUser {
   resetOTP?: string;
   token?: string;
   adminStatus: string;
+  firstTimeLogin?: boolean;
   nationality?: string;
   dob?: Date;
   role: "superAdmin" | "gymOwner" | "coach" | "athlete";
