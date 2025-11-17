@@ -317,10 +317,11 @@ export const updateAthleteProfile = async (req: AuthenticatedRequest) => {
     }
 
     if (Object.keys(athleteUpdateData).length > 0) {
+      // Use upsert to create document if it doesn't exist (e.g., for Google/Apple login users)
       updatedAthlete = await Athlete_User.findOneAndUpdate(
         { userId },
         athleteUpdateData,
-        { new: true, runValidators: true }
+        { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
       )
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")

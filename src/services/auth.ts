@@ -255,36 +255,56 @@ export const handleForgotPassword = async (
   req: Request
 ): Promise<GenericResult> => {
   try {
-    const { email } = req.body;
-    const verificationMethod = req.query.verificationMethod;
-    if (verificationMethod == "email") {
+    const { email, phoneNumber } = req.body;
+    const verificationMethod = req.query.verificationMethod as string;
+
+    if (!verificationMethod) {
+      throw new Error("Verification method is required (email or phone)");
+    }
+
+    let user;
+
+    if (verificationMethod === "email") {
       if (!email) {
-        throw new Error("Email is required.");
+        throw new Error("Email is required for email verification.");
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         throw new Error("Email is not valid.");
       }
+
+      user = await User.findOne({ email });
+      if (!user) throw new Error("User not found with this email");
+    } else if (verificationMethod === "phone") {
+      if (!phoneNumber) {
+        throw new Error("Phone number is required for phone verification.");
+      }
+
+      // Basic phone number validation
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        throw new Error("Phone number is not valid. Use international format (e.g., +1234567890)");
+      }
+
+      user = await User.findOne({ phoneNumber });
+      if (!user) throw new Error("User not found with this phone number");
+    } else {
+      throw new Error("Invalid verification method. Use 'email' or 'phone'");
     }
-    const user = await User.findOne({ email });
-    if (!user) throw new Error("User not found with this email");
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.resetOTP = otp;
     await user.save();
 
     if (verificationMethod === "email") {
-      await sendResetOTP(email, otp);
-    } else {
-      // if (user?.phoneNumber) await sendResetOTPSMS(user.phoneNumber, otp);
-      throw new Error("Phone number verification is not enabled yet");
+      await sendResetOTP(user.email, otp);
+    } else if (verificationMethod === "phone") {
+      await sendResetOTPSMS(user.phoneNumber!, otp);
     }
 
     return {
-      message: `OTP sent to your ${
-        verificationMethod === "email" ? "email" : "phone number"
-      }`,
+      message: `OTP sent to your ${verificationMethod === "email" ? "email" : "phone number"}`,
       user,
     };
   } catch (error) {
@@ -364,14 +384,22 @@ export const sendResetOTPSMS = async (
   otp: string
 ): Promise<void> => {
   try {
+    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+    
+    if (!twilioPhoneNumber) {
+      throw new Error("Twilio phone number is not configured");
+    }
+
     await client.messages.create({
-      body: `Your OTP code is: ${otp}`,
-      from: "+15005550006", // Twilio test number
+      body: `Your password reset OTP code is: ${otp}. This code will expire in 10 minutes.`,
+      from: twilioPhoneNumber,
       to: phoneNumber,
     });
+
+    console.log(`SMS sent successfully to ${phoneNumber}`);
   } catch (error) {
     console.error("Error sending SMS:", error);
-    throw error;
+    throw new Error("Failed to send SMS. Please try again.");
   }
 };
 
@@ -480,9 +508,11 @@ export const handleGoogleLogin = async (req: Request) => {
           adminStatus: "approved",
         });
 
-        // Create athlete profile for new user
+        // Create athlete profile for new user with default values
         await Athlete_User.create({
           userId: user._id,
+          height: { cm: 0, inches: 0 },
+          weight: { kg: 0, lbs: 0 },
           sportsAndSkillLevels: [],
         });
       }
@@ -606,9 +636,11 @@ export const handleAppleLogin = async (req: Request) => {
           adminStatus: "approved",
         });
 
-        // Create athlete profile for new user
+        // Create athlete profile for new user with default values
         await Athlete_User.create({
           userId: user._id,
+          height: { cm: 0, inches: 0 },
+          weight: { kg: 0, lbs: 0 },
           sportsAndSkillLevels: [],
         });
       }
