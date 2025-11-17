@@ -8,7 +8,9 @@ import {
   verifyCode,
   googleLogin,
   appleLogin,
+  deleteAccount,
 } from "../controllers/auth.js";
+import { userAuth } from "../middlewares/user.js";
 import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 import { validateUser } from "../validations/signup.js";
 const router = express.Router();
@@ -33,6 +35,7 @@ router.post(
 router.post("/login", login);
 router.post("/google-login", googleLogin);
 router.post("/apple-login", appleLogin);
+router.delete("/delete-account", userAuth, deleteAccount);
 router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/otp-verification", verifyOtp);
 router.post("/reset-password", resetPassword);

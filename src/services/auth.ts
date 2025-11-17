@@ -522,18 +522,27 @@ export const handleGoogleLogin = async (req: Request) => {
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
+      
+      // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
-        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .populate("sportsAndSkillLevels.skillSetLevel")
         .lean();
     }
 
-    return {
+    // Build response matching normal login structure
+    const response: any = {
       user: populatedUser,
       token: jwtToken,
       gym: gym || null,
-      ...(athleteDetails && { athlete_details: athleteDetails }),
     };
+
+    // Always include athlete_details if user is athlete
+    if (populatedUser.role === "athlete") {
+      response.athlete_details = athleteDetails;
+    }
+
+    return response;
   } catch (error) {
     console.error("Google Login Error:", error);
     throw error;
@@ -639,20 +648,98 @@ export const handleAppleLogin = async (req: Request) => {
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
+      
+      // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
-        .populate("sportsAndSkillLevels.skillSetLevel", "level")
+        .populate("sportsAndSkillLevels.skillSetLevel")
         .lean();
     }
 
-    return {
+    // Build response matching normal login structure
+    const response: any = {
       user: populatedUser,
       token: jwtToken,
       gym: gym || null,
-      ...(athleteDetails && { athlete_details: athleteDetails }),
     };
+
+    // Always include athlete_details if user is athlete
+    if (populatedUser.role === "athlete") {
+      response.athlete_details = athleteDetails;
+    }
+
+    return response;
   } catch (error) {
     console.error("Apple Login Error:", error);
+    throw error;
+  }
+};
+
+export const handleDeleteAccount = async (req: AuthenticatedRequest) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!req.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const userId = req.user.id;
+
+    // Find the user
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Delete related data based on role
+    if (user.role === "athlete") {
+      // Delete athlete profile
+      await Athlete_User.deleteOne({ userId: userId }).session(session);
+      
+      // Delete gym memberships
+      await Gym_Member.deleteMany({ user: userId }).session(session);
+      
+      // Remove from member awaiting lists
+      await Member_Awaiting.deleteMany({ email: user.email }).session(session);
+    }
+
+    if (user.role === "gymOwner") {
+      // Delete owned gyms
+      await Gym.deleteMany({ owner: userId }).session(session);
+      
+      // Delete gym memberships for this gym
+      const gyms = await Gym.find({ owner: userId }).session(session);
+      const gymIds = gyms.map(g => g._id);
+      await Gym_Member.deleteMany({ gym: { $in: gymIds } }).session(session);
+    }
+
+    // Remove user from other users' friends lists
+    await User.updateMany(
+      { friends: userId },
+      { $pull: { friends: userId } }
+    ).session(session);
+
+    // Delete friend requests where user is sender or receiver
+    const FriendRequest = mongoose.model("Friend_Request");
+    await FriendRequest.deleteMany({
+      $or: [{ sender: userId }, { receiver: userId }]
+    }).session(session);
+
+    // Delete the user account
+    await User.deleteOne({ _id: userId }).session(session);
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      message: "Account deleted successfully",
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Delete Account Error:", error);
     throw error;
   }
 };
