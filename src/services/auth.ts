@@ -212,6 +212,7 @@ export const handleLogin = async (req: Request) => {
     
     // Track first time login status for gym owners
     const isFirstTimeLogin = user.role === "gymOwner" && user.firstTimeLogin === true;
+    console.log(`Login: role=${user.role}, adminStatus=${user.adminStatus}, firstTimeLogin=${user.firstTimeLogin}, isFirstTimeLogin=${isFirstTimeLogin}`);
     
     const token = jwt.sign(
       {

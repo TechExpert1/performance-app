@@ -115,6 +115,7 @@ export const updateProfile = async (req: AuthenticatedRequest) => {
     targetUser.adminStatus !== "approved"
   ) {
     userData.firstTimeLogin = true;
+    console.log(`Setting firstTimeLogin: true for gym owner ${userId}`);
   }
 
   // Update the main User model
