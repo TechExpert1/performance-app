@@ -531,13 +531,7 @@ export const handleGoogleLogin = async (req: Request) => {
           adminStatus: "approved",
         });
 
-        // Create athlete profile for new user with default values
-        await Athlete_User.create({
-          userId: user._id,
-          height: { cm: 0, inches: 0 },
-          weight: { kg: 0, lbs: 0 },
-          sportsAndSkillLevels: [],
-        });
+        // Don't create Athlete_User - let it be created via update profile API
       }
     }
 
@@ -659,13 +653,7 @@ export const handleAppleLogin = async (req: Request) => {
           adminStatus: "approved",
         });
 
-        // Create athlete profile for new user with default values
-        await Athlete_User.create({
-          userId: user._id,
-          height: { cm: 0, inches: 0 },
-          weight: { kg: 0, lbs: 0 },
-          sportsAndSkillLevels: [],
-        });
+        // Don't create Athlete_User - let it be created via update profile API
       }
     }
 
