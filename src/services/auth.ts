@@ -202,6 +202,11 @@ export const handleLogin = async (req: Request) => {
     const user = await User.findOne({ email }).populate("gym friends");
     if (!user) throw new Error("Invalid credentials");
 
+    // Check if gym owner is rejected
+    if (user.role === "gymOwner" && user.adminStatus === "rejected") {
+      throw new Error("Your account has been rejected by the administrator");
+    }
+
     // Check if user uses social login
     if (!user.password) {
       throw new Error("Please use your social login method (Google or Apple)");
@@ -253,7 +258,7 @@ export const handleLogin = async (req: Request) => {
     return {
       user,
       token,
-      gym: gym || null,
+      ...(gym && { gym }),
       ...(athleteDetails && { athlete_details: athleteDetails }),
       ...(user.role === "gymOwner" && user.adminStatus === "approved" && { firstTimeLogin: isFirstTimeLogin }),
     };
@@ -582,11 +587,15 @@ export const handleGoogleLogin = async (req: Request) => {
     const response: any = {
       user: populatedUser,
       token: jwtToken,
-      gym: gym || null,
     };
 
-    // Always include athlete_details if user is athlete
-    if (populatedUser.role === "athlete") {
+    // Only include gym if it exists
+    if (gym) {
+      response.gym = gym;
+    }
+
+    // Only include athlete_details if it exists
+    if (athleteDetails) {
       response.athlete_details = athleteDetails;
     }
 
@@ -710,11 +719,15 @@ export const handleAppleLogin = async (req: Request) => {
     const response: any = {
       user: populatedUser,
       token: jwtToken,
-      gym: gym || null,
     };
 
-    // Always include athlete_details if user is athlete
-    if (populatedUser.role === "athlete") {
+    // Only include gym if it exists
+    if (gym) {
+      response.gym = gym;
+    }
+
+    // Only include athlete_details if it exists
+    if (athleteDetails) {
       response.athlete_details = athleteDetails;
     }
 
