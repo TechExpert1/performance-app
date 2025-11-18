@@ -258,7 +258,7 @@ export const handleLogin = async (req: Request) => {
     return {
       user,
       token,
-      ...(gym && { gym }),
+      gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
       ...(user.role === "gymOwner" && user.adminStatus === "approved" && { firstTimeLogin: isFirstTimeLogin }),
     };
@@ -587,15 +587,11 @@ export const handleGoogleLogin = async (req: Request) => {
     const response: any = {
       user: populatedUser,
       token: jwtToken,
+      gym: gym || null,
     };
 
-    // Only include gym if it exists
-    if (gym) {
-      response.gym = gym;
-    }
-
-    // Only include athlete_details if it exists
-    if (athleteDetails) {
+    // Always include athlete_details if user is athlete
+    if (populatedUser.role === "athlete") {
       response.athlete_details = athleteDetails;
     }
 
@@ -719,15 +715,11 @@ export const handleAppleLogin = async (req: Request) => {
     const response: any = {
       user: populatedUser,
       token: jwtToken,
+      gym: gym || null,
     };
 
-    // Only include gym if it exists
-    if (gym) {
-      response.gym = gym;
-    }
-
-    // Only include athlete_details if it exists
-    if (athleteDetails) {
+    // Always include athlete_details if user is athlete
+    if (populatedUser.role === "athlete") {
       response.athlete_details = athleteDetails;
     }
 
