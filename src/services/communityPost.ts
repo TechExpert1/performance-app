@@ -89,9 +89,15 @@ export const createPostComment = async (req: AuthenticatedRequest) => {
   };
   const comment = await Community_Post_Comment.create(payload);
 
+  // Fetch all comments for this post with populated user data
+  const allComments = await Community_Post_Comment.find({ post: postId })
+    .populate("user", "name profileImage")
+    .sort({ createdAt: -1 }); // Sort comments by newest first
+
   return {
     message: "comment added successfully",
     comment,
+    comments: allComments,
   };
 };
 
@@ -132,18 +138,30 @@ export const getAllCommunityPosts = async (req: Request) => {
     .sort({ [sortBy]: sortDirection })
     .skip(skip)
     .limit(Number(limit))
-    .populate("createdBy")
-    .populate({
-      path: "comments",
-      populate: {
-        path: "user",
-        select: "name profileImage"
-      },
-      options: { sort: { createdAt: 1 } } // Sort comments by oldest first
-    });
+    .populate("createdBy");
+
+  // Fetch comments for all posts in this result set
+  const postIds = posts.map(post => post._id);
+  const allComments = await Community_Post_Comment.find({ post: { $in: postIds } })
+    .populate("user", "name profileImage")
+    .sort({ createdAt: -1 }); // Sort comments by newest first
+
+  // Group comments by post ID
+  const commentsByPost = allComments.reduce((acc, comment) => {
+    const postId = comment.post.toString();
+    if (!acc[postId]) acc[postId] = [];
+    acc[postId].push(comment);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  // Attach comments to posts
+  const postsWithComments = posts.map(post => ({
+    ...post.toObject(),
+    comments: commentsByPost[(post as any)._id.toString()] || []
+  }));
 
   return {
-    data: posts,
+    data: postsWithComments,
     pagination: {
       page: Number(page),
       limit: Number(limit),
