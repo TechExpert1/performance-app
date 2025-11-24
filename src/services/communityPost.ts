@@ -132,7 +132,15 @@ export const getAllCommunityPosts = async (req: Request) => {
     .sort({ [sortBy]: sortDirection })
     .skip(skip)
     .limit(Number(limit))
-    .populate("createdBy");
+    .populate("createdBy")
+    .populate({
+      path: "comments",
+      populate: {
+        path: "user",
+        select: "name profileImage"
+      },
+      options: { sort: { createdAt: 1 } } // Sort comments by oldest first
+    });
 
   return {
     data: posts,
