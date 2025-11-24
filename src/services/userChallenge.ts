@@ -182,6 +182,11 @@ export const removeUserChallenge = async (req: Request) => {
     throw new Error("User challenge not found");
   }
 
+  // Remove user from challenge participants array
+  await Challenge.findByIdAndUpdate(removed.challenge, {
+    $pull: { participants: removed.user },
+  });
+
   return {
     message: "User challenge removed successfully",
   };
