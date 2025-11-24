@@ -89,6 +89,11 @@ export const updateChallenge = async (
       ) {
         parsedSubmission = req.body.submission;
       }
+
+      // Remove ownerApprovalStatus if sent by client - users cannot set their own approval status
+      if (parsedSubmission && typeof parsedSubmission === 'object') {
+        delete (parsedSubmission as any).ownerApprovalStatus;
+      }
     } catch {
       throw new Error("Invalid submission JSON format");
     }
