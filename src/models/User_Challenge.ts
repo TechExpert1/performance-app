@@ -34,7 +34,7 @@ const userChallengeSchema = new Schema<UserChallengeDocument>(
     },
     status: {
       type: String,
-      enum: ["active", "completed", "cancelled"],
+      enum: ["active", "completed", "incomplete", "cancelled"],
       default: "active",
       required: true,
     },

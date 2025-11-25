@@ -320,7 +320,8 @@ export const handleGetLeaderBoard = async (req: Request) => {
       };
     };
 
-    const leaderboard = await UserChallenge.aggregate([
+    // Get submissions from UserChallenge collection (users who joined the challenge)
+    const userChallengeSubmissions = await UserChallenge.aggregate([
       {
         $match: { challenge: new mongoose.Types.ObjectId(req.params.id) },
       },
@@ -345,12 +346,47 @@ export const handleGetLeaderBoard = async (req: Request) => {
           name: "$userData.name",
           country: "$userData.country",
           submission: "$dailySubmissions",
+          source: { $literal: "userChallenge" },
         },
       },
+    ]);
+
+    // Get direct submissions from Challenge collection
+    const directSubmissions = await Challenge.aggregate([
       {
-        $sort: { "submission.createdAt": 1 },
+        $match: { _id: new mongoose.Types.ObjectId(req.params.id) },
+      },
+      {
+        $unwind: "$dailySubmissions",
+      },
+      {
+        $match: { "dailySubmissions.ownerApprovalStatus": "accepted" },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "dailySubmissions.user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      { $unwind: "$userData" },
+      {
+        $project: {
+          _id: 0,
+          name: "$userData.name",
+          country: "$userData.country",
+          submission: "$dailySubmissions",
+          source: { $literal: "direct" },
+        },
       },
     ]);
+
+    // Combine both submission types and sort by submission creation date
+    const allSubmissions = [...userChallengeSubmissions, ...directSubmissions];
+    const leaderboard = allSubmissions.sort((a, b) =>
+      new Date(a.submission.createdAt).getTime() - new Date(b.submission.createdAt).getTime()
+    );
 
     return {
       gym: populatedChallenge.community?.gym?.name,

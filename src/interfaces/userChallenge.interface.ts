@@ -12,7 +12,7 @@ export interface IDailySubmission {
 export interface IUserChallenge {
   user: Types.ObjectId;
   challenge: Types.ObjectId;
-  status: "active" | "completed" | "cancelled";
+  status: "active" | "completed" | "incomplete" | "cancelled";
   dailySubmissions: IDailySubmission[];
   createdAt?: Date;
   updatedAt?: Date;

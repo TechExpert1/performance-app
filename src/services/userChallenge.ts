@@ -140,13 +140,7 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
         requiredDays = Number(duration);
       }
 
-      if (requiredDays) {
-        const totalSubmissions = userChallenge.dailySubmissions.length;
-
-        if (totalSubmissions >= requiredDays) {
-          userChallenge.status = "completed";
-        }
-      }
+      // Note: Status is now determined by owner approval of submissions, not submission count
     }
   }
 
@@ -162,14 +156,16 @@ export const updateUserChallengeSubmission = async (
   req: AuthenticatedRequest
 ) => {
   const { id, submissionId } = req.params;
-  const status = req.body.status;
+  const approvalStatus = req.body.status;
+
+  // Update the submission approval status
   const updated = await UserChallenge.findOneAndUpdate(
     {
       _id: id,
       "dailySubmissions._id": submissionId,
     },
     {
-      $set: { "dailySubmissions.$.ownerApprovalStatus": status },
+      $set: { "dailySubmissions.$.ownerApprovalStatus": approvalStatus },
     },
     { new: true }
   );
@@ -178,7 +174,36 @@ export const updateUserChallengeSubmission = async (
     throw new Error("User Challenge or Submission not found");
   }
 
-  return { message: "Status updated succesfullt", data: updated };
+  // Determine overall challenge status based on submission approvals
+  const allSubmissions = updated.dailySubmissions;
+  const totalSubmissions = allSubmissions.length;
+  const acceptedSubmissions = allSubmissions.filter(sub => sub.ownerApprovalStatus === "accepted").length;
+  const rejectedSubmissions = allSubmissions.filter(sub => sub.ownerApprovalStatus === "rejected").length;
+
+  let newStatus = updated.status; // Keep current status by default
+
+  if (rejectedSubmissions > 0) {
+    // If any submission is rejected, mark as cancelled
+    newStatus = "cancelled";
+  } else if (acceptedSubmissions === totalSubmissions && totalSubmissions > 0) {
+    // If all submissions are accepted, mark as completed
+    newStatus = "completed";
+  } else if (updated.challenge && typeof updated.challenge === 'object' && 'endDate' in updated.challenge) {
+    // Check if challenge has ended
+    const challenge = await Challenge.findById(updated.challenge);
+    if (challenge && challenge.endDate && new Date() > challenge.endDate) {
+      // Challenge has ended but not all submissions approved
+      newStatus = "incomplete";
+    }
+  }
+
+  // Update the challenge status if it changed
+  if (newStatus !== updated.status) {
+    updated.status = newStatus;
+    await updated.save();
+  }
+
+  return { message: "Status updated successfully", data: updated };
 };
 
 export const removeUserChallenge = async (req: Request) => {
@@ -299,12 +324,43 @@ export const getAllUserChallenges = async (req: Request) => {
     incomplete: [] as any[],
   };
 
-  challenges.forEach((ch) => {
-    if (ch.status === "active") grouped.active.push(ch);
-    else if (ch.status === "completed") grouped.completed.push(ch);
-    else if (ch.status === "cancelled") grouped.cancelled.push(ch);
+  // Check for challenges that may need status updates
+  for (const ch of challenges) {
+    let currentStatus = ch.status;
+
+    // If challenge is still active but may have ended, check status
+    if (currentStatus === "active" && ch.challenge && typeof ch.challenge === 'object' && 'endDate' in ch.challenge) {
+      const challenge = await Challenge.findById(ch.challenge).lean();
+      if (challenge && challenge.endDate && new Date() > challenge.endDate) {
+        // Challenge has ended
+        const userChallenge = await UserChallenge.findById(ch._id);
+        if (userChallenge) {
+          const allSubmissions = userChallenge.dailySubmissions;
+          const acceptedCount = allSubmissions.filter(sub => sub.ownerApprovalStatus === "accepted").length;
+          const rejectedCount = allSubmissions.filter(sub => sub.ownerApprovalStatus === "rejected").length;
+
+          if (rejectedCount > 0) {
+            currentStatus = "cancelled";
+            userChallenge.status = "cancelled";
+          } else if (acceptedCount === allSubmissions.length && allSubmissions.length > 0) {
+            currentStatus = "completed";
+            userChallenge.status = "completed";
+          } else {
+            currentStatus = "incomplete";
+            userChallenge.status = "incomplete";
+          }
+          await userChallenge.save();
+          ch.status = currentStatus; // Update the lean object for grouping
+        }
+      }
+    }
+
+    // Group by status
+    if (currentStatus === "active") grouped.active.push(ch);
+    else if (currentStatus === "completed") grouped.completed.push(ch);
+    else if (currentStatus === "cancelled") grouped.cancelled.push(ch);
     else grouped.incomplete.push(ch);
-  });
+  }
 
   return {
     message: "User challenges fetched successfully",
