@@ -18,3 +18,5 @@ import "./Training_Member.js";
 import "./Skill_Set.js";
 import "./Community_Post_Comment.js";
 import "./Challenge_Sub_Category.js";
+import "./Badge.js";
+import "./User_Badge.js";

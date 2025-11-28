@@ -34,9 +34,11 @@ import userSubscriptionRoutes from "./routes/userSubscription.js";
 import UserPerformanceExerciseRoutes from "./routes/userPerformanceExercise.js";
 import journalRoutes from "./routes/journal.js";
 import feedbackRequestRoutes from "./routes/feedbackRequest.js";
+import badgeRoutes from "./routes/badge.js";
 import { registerSocketHandlers } from "./webSocket/socket.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
+import "./cronJobs/badge.js";
 dotenv.config();
 
 const app = express();
@@ -95,11 +97,13 @@ app.use("/user-subscriptions", userSubscriptionRoutes);
 app.use("/chats", chatRoutes);
 app.use("/journals", journalRoutes);
 app.use("/feedback-requests", feedbackRequestRoutes);
+app.use("/badges", badgeRoutes);
+
 
 // Global error handler middleware (must be after all routes)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error("Global Error Handler:", err);
-  
+
   // If response already sent, skip
   if (res.headersSent) {
     return next(err);
