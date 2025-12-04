@@ -6,7 +6,7 @@ export interface IReview {
   category?: {
     categoryId: Types.ObjectId;
     categoryModel: "Sport_Category" | "User_Sport_Category";
-  };
+  }[];
   skill?: {
     skillId: Types.ObjectId;
     skillModel: "Sport_Category_Skill" | "User_Sport_Category_Skill";

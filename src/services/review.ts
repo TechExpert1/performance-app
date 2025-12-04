@@ -16,6 +16,37 @@ export const createReview = async (req: AuthenticatedRequest) => {
 
   const userId = req.user.id;
   let skill: any[] | undefined;
+  let category: any[] | undefined;
+
+  // Parse category for Physical Performance and Skill Practice
+  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
+    let rawCategory = req.body.category;
+
+    if (typeof rawCategory === "string") {
+      try {
+        const parsed = JSON.parse(rawCategory);
+        rawCategory = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        throw new Error("Invalid category data format");
+      }
+    }
+
+    if (rawCategory && !Array.isArray(rawCategory)) {
+      rawCategory = [rawCategory];
+    }
+
+    if (rawCategory && Array.isArray(rawCategory)) {
+      category = rawCategory.map((c: any) => {
+        if (!c.categoryId || !c.categoryModel) {
+          throw new Error("Each category must have categoryId and categoryModel");
+        }
+        return {
+          categoryId: c.categoryId,
+          categoryModel: c.categoryModel,
+        };
+      });
+    }
+  }
 
   if (req.body.sessionType === "Skill Practice") {
     let rawSkill = req.body.skill;
@@ -50,8 +81,15 @@ export const createReview = async (req: AuthenticatedRequest) => {
     user: userId,
     media: req.fileUrls?.media || [],
     ...(skill ? { skill } : {}),
+    ...(category ? { category } : {}),
     ...req.body,
   };
+
+  // Remove raw category from body if we parsed it
+  if (category) {
+    delete data.category;
+    (data as any).category = category;
+  }
 
   const review = (await Review.create(data)) as any;
 
@@ -127,6 +165,37 @@ export const updateReview = async (req: AuthenticatedRequest) => {
   }
 
   let skill: any[] | undefined;
+  let category: any[] | undefined;
+
+  // Parse category for Physical Performance and Skill Practice
+  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
+    let rawCategory = req.body.category;
+
+    if (typeof rawCategory === "string") {
+      try {
+        const parsed = JSON.parse(rawCategory);
+        rawCategory = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        throw new Error("Invalid category data format");
+      }
+    }
+
+    if (rawCategory && !Array.isArray(rawCategory)) {
+      rawCategory = [rawCategory];
+    }
+
+    if (rawCategory && Array.isArray(rawCategory)) {
+      category = rawCategory.map((c: any) => {
+        if (!c.categoryId || !c.categoryModel) {
+          throw new Error("Each category must have categoryId and categoryModel");
+        }
+        return {
+          categoryId: c.categoryId,
+          categoryModel: c.categoryModel,
+        };
+      });
+    }
+  }
 
   if (req.body.sessionType === "Skill Practice") {
     let rawSkill = req.body.skill;
@@ -159,6 +228,7 @@ export const updateReview = async (req: AuthenticatedRequest) => {
     ...updateData,
     ...req.body,
     ...(skill ? { skill } : {}),
+    ...(category ? { category } : {}),
   };
 
   const updatedReview = await Review.findByIdAndUpdate(id, updateData, {

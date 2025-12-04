@@ -28,11 +28,12 @@ const PerformanceSetSchema = new Schema<PerformanceSetDocument>(
       ref: "Challenge_Category",
       required: true,
     },
-    subCategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Challenge_Sub_Category",
-      required: true,
-    },
+    subCategory: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Challenge_Sub_Category",
+      },
+    ],
     exercise: {
       type: Schema.Types.ObjectId,
       ref: "Challenge_Category_Exercise",

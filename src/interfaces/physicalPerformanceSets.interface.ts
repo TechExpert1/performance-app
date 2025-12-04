@@ -36,7 +36,7 @@ export interface ISetVariation {
 export interface IPerformanceSet {
   performance?: Types.ObjectId;
   category: Types.ObjectId;
-  subCategory: Types.ObjectId;
+  subCategory: Types.ObjectId[];
   exercise: Types.ObjectId;
   date?: Date;
 
