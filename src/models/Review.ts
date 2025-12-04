@@ -9,28 +9,14 @@ const reviewSchema = new Schema<ReviewDocument>(
     sport: { type: mongoose.Schema.Types.ObjectId, ref: "Sport" },
     category: [
       {
-        categoryId: {
-          type: mongoose.Schema.Types.ObjectId,
-          refPath: "category.categoryModel",
-        },
-        categoryModel: {
-          type: String,
-          enum: ["Sport_Category", "User_Sport_Category"],
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category",
       },
     ],
     skill: [
       {
-        skillId: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          refPath: "skill.skillModel",
-        },
-        skillModel: {
-          type: String,
-          required: true,
-          enum: ["Sport_Category_Skill", "User_Sport_Category_Skill"],
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category_Skill",
       },
     ],
     sessionType: { type: String, required: true },

@@ -34,11 +34,12 @@ const PerformanceSetSchema = new Schema<PerformanceSetDocument>(
         ref: "Challenge_Sub_Category",
       },
     ],
-    exercise: {
-      type: Schema.Types.ObjectId,
-      ref: "Challenge_Category_Exercise",
-      required: true,
-    },
+    exercise: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Challenge_Category_Exercise",
+      },
+    ],
     variation: {
       type: [SetVariationSchema],
       required: true,

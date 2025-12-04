@@ -36,15 +36,7 @@ export const createReview = async (req: AuthenticatedRequest) => {
     }
 
     if (rawCategory && Array.isArray(rawCategory)) {
-      category = rawCategory.map((c: any) => {
-        if (!c.categoryId || !c.categoryModel) {
-          throw new Error("Each category must have categoryId and categoryModel");
-        }
-        return {
-          categoryId: c.categoryId,
-          categoryModel: c.categoryModel,
-        };
-      });
+      category = rawCategory; // Just use IDs directly
     }
   }
 
@@ -61,20 +53,13 @@ export const createReview = async (req: AuthenticatedRequest) => {
       }
     }
 
-    if (!Array.isArray(rawSkill)) {
-      throw new Error("Skill must be an array of objects.");
+    if (rawSkill && !Array.isArray(rawSkill)) {
+      rawSkill = [rawSkill];
     }
 
-    // ✅ Normalize into correct shape
-    skill = rawSkill.map((s: any) => {
-      if (!s.skillId || !s.skillModel) {
-        throw new Error("Each skill must have skillId and skillModel");
-      }
-      return {
-        skillId: s.skillId,
-        skillModel: s.skillModel,
-      };
-    });
+    if (rawSkill && Array.isArray(rawSkill)) {
+      skill = rawSkill; // Just use IDs directly
+    }
   }
 
   const data = {
@@ -185,15 +170,7 @@ export const updateReview = async (req: AuthenticatedRequest) => {
     }
 
     if (rawCategory && Array.isArray(rawCategory)) {
-      category = rawCategory.map((c: any) => {
-        if (!c.categoryId || !c.categoryModel) {
-          throw new Error("Each category must have categoryId and categoryModel");
-        }
-        return {
-          categoryId: c.categoryId,
-          categoryModel: c.categoryModel,
-        };
-      });
+      category = rawCategory; // Just use IDs directly
     }
   }
 
@@ -209,19 +186,13 @@ export const updateReview = async (req: AuthenticatedRequest) => {
       }
     }
 
-    if (!Array.isArray(rawSkill)) {
-      throw new Error("Skill must be an array of objects.");
+    if (rawSkill && !Array.isArray(rawSkill)) {
+      rawSkill = [rawSkill];
     }
 
-    skill = rawSkill.map((s: any) => {
-      if (!s.skillId || !s.skillModel) {
-        throw new Error("Each skill must have skillId and skillModel");
-      }
-      return {
-        skillId: s.skillId,
-        skillModel: s.skillModel,
-      };
-    });
+    if (rawSkill && Array.isArray(rawSkill)) {
+      skill = rawSkill; // Just use IDs directly
+    }
   }
 
   updateData = {
@@ -246,8 +217,8 @@ export const getReviewById = async (req: Request) => {
   const review = await Review.findById(id).populate([
     { path: "user" },
     { path: "sport" },
-    { path: "category.categoryId" },
-    { path: "skill.skillId" },
+    { path: "category" },
+    { path: "skill" },
     { path: "opponent" },
     { path: "coachFeedback.coach" },
     { path: "peerFeedback.friend" },
@@ -302,11 +273,11 @@ export const getAllReviews = async (req: Request) => {
       Review.find({
         ...query,
         createdAt: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
-      }).populate(["sport", "category.categoryId", "skill.skillId"]),
+      }).populate(["sport", "category", "skill"]),
       Review.find({
         ...query,
         createdAt: { $gte: startOfWeek.toDate(), $lte: endOfWeek.toDate() },
-      }).populate(["sport", "category.categoryId", "skill.skillId"]),
+      }).populate(["sport", "category", "skill"]),
     ]);
 
     const groupedMonth: Record<string, any[]> = {};
@@ -378,7 +349,7 @@ export const getAllReviews = async (req: Request) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const data = await Review.find(query)
-      .populate(["sport", "category.categoryId", "skill.skillId"])
+      .populate(["sport", "category", "skill"])
       .sort(sortOption)
       .skip(skip)
       .limit(Number(limit));
@@ -398,7 +369,7 @@ export const getAllReviews = async (req: Request) => {
   }
 
   const data = await Review.find(query)
-    .populate(["sport", "category.categoryId", "skill.skillId"])
+    .populate(["sport", "category", "skill"])
     .sort(sortOption);
 
   return {
