@@ -62,19 +62,16 @@ export const createReview = async (req: AuthenticatedRequest) => {
     }
   }
 
+  // Create a copy of req.body without category and skill (we'll add parsed versions)
+  const { category: bodyCategory, skill: bodySkill, ...restBody } = req.body;
+
   const data = {
     user: userId,
     media: req.fileUrls?.media || [],
     ...(skill ? { skill } : {}),
     ...(category ? { category } : {}),
-    ...req.body,
+    ...restBody,
   };
-
-  // Remove raw category from body if we parsed it
-  if (category) {
-    delete data.category;
-    (data as any).category = category;
-  }
 
   const review = (await Review.create(data)) as any;
 
@@ -195,9 +192,12 @@ export const updateReview = async (req: AuthenticatedRequest) => {
     }
   }
 
+  // Create a copy of req.body without category and skill (we'll add parsed versions)
+  const { category: bodyCategory, skill: bodySkill, ...restBody } = req.body;
+
   updateData = {
     ...updateData,
-    ...req.body,
+    ...restBody,
     ...(skill ? { skill } : {}),
     ...(category ? { category } : {}),
   };
