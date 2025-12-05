@@ -29,16 +29,8 @@ const feedbackRequestSchema = new Schema<FeedbackRequestDocument>(
     },
     skills: [
       {
-        skillId: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          refPath: "skills.skillModel",
-        },
-        skillModel: {
-          type: String,
-          required: true,
-          enum: ["Sport_Category_Skill", "User_Sport_Category_Skill"],
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sport_Category_Skill",
       },
     ],
     status: {

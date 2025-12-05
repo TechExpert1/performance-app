@@ -5,10 +5,7 @@ export interface IFeedbackRequest {
   recipient: mongoose.Types.ObjectId; // User who will give feedback
   review: mongoose.Types.ObjectId; // Review/Journal entry
   sport?: mongoose.Types.ObjectId;
-  skills: {
-    skillId: mongoose.Types.ObjectId;
-    skillModel: string;
-  }[];
+  skills?: mongoose.Types.ObjectId[];
   status: "pending" | "completed" | "declined";
   type: "peer" | "coach";
   requestMessage?: string;
