@@ -18,47 +18,42 @@ export const createReview = async (req: AuthenticatedRequest) => {
   let skill: any[] | undefined;
   let category: any[] | undefined;
 
-  // Parse category for Physical Performance and Skill Practice
-  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
-    let rawCategory = req.body.category;
-
-    if (typeof rawCategory === "string") {
+  // Helper function to deeply parse JSON strings and flatten arrays
+  const parseIds = (input: any): string[] => {
+    if (!input) return [];
+    
+    // If it's a string, try to parse it
+    if (typeof input === "string") {
       try {
-        const parsed = JSON.parse(rawCategory);
-        rawCategory = Array.isArray(parsed) ? parsed : [parsed];
+        const parsed = JSON.parse(input);
+        return parseIds(parsed); // Recursively parse in case of double-stringification
       } catch {
-        throw new Error("Invalid category data format");
+        // It's a plain string ID
+        return [input];
       }
     }
-
-    if (rawCategory && !Array.isArray(rawCategory)) {
-      rawCategory = [rawCategory];
+    
+    // If it's an array, flatten and parse each element
+    if (Array.isArray(input)) {
+      return input.flatMap((item) => parseIds(item));
     }
+    
+    // If it's something else, convert to string
+    return [String(input)];
+  };
 
-    if (rawCategory && Array.isArray(rawCategory)) {
-      category = rawCategory; // Just use IDs directly
+  // Parse category for Physical Performance and Skill Practice
+  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
+    const parsedCategory = parseIds(req.body.category);
+    if (parsedCategory.length > 0) {
+      category = parsedCategory;
     }
   }
 
   if (req.body.sessionType === "Skill Practice") {
-    let rawSkill = req.body.skill;
-
-    // Parse if it's stringified JSON
-    if (typeof rawSkill === "string") {
-      try {
-        const parsed = JSON.parse(rawSkill);
-        rawSkill = Array.isArray(parsed) ? parsed : [parsed];
-      } catch {
-        throw new Error("Invalid skill data format");
-      }
-    }
-
-    if (rawSkill && !Array.isArray(rawSkill)) {
-      rawSkill = [rawSkill];
-    }
-
-    if (rawSkill && Array.isArray(rawSkill)) {
-      skill = rawSkill; // Just use IDs directly
+    const parsedSkill = parseIds(req.body.skill);
+    if (parsedSkill.length > 0) {
+      skill = parsedSkill;
     }
   }
 
@@ -149,46 +144,42 @@ export const updateReview = async (req: AuthenticatedRequest) => {
   let skill: any[] | undefined;
   let category: any[] | undefined;
 
-  // Parse category for Physical Performance and Skill Practice
-  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
-    let rawCategory = req.body.category;
-
-    if (typeof rawCategory === "string") {
+  // Helper function to deeply parse JSON strings and flatten arrays
+  const parseIds = (input: any): string[] => {
+    if (!input) return [];
+    
+    // If it's a string, try to parse it
+    if (typeof input === "string") {
       try {
-        const parsed = JSON.parse(rawCategory);
-        rawCategory = Array.isArray(parsed) ? parsed : [parsed];
+        const parsed = JSON.parse(input);
+        return parseIds(parsed); // Recursively parse in case of double-stringification
       } catch {
-        throw new Error("Invalid category data format");
+        // It's a plain string ID
+        return [input];
       }
     }
-
-    if (rawCategory && !Array.isArray(rawCategory)) {
-      rawCategory = [rawCategory];
+    
+    // If it's an array, flatten and parse each element
+    if (Array.isArray(input)) {
+      return input.flatMap((item) => parseIds(item));
     }
+    
+    // If it's something else, convert to string
+    return [String(input)];
+  };
 
-    if (rawCategory && Array.isArray(rawCategory)) {
-      category = rawCategory; // Just use IDs directly
+  // Parse category for Physical Performance and Skill Practice
+  if (req.body.sessionType === "Physical Performance" || req.body.sessionType === "Skill Practice") {
+    const parsedCategory = parseIds(req.body.category);
+    if (parsedCategory.length > 0) {
+      category = parsedCategory;
     }
   }
 
   if (req.body.sessionType === "Skill Practice") {
-    let rawSkill = req.body.skill;
-
-    if (typeof rawSkill === "string") {
-      try {
-        const parsed = JSON.parse(rawSkill);
-        rawSkill = Array.isArray(parsed) ? parsed : [parsed];
-      } catch {
-        throw new Error("Invalid skill data format");
-      }
-    }
-
-    if (rawSkill && !Array.isArray(rawSkill)) {
-      rawSkill = [rawSkill];
-    }
-
-    if (rawSkill && Array.isArray(rawSkill)) {
-      skill = rawSkill; // Just use IDs directly
+    const parsedSkill = parseIds(req.body.skill);
+    if (parsedSkill.length > 0) {
+      skill = parsedSkill;
     }
   }
 
