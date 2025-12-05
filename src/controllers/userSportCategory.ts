@@ -149,37 +149,58 @@ export const sportCategoryController = {
         },
         {
           $lookup: {
-            from: "user_sport_categories",
-            let: { sportId: "$_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$sport", "$$sportId"] },
-                      { $eq: ["$user", userId] },
-                    ],
-                  },
-                },
-              },
-              {
-                $lookup: {
-                  from: "user_sport_category_skills",
-                  localField: "_id",
-                  foreignField: "category",
-                  as: "skills",
-                },
-              },
-            ],
+            from: "sport_categories",
+            localField: "_id",
+            foreignField: "sport",
             as: "categories",
+          },
+        },
+        {
+          $unwind: {
+            path: "$categories",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "sport_category_skills",
+            localField: "categories._id",
+            foreignField: "category",
+            as: "categories.skills",
+          },
+        },
+        {
+          $group: {
+            _id: "$_id",
+            name: { $first: "$name" },
+            sportsType: { $first: "$sportsType" },
+            skillLevelSet: { $first: "$skillLevelSet" },
+            image: { $first: "$image" },
+            createdAt: { $first: "$createdAt" },
+            updatedAt: { $first: "$updatedAt" },
+            categories: { $push: "$categories" },
           },
         },
         {
           $project: {
             _id: 1,
             name: 1,
-            categories: 1,
+            image: 1,
+            sportsType: 1,
+            skillLevelSet: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            categories: {
+              $filter: {
+                input: "$categories",
+                as: "cat",
+                cond: { $ne: ["$$cat", null] },
+              },
+            },
           },
+        },
+        {
+          $sort: { createdAt: 1 },
         },
       ]);
 

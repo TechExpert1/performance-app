@@ -14,10 +14,9 @@ router.post("/skills", userAuth, sportCategoryController.createSkill);
 router.patch("/skills/:id", userAuth, sportCategoryController.updateSkill);
 router.delete("/skills/:id", userAuth, sportCategoryController.deleteSkill);
 
-// Aggregated data (sports → categories → skills)
+// Aggregated data (sports → categories → skills) - works without auth, uses user query param
 router.get(
   "/categories-with-skills",
-  userAuth,
   sportCategoryController.getSportsWithCategoriesAndSkills
 );
 
