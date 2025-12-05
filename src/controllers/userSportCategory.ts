@@ -134,7 +134,19 @@ export const sportCategoryController = {
 
       const userId = new mongoose.Types.ObjectId(user as string);
 
+      // Get user's selected sports from Athlete_User profile
+      const athleteProfile = await mongoose.model("Athlete_User").findOne({ userId });
+      const userSportIds = athleteProfile?.sportsAndSkillLevels?.map(
+        (s: any) => new mongoose.Types.ObjectId(s.sport)
+      ) || [];
+
       const sports = await Sport.aggregate([
+        // Only include sports that user selected during signup
+        {
+          $match: {
+            _id: { $in: userSportIds }
+          }
+        },
         {
           $lookup: {
             from: "user_sport_categories",
@@ -161,9 +173,6 @@ export const sportCategoryController = {
             ],
             as: "categories",
           },
-        },
-        {
-          $match: { categories: { $ne: [] } },
         },
         {
           $project: {

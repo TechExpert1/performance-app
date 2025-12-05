@@ -2,6 +2,7 @@ import { Request } from "express";
 import mongoose, { SortOrder } from "mongoose";
 import Sport, { SportDocument } from "../models/Sports.js";
 import { SkillSetLevel } from "../models/Skill_Set.js";
+import Athlete_User from "../models/Athlete_User.js";
 interface ServiceResponse<T> {
   message: string;
   sport?: T;
@@ -101,7 +102,29 @@ export const getSportById = async (
 // service/sportService.ts or similar
 
 export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
-  const result = await Sport.aggregate([
+  // Get the authenticated user's selected sports from Athlete_User
+  const userId = (req as any).user?.id;
+  let sportIds: mongoose.Types.ObjectId[] = [];
+
+  if (userId) {
+    const athleteUser = await Athlete_User.findOne({ userId }).select("sportsAndSkillLevels");
+    if (athleteUser?.sportsAndSkillLevels?.length) {
+      sportIds = athleteUser.sportsAndSkillLevels.map(
+        (s: any) => new mongoose.Types.ObjectId(s.sport)
+      );
+    }
+  }
+
+  // Build the aggregation pipeline
+  const pipeline: any[] = [];
+
+  // If user has selected sports, filter by them
+  if (sportIds.length > 0) {
+    pipeline.push({ $match: { _id: { $in: sportIds } } });
+  }
+
+  // Add the rest of the aggregation stages
+  pipeline.push(
     {
       $lookup: {
         from: "sport_categories",
@@ -121,7 +144,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         from: "sport_category_skills",
         localField: "categories._id",
         foreignField: "category",
-        as: "categories.skills", // this will include all fields, including description
+        as: "categories.skills",
       },
     },
     {
@@ -156,9 +179,10 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
     },
     {
       $sort: { createdAt: 1 },
-    },
-  ]);
+    }
+  );
 
+  const result = await Sport.aggregate(pipeline);
   return result;
 };
 
