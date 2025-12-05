@@ -63,7 +63,7 @@ export const getAllChallengeCategoriesWithSubsAndExercises = async (
                       },
                     },
                   },
-                  { $project: { _id: 1, name: 1, rules: 1 } },
+                  { $project: { _id: 1, name: 1, rules: 1, description: 1, coachTip: 1 } },
                 ],
                 as: "exercises",
               },
