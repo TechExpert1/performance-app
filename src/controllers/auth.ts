@@ -8,6 +8,8 @@ import {
   handleVerifyCode,
   handleGoogleLogin,
   handleAppleLogin,
+  handleGoogleLoginGym,
+  handleAppleLoginGym,
   handleDeleteAccount,
 } from "../services/auth.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
@@ -120,6 +122,38 @@ export const appleLogin = async (
 ): Promise<void> => {
   try {
     const result = await handleAppleLogin(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
+
+export const googleLoginGym = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await handleGoogleLoginGym(req);
+    res.status(200).json(result);
+  } catch (err) {
+    if (err instanceof Error) {
+      res.status(422).json({ error: err.message });
+    } else {
+      res.status(422).json({ error: "Unknown error occurred" });
+    }
+  }
+};
+
+export const appleLoginGym = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const result = await handleAppleLoginGym(req);
     res.status(200).json(result);
   } catch (err) {
     if (err instanceof Error) {

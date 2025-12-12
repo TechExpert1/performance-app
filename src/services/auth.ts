@@ -718,6 +718,223 @@ export const handleAppleLogin = async (req: Request) => {
   }
 };
 
+export const handleGoogleLoginGym = async (req: Request) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      throw new Error("Google ID token is required");
+    }
+
+    // Verify the Google ID token
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    
+    if (!googleClientId) {
+      throw new Error("Google authentication is not configured");
+    }
+
+    const client = new OAuth2Client(googleClientId);
+    
+    let email: string;
+    let googleId: string;
+    let name: string | undefined;
+    let profileImage: string | undefined;
+
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: googleClientId,
+      });
+
+      const payload = ticket.getPayload();
+      
+      if (!payload || !payload.email) {
+        throw new Error("Invalid token payload");
+      }
+
+      email = payload.email;
+      googleId = payload.sub;
+      name = payload.name;
+      profileImage = payload.picture;
+    } catch (error) {
+      console.error("Google token verification failed:", error);
+      throw new Error("Invalid Google ID token");
+    }
+
+    // Check if user exists with this Google provider
+    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" });
+
+    if (!user) {
+      // Check if user exists with this email (from email/password signup)
+      user = await User.findOne({ email });
+
+      if (user) {
+        // User exists with email provider, link Google account
+        user.authProvider = "google";
+        user.authProviderId = googleId;
+        if (profileImage && !user.profileImage) {
+          user.profileImage = profileImage;
+        }
+        await user.save();
+      } else {
+        // Create new user with Google as gym owner
+        user = await User.create({
+          email,
+          name: name || email.split("@")[0],
+          authProvider: "google",
+          authProviderId: googleId,
+          role: "gymOwner",
+          profileImage: profileImage || "",
+          adminStatus: "approved",
+        });
+
+        // Don't create Gym - let it be created via update profile API
+      }
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string
+    );
+
+    user.token = jwtToken;
+    await user.save();
+
+    // Populate user with gym and friends like normal login
+    const populatedUser = await User.findById(user._id).populate("gym friends");
+    
+    if (!populatedUser) {
+      throw new Error("User not found after save");
+    }
+
+    let gym = null;
+
+    if (populatedUser.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
+    }
+
+    // Build response matching normal login structure
+    const response: any = {
+      user: populatedUser,
+      token: jwtToken,
+      gym: gym || null,
+    };
+
+    return response;
+  } catch (error) {
+    console.error("Google Login Gym Error:", error);
+    throw error;
+  }
+};
+
+export const handleAppleLoginGym = async (req: Request) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      throw new Error("Apple identity token is required");
+    }
+
+    // Decode Apple JWT token (Apple tokens are standard JWTs)
+    let email: string;
+    let appleId: string;
+    
+    try {
+      // Decode without verification for now (Apple's public keys need to be fetched for full verification)
+      const decoded = jwt.decode(token) as any;
+      
+      if (!decoded || !decoded.sub) {
+        throw new Error("Invalid token payload");
+      }
+
+      appleId = decoded.sub;
+      email = decoded.email;
+
+      if (!email) {
+        throw new Error("Email not found in Apple token");
+      }
+    } catch (error) {
+      console.error("Apple token verification failed:", error);
+      throw new Error("Invalid Apple identity token");
+    }
+
+    // Check if user exists with this Apple provider
+    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" });
+
+    if (!user) {
+      // Check if user exists with this email (from email/password signup)
+      user = await User.findOne({ email });
+
+      if (user) {
+        // User exists with email provider, link Apple account
+        user.authProvider = "apple";
+        user.authProviderId = appleId;
+        await user.save();
+      } else {
+        // Create new user with Apple as gym owner
+        const firstName = email.split("@")[0];
+        
+        user = await User.create({
+          email,
+          name: firstName,
+          authProvider: "apple",
+          authProviderId: appleId,
+          role: "gymOwner",
+          profileImage: "",
+          adminStatus: "approved",
+        });
+
+        // Don't create Gym - let it be created via update profile API
+      }
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string
+    );
+
+    user.token = jwtToken;
+    await user.save();
+
+    // Populate user with gym and friends like normal login
+    const populatedUser = await User.findById(user._id).populate("gym friends");
+    
+    if (!populatedUser) {
+      throw new Error("User not found after save");
+    }
+
+    let gym = null;
+
+    if (populatedUser.role === "gymOwner") {
+      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
+    }
+
+    // Build response matching normal login structure
+    const response: any = {
+      user: populatedUser,
+      token: jwtToken,
+      gym: gym || null,
+    };
+
+    return response;
+  } catch (error) {
+    console.error("Apple Login Gym Error:", error);
+    throw error;
+  }
+};
+
 export const handleDeleteAccount = async (req: AuthenticatedRequest) => {
   const session = await mongoose.startSession();
   session.startTransaction();

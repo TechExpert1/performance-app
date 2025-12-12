@@ -487,9 +487,6 @@ export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
 
   // Fetch existing gym to handle file deletions and appends
   let existingGym = await Gym.findOne({ owner: userId });
-  if (!existingGym) {
-    throw new Error("Gym not found for this owner");
-  }
 
   // Prepare update data
   const gymUpdateData: any = {};
@@ -499,65 +496,85 @@ export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
   if (cnic) gymUpdateData.cnic = cnic;
   if (sport && Array.isArray(sport)) gymUpdateData.sport = sport;
 
-  // Handle file deletions (remove specific URLs from arrays)
-  if (deletePersonalIdentification) {
-    const urlsToDelete = Array.isArray(deletePersonalIdentification)
-      ? deletePersonalIdentification
-      : [deletePersonalIdentification];
-    gymUpdateData.personalIdentification = (
-      existingGym.personalIdentification || []
-    ).filter((url: string) => !urlsToDelete.includes(url));
-  }
+  // Set owner for upsert
+  gymUpdateData.owner = userId;
 
-  if (deleteProofOfBusiness) {
-    const urlsToDelete = Array.isArray(deleteProofOfBusiness)
-      ? deleteProofOfBusiness
-      : [deleteProofOfBusiness];
-    gymUpdateData.proofOfBusiness = (existingGym.proofOfBusiness || []).filter(
-      (url: string) => !urlsToDelete.includes(url)
-    );
-  }
-
-  if (deleteGymImages) {
-    const urlsToDelete = Array.isArray(deleteGymImages)
-      ? deleteGymImages
-      : [deleteGymImages];
-    gymUpdateData.gymImages = (existingGym.gymImages || []).filter(
-      (url: string) => !urlsToDelete.includes(url)
-    );
-  }
-
-  // Handle new file uploads (append to existing, not replace)
-  if ((req as any).fileUrls) {
-    if ((req as any).fileUrls.personalIdentification) {
-      const existingIds = existingGym.personalIdentification || [];
-      gymUpdateData.personalIdentification = [
-        ...existingIds,
-        ...(req as any).fileUrls.personalIdentification,
-      ];
+  // Handle file deletions and uploads differently based on whether gym exists
+  if (existingGym) {
+    // Handle file deletions (remove specific URLs from arrays)
+    if (deletePersonalIdentification) {
+      const urlsToDelete = Array.isArray(deletePersonalIdentification)
+        ? deletePersonalIdentification
+        : [deletePersonalIdentification];
+      gymUpdateData.personalIdentification = (
+        existingGym.personalIdentification || []
+      ).filter((url: string) => !urlsToDelete.includes(url));
     }
-    if ((req as any).fileUrls.proofOfBusiness) {
-      const existingProof = existingGym.proofOfBusiness || [];
-      gymUpdateData.proofOfBusiness = [
-        ...existingProof,
-        ...(req as any).fileUrls.proofOfBusiness,
-      ];
+
+    if (deleteProofOfBusiness) {
+      const urlsToDelete = Array.isArray(deleteProofOfBusiness)
+        ? deleteProofOfBusiness
+        : [deleteProofOfBusiness];
+      gymUpdateData.proofOfBusiness = (existingGym.proofOfBusiness || []).filter(
+        (url: string) => !urlsToDelete.includes(url)
+      );
     }
-    if ((req as any).fileUrls.gymImages) {
-      const existingImages = existingGym.gymImages || [];
-      gymUpdateData.gymImages = [
-        ...existingImages,
-        ...(req as any).fileUrls.gymImages,
-      ];
+
+    if (deleteGymImages) {
+      const urlsToDelete = Array.isArray(deleteGymImages)
+        ? deleteGymImages
+        : [deleteGymImages];
+      gymUpdateData.gymImages = (existingGym.gymImages || []).filter(
+        (url: string) => !urlsToDelete.includes(url)
+      );
+    }
+
+    // Handle new file uploads (append to existing, not replace)
+    if ((req as any).fileUrls) {
+      if ((req as any).fileUrls.personalIdentification) {
+        const existingIds = existingGym.personalIdentification || [];
+        gymUpdateData.personalIdentification = [
+          ...existingIds,
+          ...(req as any).fileUrls.personalIdentification,
+        ];
+      }
+      if ((req as any).fileUrls.proofOfBusiness) {
+        const existingProof = existingGym.proofOfBusiness || [];
+        gymUpdateData.proofOfBusiness = [
+          ...existingProof,
+          ...(req as any).fileUrls.proofOfBusiness,
+        ];
+      }
+      if ((req as any).fileUrls.gymImages) {
+        const existingImages = existingGym.gymImages || [];
+        gymUpdateData.gymImages = [
+          ...existingImages,
+          ...(req as any).fileUrls.gymImages,
+        ];
+      }
+    }
+  } else {
+    // No existing gym, just set new files if provided
+    if ((req as any).fileUrls) {
+      if ((req as any).fileUrls.personalIdentification) {
+        gymUpdateData.personalIdentification = (req as any).fileUrls.personalIdentification;
+      }
+      if ((req as any).fileUrls.proofOfBusiness) {
+        gymUpdateData.proofOfBusiness = (req as any).fileUrls.proofOfBusiness;
+      }
+      if ((req as any).fileUrls.gymImages) {
+        gymUpdateData.gymImages = (req as any).fileUrls.gymImages;
+      }
     }
   }
 
   let updatedGym = null;
   if (Object.keys(gymUpdateData).length > 0) {
+    // Use upsert to create document if it doesn't exist (e.g., for Google/Apple login users)
     updatedGym = await Gym.findOneAndUpdate(
       { owner: userId },
       gymUpdateData,
-      { new: true, runValidators: true }
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     )
       .populate("sport", "name")
       .lean();

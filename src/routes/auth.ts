@@ -8,6 +8,8 @@ import {
   verifyCode,
   googleLogin,
   appleLogin,
+  googleLoginGym,
+  appleLoginGym,
   deleteAccount,
 } from "../controllers/auth.js";
 import { userAuth } from "../middlewares/user.js";
@@ -35,6 +37,8 @@ router.post(
 router.post("/login", login);
 router.post("/google-login", googleLogin);
 router.post("/apple-login", appleLogin);
+router.post("/google-login-gym", googleLoginGym);
+router.post("/apple-login-gym", appleLoginGym);
 router.delete("/delete-account", userAuth, deleteAccount);
 router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/otp-verification", verifyOtp);

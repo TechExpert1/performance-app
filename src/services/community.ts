@@ -263,10 +263,13 @@ export const getAllCommunities = async (req: Request) => {
         .sort(sortOption);
     }
 
-    // Add members & totalMembers for each community
+    // Get authenticated user ID if available
+    const userId = (req as any).user?.id;
+
+    // Add members, totalMembers, and isRequested for each community
     const enrichedCommunities = await Promise.all(
       communities.map(async (community) => {
-        const [totalMembers, members] = await Promise.all([
+        const [totalMembers, members, memberRequest] = await Promise.all([
           Community_Member.countDocuments({
             community: community._id,
             status: "approved",
@@ -275,6 +278,14 @@ export const getAllCommunities = async (req: Request) => {
             community: community._id,
             status: "approved",
           }).populate("user"),
+          // Check if current user has requested/joined this community
+          userId
+            ? Community_Member.findOne({
+                community: community._id,
+                user: userId,
+                status: { $in: ["pending", "approved"] },
+              })
+            : null,
         ]);
 
         const memberUsers = members.map((m) => m.user);
@@ -283,6 +294,7 @@ export const getAllCommunities = async (req: Request) => {
           ...community.toObject(),
           totalMembers,
           members: memberUsers,
+          isRequested: memberRequest ? true : false,
         };
       })
     );
