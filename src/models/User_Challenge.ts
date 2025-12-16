@@ -9,6 +9,8 @@ const dailySubmissionSchema = new Schema(
     time: { type: String },
     reps: { type: String },
     distance: { type: String },
+    weight: { type: String },
+    calories: { type: String },
     mediaUrl: { type: String },
     ownerApprovalStatus: {
       type: String,

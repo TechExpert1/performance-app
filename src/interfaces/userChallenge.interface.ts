@@ -5,6 +5,9 @@ export interface IDailySubmission {
   mediaUrl: string;
   time?: string;
   reps?: string;
+  distance?: string;
+  weight?: string;
+  calories?: string;
   note?: string;
   ownerApprovalStatus: "pending" | "accepted" | "rejected";
 }

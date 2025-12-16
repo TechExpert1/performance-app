@@ -60,11 +60,19 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
     req.body.submission ||
     (req.fileUrls?.media && req.fileUrls.media.length > 0)
   ) {
+    // Get challenge with format to validate submission
+    let challenge = await Challenge.findById(userChallenge.challenge).populate("format");
+    if (!challenge) {
+      throw new Error("Challenge not found");
+    }
+
+    // Get the format name to determine which field to use
+    const formatName = ((challenge.format as any)?.name || "").toLowerCase();
+
     let parsedSubmission: {
       date?: string;
       note?: string;
-      time?: string;
-      reps?: string;
+      value?: string;
     } = {};
 
     try {
@@ -85,12 +93,37 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
       throw new Error("Invalid submission JSON format");
     }
 
-    let challenge: any;
+    // Validate that value is provided
+    if (!parsedSubmission.value) {
+      throw new Error("Value is required for submission");
+    }
+
+    // Map value to the correct field based on format
+    const submissionData: any = {
+      date: parsedSubmission.date ? new Date(parsedSubmission.date) : new Date(),
+      mediaUrl: req.fileUrls?.media?.[0] || "",
+      note: parsedSubmission.note || "",
+      ownerApprovalStatus: "pending",
+    };
+
+    // Determine which field to populate based on format
+    if (formatName.includes("fastest time") || formatName.includes("time for")) {
+      submissionData.time = parsedSubmission.value;
+    } else if (formatName.includes("max weight") || formatName.includes("1 rep max")) {
+      submissionData.weight = parsedSubmission.value;
+    } else if (formatName.includes("max reps") || formatName.includes("reps")) {
+      submissionData.reps = parsedSubmission.value;
+    } else if (formatName.includes("max distance") || formatName.includes("distance")) {
+      submissionData.distance = parsedSubmission.value;
+    } else if (formatName.includes("calories")) {
+      submissionData.calories = parsedSubmission.value;
+    } else {
+      // Default to time if format is not recognized
+      submissionData.time = parsedSubmission.value;
+    }
+
+    // Validate submission date
     if (parsedSubmission.date) {
-      challenge = await Challenge.findById(userChallenge.challenge);
-      if (!challenge) {
-        throw new Error("Challenge not found");
-      }
       if (!challenge?.createdAt || !challenge.endDate) {
         throw new Error("Challenge start date or end date is missing");
       }
@@ -113,20 +146,7 @@ export const updateUserChallenge = async (req: AuthenticatedRequest) => {
       }
     }
 
-    userChallenge.dailySubmissions.push({
-      date: parsedSubmission.date
-        ? new Date(parsedSubmission.date)
-        : new Date(),
-      mediaUrl: req.fileUrls?.media?.[0] || " ",
-      note: parsedSubmission.note || "",
-      time: parsedSubmission.time || "",
-      reps: parsedSubmission.reps || "",
-      ownerApprovalStatus: "pending",
-    });
-
-    if (!challenge) {
-      challenge = await Challenge.findById(userChallenge.challenge);
-    }
+    userChallenge.dailySubmissions.push(submissionData);
 
     if (challenge) {
       let requiredDays: number | null = null;

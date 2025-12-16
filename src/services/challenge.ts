@@ -67,17 +67,18 @@ export const updateChallenge = async (
     req.body.submission ||
     (req.fileUrls?.media && req.fileUrls.media.length > 0)
   ) {
-    const challenge = await Challenge.findById(req.params.id);
+    const challenge = await Challenge.findById(req.params.id).populate("format");
     if (!challenge) {
       throw new Error("Challenge not found");
     }
 
+    // Get the format name to determine which field to use
+    const formatName = ((challenge.format as any)?.name || "").toLowerCase();
+
     let parsedSubmission: {
       date?: string;
       note?: string;
-      time?: string;
-      reps?: string;
-      distance?: string;
+      value?: string;
     } = {};
 
     try {
@@ -96,6 +97,36 @@ export const updateChallenge = async (
       }
     } catch {
       throw new Error("Invalid submission JSON format");
+    }
+
+    // Validate that value is provided
+    if (!parsedSubmission.value) {
+      throw new Error("Value is required for submission");
+    }
+
+    // Map value to the correct field based on format
+    const submissionData: any = {
+      user: new mongoose.Types.ObjectId(req.user!.id),
+      date: parsedSubmission.date ? new Date(parsedSubmission.date) : new Date(),
+      mediaUrl: req.fileUrls?.media?.[0] || "",
+      note: parsedSubmission.note || "",
+      ownerApprovalStatus: "pending",
+    };
+
+    // Determine which field to populate based on format
+    if (formatName.includes("fastest time") || formatName.includes("time for")) {
+      submissionData.time = parsedSubmission.value;
+    } else if (formatName.includes("max weight") || formatName.includes("1 rep max")) {
+      submissionData.weight = parsedSubmission.value;
+    } else if (formatName.includes("max reps") || formatName.includes("reps")) {
+      submissionData.reps = parsedSubmission.value;
+    } else if (formatName.includes("max distance") || formatName.includes("distance")) {
+      submissionData.distance = parsedSubmission.value;
+    } else if (formatName.includes("calories")) {
+      submissionData.calories = parsedSubmission.value;
+    } else {
+      // Default to time if format is not recognized
+      submissionData.time = parsedSubmission.value;
     }
 
     // Validate submission date
@@ -123,18 +154,7 @@ export const updateChallenge = async (
     }
 
     // Add submission to challenge
-    challenge.dailySubmissions.push({
-      user: new mongoose.Types.ObjectId(req.user!.id),
-      date: parsedSubmission.date
-        ? new Date(parsedSubmission.date)
-        : new Date(),
-      mediaUrl: req.fileUrls?.media?.[0] || "",
-      note: parsedSubmission.note || "",
-      time: parsedSubmission.time || "",
-      reps: parsedSubmission.reps || "",
-      distance: parsedSubmission.distance || "",
-      ownerApprovalStatus: "pending",
-    } as any);
+    challenge.dailySubmissions.push(submissionData);
 
     await challenge.save();
 
@@ -312,13 +332,18 @@ export const handleGetLeaderBoard = async (req: Request) => {
           select: "name",
         },
       })
+      .populate("format")
       .lean();
 
     const populatedChallenge = challenge as unknown as {
       community?: {
         gym?: { name?: string };
       };
+      format?: { name?: string };
     };
+
+    // Get format name to determine sorting logic
+    const formatName = populatedChallenge.format?.name || "";
 
     // Get submissions from UserChallenge collection (users who joined the challenge)
     const userChallengeSubmissions = await UserChallenge.aggregate([
@@ -382,19 +407,107 @@ export const handleGetLeaderBoard = async (req: Request) => {
       },
     ]);
 
-    // Combine both submission types and sort by submission creation date
+    // Combine both submission types
     const allSubmissions = [...userChallengeSubmissions, ...directSubmissions];
-    const leaderboard = allSubmissions.sort((a, b) =>
-      new Date(a.submission.createdAt).getTime() - new Date(b.submission.createdAt).getTime()
-    );
+
+    const formatLower = formatName.toLowerCase();
+
+    // Sort based on format type
+    const leaderboard = allSubmissions.sort((a, b) => {
+      // For "Fastest Time" formats - lower time is better (ascending)
+      if (formatLower.includes("fastest time") || formatLower.includes("time for")) {
+        const timeA = parseTimeToSeconds(a.submission.time);
+        const timeB = parseTimeToSeconds(b.submission.time);
+        return timeA - timeB;
+      }
+
+      // For "Max Weight" formats - higher weight is better (descending)
+      if (formatLower.includes("max weight") || formatLower.includes("1 rep max")) {
+        const weightA = parseFloat(a.submission.weight) || 0;
+        const weightB = parseFloat(b.submission.weight) || 0;
+        return weightB - weightA;
+      }
+
+      // For "Max Reps" formats - higher reps is better (descending)
+      if (formatLower.includes("max reps") || formatLower.includes("reps")) {
+        const repsA = parseFloat(a.submission.reps) || 0;
+        const repsB = parseFloat(b.submission.reps) || 0;
+        return repsB - repsA;
+      }
+
+      // For "Max Distance" formats - higher distance is better (descending)
+      if (formatLower.includes("max distance") || formatLower.includes("distance")) {
+        const distanceA = parseFloat(a.submission.distance) || 0;
+        const distanceB = parseFloat(b.submission.distance) || 0;
+        return distanceB - distanceA;
+      }
+
+      // For "Max Calories" formats - higher calories is better (descending)
+      if (formatLower.includes("calories")) {
+        const caloriesA = parseFloat(a.submission.calories) || 0;
+        const caloriesB = parseFloat(b.submission.calories) || 0;
+        return caloriesB - caloriesA;
+      }
+
+      // Default: sort by creation date
+      return new Date(a.submission.createdAt).getTime() - new Date(b.submission.createdAt).getTime();
+    });
+
+    // Add rank and format-specific result field to each entry
+    const rankedLeaderboard = leaderboard.map((entry, index) => {
+      const baseData: any = {
+        rank: index + 1,
+        name: entry.name,
+        country: entry.country,
+        days: entry.submission.date ? Math.ceil((new Date().getTime() - new Date(entry.submission.date).getTime()) / (1000 * 60 * 60 * 24)) + " Days" : "",
+        video: entry.submission.mediaUrl || "",
+      };
+
+      // Add format-specific field
+      if (formatLower.includes("fastest time") || formatLower.includes("time for")) {
+        baseData.time = entry.submission.time || "";
+      } else if (formatLower.includes("max weight") || formatLower.includes("1 rep max")) {
+        baseData.weight = entry.submission.weight || "";
+      } else if (formatLower.includes("max reps") || formatLower.includes("reps")) {
+        baseData.reps = entry.submission.reps || "";
+      } else if (formatLower.includes("max distance") || formatLower.includes("distance")) {
+        baseData.distance = entry.submission.distance || "";
+      } else if (formatLower.includes("calories")) {
+        baseData.calories = entry.submission.calories || "";
+      }
+
+      return baseData;
+    });
 
     return {
       gym: populatedChallenge.community?.gym?.name,
-      leaderboard,
+      format: formatName,
+      leaderboard: rankedLeaderboard,
     };
   } catch (error: any) {
     throw new Error("Error fetching leaderboard: " + error.message);
   }
+};
+
+// Helper function to parse time string to seconds for comparison
+const parseTimeToSeconds = (timeStr: string): number => {
+  if (!timeStr) return Infinity; // No time means worst ranking for "fastest time"
+  
+  // Handle formats like "1:30:00" (h:m:s), "1:30" (m:s), or just seconds "90"
+  const parts = timeStr.split(":").map(Number);
+  
+  if (parts.length === 3) {
+    // h:m:s format
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    // m:s format
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 1) {
+    // just seconds or a number
+    return parts[0] || Infinity;
+  }
+  
+  return Infinity;
 };
 
 export const updateChallengeSubmission = async (

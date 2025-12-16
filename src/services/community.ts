@@ -278,12 +278,12 @@ export const getAllCommunities = async (req: Request) => {
             community: community._id,
             status: "approved",
           }).populate("user"),
-          // Check if current user has requested/joined this community
+          // Check if current user has a pending request for this community
           userId
             ? Community_Member.findOne({
                 community: community._id,
                 user: userId,
-                status: { $in: ["pending", "approved"] },
+                status: "pending",
               })
             : null,
         ]);
