@@ -223,7 +223,7 @@ export const getActiveMembersOfCommunity = async (
   };
 };
 
-export const getAllCommunities = async (req: Request) => {
+export const getAllCommunities = async (req: AuthenticatedRequest) => {
   try {
     const {
       page,
@@ -263,8 +263,8 @@ export const getAllCommunities = async (req: Request) => {
         .sort(sortOption);
     }
 
-    // Get authenticated user ID if available
-    const userId = (req as any).user?.id;
+    // Get authenticated user ID
+    const userId = req.user?.id;
 
     // Add members, totalMembers, and isRequested for each community
     const enrichedCommunities = await Promise.all(

@@ -25,7 +25,7 @@ router.delete("/:id", gymOwnerAuth, CommunityController.remove);
 router.get("/:id", userAuth, CommunityController.getById);
 router.get("/:id/requests", gymOwnerAuth, CommunityController.getRequests);
 router.get("/:id/members", userAuth, CommunityController.getMembers);
-router.get("/", CommunityController.getAll);
+router.get("/", userAuth, CommunityController.getAll);
 
 // posts
 router.post(
