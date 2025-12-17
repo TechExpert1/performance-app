@@ -90,22 +90,29 @@ export const getCommunityById = async (req: AuthenticatedRequest) => {
     }).populate("user"),
   ]);
   const memberUsers = members.map((m) => m.user);
-  let isRequested = false;
-
+  
+  // Determine request status: accepted, pending, or notSent
+  let requestStatus = "notSent";
   if (req.user?.id) {
-    const pendingRequest = await Community_Member.findOne({
+    const memberRecord = await Community_Member.findOne({
       community: communityId,
       user: req.user.id,
-      status: "pending",
     });
-    isRequested = !!pendingRequest;
+    if (memberRecord) {
+      if (memberRecord.status === "approved") {
+        requestStatus = "accepted";
+      } else if (memberRecord.status === "pending") {
+        requestStatus = "pending";
+      }
+      // For "rejected" or any other status, keep as "notSent"
+    }
   }
   return {
     ...found.toObject(),
     totalMembers,
     totalPosts,
     members: memberUsers,
-    isRequested,
+    requestStatus,
   };
 };
 
@@ -266,10 +273,10 @@ export const getAllCommunities = async (req: AuthenticatedRequest) => {
     // Get authenticated user ID
     const userId = req.user?.id;
 
-    // Add members, totalMembers, and isRequested for each community
+    // Add members, totalMembers, and requestStatus for each community
     const enrichedCommunities = await Promise.all(
       communities.map(async (community) => {
-        const [totalMembers, members, memberRequest] = await Promise.all([
+        const [totalMembers, members, memberRecord] = await Promise.all([
           Community_Member.countDocuments({
             community: community._id,
             status: "approved",
@@ -278,23 +285,33 @@ export const getAllCommunities = async (req: AuthenticatedRequest) => {
             community: community._id,
             status: "approved",
           }).populate("user"),
-          // Check if current user has a pending request for this community
+          // Check current user's membership status for this community
           userId
             ? Community_Member.findOne({
                 community: community._id,
                 user: userId,
-                status: "pending",
               })
             : null,
         ]);
 
         const memberUsers = members.map((m) => m.user);
 
+        // Determine request status: accepted, pending, or notSent
+        let requestStatus = "notSent";
+        if (memberRecord) {
+          if (memberRecord.status === "approved") {
+            requestStatus = "accepted";
+          } else if (memberRecord.status === "pending") {
+            requestStatus = "pending";
+          }
+          // For "rejected" or any other status, keep as "notSent"
+        }
+
         return {
           ...community.toObject(),
           totalMembers,
           members: memberUsers,
-          isRequested: memberRequest ? true : false,
+          requestStatus,
         };
       })
     );
