@@ -304,7 +304,14 @@ export const getAllChallenges = async (req: Request) => {
           userChallenge: uc,
         });
       } else {
-        enhanced.push(ch);
+        // Check if user has direct submission in challenge's dailySubmissions
+        const userDirectSubmission = ch.dailySubmissions?.find(
+          (sub: any) => sub.user?._id?.toString() === userId || sub.user?.toString() === userId
+        );
+        enhanced.push({
+          ...ch,
+          dailySubmission: userDirectSubmission || null,
+        });
       }
     }
     finalData = enhanced;
