@@ -1,6 +1,7 @@
 import Review from "../models/Review.js";
 import { AuthenticatedRequest } from "../middlewares/user.js";
 import { SortOrder } from "mongoose";
+import mongoose from "mongoose";
 
 export const getAllJournals = async (req: AuthenticatedRequest) => {
   if (!req.user) {
@@ -54,11 +55,17 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
   }
 
   if (category) {
-    query.category = category;
+    // Validate that category is a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(category as string)) {
+      query.category = category;
+    }
   }
 
   if (skill) {
-    query.skill = skill;
+    // Validate that skill is a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(skill as string)) {
+      query.skill = skill;
+    }
   }
 
   // Date range filter
@@ -89,6 +96,60 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
   const sortOption: Record<string, SortOrder> = {
     [sortBy as string]: sortOrder === "asc" ? 1 : -1,
   };
+
+  // Helper to check if value is a valid ObjectId
+  const isValidObjectId = (val: any) => mongoose.Types.ObjectId.isValid(val) && String(new mongoose.Types.ObjectId(val)) === String(val);
+
+  // First, clean up bad data - remove non-ObjectId strings from category and skill arrays
+  // Use native MongoDB driver to bypass Mongoose schema validation
+  const collection = Review.collection;
+  await collection.updateMany(
+    {},
+    [
+      {
+        $set: {
+          category: {
+            $cond: {
+              if: { $isArray: "$category" },
+              then: {
+                $filter: {
+                  input: "$category",
+                  as: "c",
+                  cond: { $eq: [{ $type: "$$c" }, "objectId"] }
+                }
+              },
+              else: {
+                $cond: {
+                  if: { $eq: [{ $type: "$category" }, "objectId"] },
+                  then: ["$category"],
+                  else: []
+                }
+              }
+            }
+          },
+          skill: {
+            $cond: {
+              if: { $isArray: "$skill" },
+              then: {
+                $filter: {
+                  input: "$skill",
+                  as: "s",
+                  cond: { $eq: [{ $type: "$$s" }, "objectId"] }
+                }
+              },
+              else: {
+                $cond: {
+                  if: { $eq: [{ $type: "$skill" }, "objectId"] },
+                  then: ["$skill"],
+                  else: []
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  );
 
   // Get all matching reviews (without pagination if searching populated fields)
   let reviews = await Review.find(query)
