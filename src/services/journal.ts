@@ -54,11 +54,11 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
   }
 
   if (category) {
-    query["category.categoryId"] = category;
+    query.category = category;
   }
 
   if (skill) {
-    query["skill.skillId"] = skill;
+    query.skill = skill;
   }
 
   // Date range filter
