@@ -102,10 +102,15 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
         select: "name image",
       },
       {
-        path: "category.categoryId",
+        path: "category",
+        select: "name",
       },
       {
-        path: "skill.skillId",
+        path: "skill",
+        populate: {
+          path: "category",
+          select: "name",
+        },
       },
       {
         path: "coachFeedback.coach",
@@ -136,9 +141,11 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
       // Populated fields
       const sportMatch = review.sport?.name?.toLowerCase().includes(lowerSearch);
       const userMatch = review.user?.name?.toLowerCase().includes(lowerSearch);
-      const categoryMatch = review.category?.categoryId?.name?.toLowerCase().includes(lowerSearch);
+      const categoryMatch = Array.isArray(review.category) && review.category.some((c: any) => 
+        c?.name?.toLowerCase().includes(lowerSearch)
+      );
       const skillMatch = Array.isArray(review.skill) && review.skill.some((s: any) => 
-        s.skillId?.name?.toLowerCase().includes(lowerSearch)
+        s?.name?.toLowerCase().includes(lowerSearch)
       );
       const coachNameMatch = review.coachFeedback?.coach?.name?.toLowerCase().includes(lowerSearch);
       const peerNameMatch = review.peerFeedback?.friend?.name?.toLowerCase().includes(lowerSearch);
@@ -166,9 +173,21 @@ export const getAllJournals = async (req: AuthenticatedRequest) => {
     matchResult: review.matchResult,
     opponent: review.opponent,
     clubOrTeam: review.clubOrTeam,
-    category: review.category?.categoryId,
+    categories: Array.isArray(review.category)
+      ? review.category.map((c: any) => ({
+          _id: c._id,
+          name: c.name,
+        }))
+      : [],
     skills: Array.isArray(review.skill)
-      ? review.skill.map((s: any) => s.skillId)
+      ? review.skill.map((s: any) => ({
+          _id: s._id,
+          name: s.name,
+          category: s.category ? {
+            _id: s.category._id,
+            name: s.category.name,
+          } : null,
+        }))
       : [],
     
     // Personal Feedback

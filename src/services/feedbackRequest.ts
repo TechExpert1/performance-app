@@ -186,7 +186,11 @@ export const getRequestDetails = async (req: AuthenticatedRequest) => {
       select: "name image",
     })
     .populate({
-      path: "skills.skillId",
+      path: "skills",
+      populate: {
+        path: "category",
+        select: "name",
+      },
     })
     .populate({
       path: "review",
@@ -224,9 +228,28 @@ export const getRequestDetails = async (req: AuthenticatedRequest) => {
         ? requestData.requester.profileImage
         : requestData.recipient.profileImage,
     skills: requestData.skills?.map((s: any) => ({
-      _id: s.skillId?._id,
-      name: s.skillId?.name,
+      _id: s._id,
+      name: s.name,
+      category: s.category ? {
+        _id: s.category._id,
+        name: s.category.name,
+      } : null,
     })) || [],
+    categories: Array.from(
+      new Set(
+        requestData.skills
+          ?.map((s: any) => s.category?._id?.toString())
+          .filter(Boolean)
+      )
+    ).map((catId) => {
+      const skill = requestData.skills.find(
+        (s: any) => s.category?._id?.toString() === catId
+      );
+      return {
+        _id: skill.category._id,
+        name: skill.category.name,
+      };
+    }),
     status: requestData.status,
     type: requestData.type,
     requestMessage: requestData.requestMessage,

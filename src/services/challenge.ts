@@ -293,7 +293,12 @@ export const getAllChallenges = async (req: Request) => {
   if (userId) {
     const enhanced: any[] = [];
     for (const ch of dataWithDaysLeft) {
-      const uc = await UserChallenge.findOne({ user: userId, challenge: ch._id }).lean();
+      const uc = await UserChallenge.findOne({ user: userId, challenge: ch._id })
+        .populate({
+          path: "dailySubmissions.user",
+          select: "name email profileImage",
+        })
+        .lean();
       if (uc) {
         enhanced.push({
           ...ch,
