@@ -1,0 +1,241 @@
+{
+	"info": {
+		"_postman_id": "gym-login-apis-collection",
+		"name": "Gym Login APIs",
+		"description": "Collection containing Google and Apple login APIs for Gym Owners with FormData payload",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Google Login Gym",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "token",
+							"value": "",
+							"description": "Google ID token (required)",
+							"type": "text"
+						},
+						{
+							"key": "name",
+							"value": "",
+							"description": "Full name of the gym owner",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "",
+							"description": "Email address",
+							"type": "text"
+						},
+						{
+							"key": "dob",
+							"value": "",
+							"description": "Date of birth (YYYY-MM-DD format)",
+							"type": "text"
+						},
+						{
+							"key": "gender",
+							"value": "",
+							"description": "Gender (male, female, or other)",
+							"type": "text"
+						},
+						{
+							"key": "gymName",
+							"value": "",
+							"description": "Name of the gym",
+							"type": "text"
+						},
+						{
+							"key": "address",
+							"value": "",
+							"description": "Gym address",
+							"type": "text"
+						},
+						{
+							"key": "registrationNumber",
+							"value": "",
+							"description": "Business registration number",
+							"type": "text"
+						},
+						{
+							"key": "cnicNumber",
+							"value": "",
+							"description": "CNIC number",
+							"type": "text"
+						},
+						{
+							"key": "sports",
+							"value": "",
+							"description": "Sport ID (can add multiple with same key)",
+							"type": "text"
+						},
+						{
+							"key": "proofOfBusiness",
+							"value": "",
+							"description": "Proof of business documents (images)",
+							"type": "file"
+						},
+						{
+							"key": "personalInformation",
+							"value": "",
+							"description": "Personal identification documents (images)",
+							"type": "file"
+						},
+						{
+							"key": "gymPhotos",
+							"value": "",
+							"description": "Photos of the gym (images)",
+							"type": "file"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/google-login-gym",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"google-login-gym"
+					]
+				},
+				"description": "Login or register as a gym owner using Google authentication with complete gym profile information.\n\n**FormData Fields:**\n- `token` (required): Google ID token\n- `name`: Full name of the gym owner\n- `email`: Email address\n- `dob`: Date of birth (YYYY-MM-DD format)\n- `gender`: Gender (male, female, or other)\n- `gymName`: Name of the gym\n- `address`: Gym address\n- `registrationNumber`: Business registration number\n- `cnicNumber`: CNIC number\n- `sports`: Sport IDs (can add multiple entries with the same key)\n- `proofOfBusiness`: Proof of business documents (multiple images allowed)\n- `personalInformation`: Personal identification documents (multiple images allowed)\n- `gymPhotos`: Photos of the gym (multiple images allowed)"
+			},
+			"response": []
+		},
+		{
+			"name": "Apple Login Gym",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "token",
+							"value": "",
+							"description": "Apple identity token (required)",
+							"type": "text"
+						},
+						{
+							"key": "name",
+							"value": "",
+							"description": "Full name of the gym owner",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "",
+							"description": "Email address",
+							"type": "text"
+						},
+						{
+							"key": "dob",
+							"value": "",
+							"description": "Date of birth (YYYY-MM-DD format)",
+							"type": "text"
+						},
+						{
+							"key": "gender",
+							"value": "",
+							"description": "Gender (male, female, or other)",
+							"type": "text"
+						},
+						{
+							"key": "gymName",
+							"value": "",
+							"description": "Name of the gym",
+							"type": "text"
+						},
+						{
+							"key": "address",
+							"value": "",
+							"description": "Gym address",
+							"type": "text"
+						},
+						{
+							"key": "registrationNumber",
+							"value": "",
+							"description": "Business registration number",
+							"type": "text"
+						},
+						{
+							"key": "cnicNumber",
+							"value": "",
+							"description": "CNIC number",
+							"type": "text"
+						},
+						{
+							"key": "sports",
+							"value": "",
+							"description": "Sport ID (can add multiple with same key)",
+							"type": "text"
+						},
+						{
+							"key": "proofOfBusiness",
+							"value": "",
+							"description": "Proof of business documents (images)",
+							"type": "file"
+						},
+						{
+							"key": "personalInformation",
+							"value": "",
+							"description": "Personal identification documents (images)",
+							"type": "file"
+						},
+						{
+							"key": "gymPhotos",
+							"value": "",
+							"description": "Photos of the gym (images)",
+							"type": "file"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/apple-login-gym",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"apple-login-gym"
+					]
+				},
+				"description": "Login or register as a gym owner using Apple authentication with complete gym profile information.\n\n**FormData Fields:**\n- `token` (required): Apple identity token\n- `name`: Full name of the gym owner\n- `email`: Email address\n- `dob`: Date of birth (YYYY-MM-DD format)\n- `gender`: Gender (male, female, or other)\n- `gymName`: Name of the gym\n- `address`: Gym address\n- `registrationNumber`: Business registration number\n- `cnicNumber`: CNIC number\n- `sports`: Sport IDs (can add multiple entries with the same key)\n- `proofOfBusiness`: Proof of business documents (multiple images allowed)\n- `personalInformation`: Personal identification documents (multiple images allowed)\n- `gymPhotos`: Photos of the gym (multiple images allowed)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:6497",
+			"type": "string"
+		}
+	]
+}

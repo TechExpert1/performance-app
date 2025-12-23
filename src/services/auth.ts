@@ -720,7 +720,29 @@ export const handleAppleLogin = async (req: Request) => {
 
 export const handleGoogleLoginGym = async (req: Request) => {
   try {
-    const { token } = req.body;
+    const { 
+      token, 
+      name: formName, 
+      email: formEmail, 
+      dob, 
+      gender, 
+      gymName, 
+      address, 
+      registrationNumber, 
+      cnicNumber 
+    } = req.body;
+
+    // Parse sports - can be single value or array
+    let sports: string[] = [];
+    if (req.body.sports) {
+      sports = Array.isArray(req.body.sports) ? req.body.sports : [req.body.sports];
+    }
+
+    // Get file URLs from S3 upload
+    const fileUrls = (req as any).fileUrls || {};
+    const proofOfBusiness = fileUrls["proofOfBusiness"] || [];
+    const personalInformation = fileUrls["personalInformation"] || [];
+    const gymPhotos = fileUrls["gymPhotos"] || [];
 
     if (!token) {
       throw new Error("Google ID token is required");
@@ -752,9 +774,9 @@ export const handleGoogleLoginGym = async (req: Request) => {
         throw new Error("Invalid token payload");
       }
 
-      email = payload.email;
+      email = formEmail || payload.email;
       googleId = payload.sub;
-      name = payload.name;
+      name = formName || payload.name;
       profileImage = payload.picture;
     } catch (error) {
       console.error("Google token verification failed:", error);
@@ -775,6 +797,10 @@ export const handleGoogleLoginGym = async (req: Request) => {
         if (profileImage && !user.profileImage) {
           user.profileImage = profileImage;
         }
+        // Update user fields from form data
+        if (formName) user.name = formName;
+        if (dob) user.dob = new Date(dob);
+        if (gender) user.gender = gender;
         await user.save();
       } else {
         // Create new user with Google as gym owner
@@ -786,10 +812,40 @@ export const handleGoogleLoginGym = async (req: Request) => {
           role: "gymOwner",
           profileImage: profileImage || "",
           adminStatus: "approved",
+          dob: dob ? new Date(dob) : undefined,
+          gender: gender || undefined,
         });
-
-        // Don't create Gym - let it be created via update profile API
       }
+    }
+
+    // Create or update Gym with all the form data
+    let gym = await Gym.findOne({ owner: user._id });
+    
+    if (!gym && gymName) {
+      // Create new gym with all provided data
+      gym = await Gym.create({
+        owner: user._id,
+        createdBy: user._id,
+        name: gymName,
+        address: address || "",
+        registration: registrationNumber || "",
+        cnic: cnicNumber || "",
+        sport: sports.length > 0 ? sports.map((s: string) => new Types.ObjectId(s)) : [],
+        proofOfBusiness: proofOfBusiness,
+        personalIdentification: personalInformation,
+        gymImages: gymPhotos,
+      });
+    } else if (gym) {
+      // Update existing gym
+      if (gymName) gym.name = gymName;
+      if (address) gym.address = address;
+      if (registrationNumber) gym.registration = registrationNumber;
+      if (cnicNumber) gym.cnic = cnicNumber;
+      if (sports.length > 0) gym.sport = sports.map((s: string) => new Types.ObjectId(s)) as any;
+      if (proofOfBusiness.length > 0) gym.proofOfBusiness = proofOfBusiness;
+      if (personalInformation.length > 0) gym.personalIdentification = personalInformation;
+      if (gymPhotos.length > 0) gym.gymImages = gymPhotos;
+      await gym.save();
     }
 
     // Generate JWT token
@@ -813,17 +869,14 @@ export const handleGoogleLoginGym = async (req: Request) => {
       throw new Error("User not found after save");
     }
 
-    let gym = null;
-
-    if (populatedUser.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
-    }
+    // Refresh gym data
+    const gymData = await Gym.findOne({ owner: populatedUser._id }).lean();
 
     // Build response matching normal login structure
     const response: any = {
       user: populatedUser,
       token: jwtToken,
-      gym: gym || null,
+      gym: gymData || null,
     };
 
     return response;
@@ -835,7 +888,29 @@ export const handleGoogleLoginGym = async (req: Request) => {
 
 export const handleAppleLoginGym = async (req: Request) => {
   try {
-    const { token } = req.body;
+    const { 
+      token, 
+      name: formName, 
+      email: formEmail, 
+      dob, 
+      gender, 
+      gymName, 
+      address, 
+      registrationNumber, 
+      cnicNumber 
+    } = req.body;
+
+    // Parse sports - can be single value or array
+    let sports: string[] = [];
+    if (req.body.sports) {
+      sports = Array.isArray(req.body.sports) ? req.body.sports : [req.body.sports];
+    }
+
+    // Get file URLs from S3 upload
+    const fileUrls = (req as any).fileUrls || {};
+    const proofOfBusiness = fileUrls["proofOfBusiness"] || [];
+    const personalInformation = fileUrls["personalInformation"] || [];
+    const gymPhotos = fileUrls["gymPhotos"] || [];
 
     if (!token) {
       throw new Error("Apple identity token is required");
@@ -854,7 +929,7 @@ export const handleAppleLoginGym = async (req: Request) => {
       }
 
       appleId = decoded.sub;
-      email = decoded.email;
+      email = formEmail || decoded.email;
 
       if (!email) {
         throw new Error("Email not found in Apple token");
@@ -875,10 +950,14 @@ export const handleAppleLoginGym = async (req: Request) => {
         // User exists with email provider, link Apple account
         user.authProvider = "apple";
         user.authProviderId = appleId;
+        // Update user fields from form data
+        if (formName) user.name = formName;
+        if (dob) user.dob = new Date(dob);
+        if (gender) user.gender = gender;
         await user.save();
       } else {
         // Create new user with Apple as gym owner
-        const firstName = email.split("@")[0];
+        const firstName = formName || email.split("@")[0];
         
         user = await User.create({
           email,
@@ -888,10 +967,40 @@ export const handleAppleLoginGym = async (req: Request) => {
           role: "gymOwner",
           profileImage: "",
           adminStatus: "approved",
+          dob: dob ? new Date(dob) : undefined,
+          gender: gender || undefined,
         });
-
-        // Don't create Gym - let it be created via update profile API
       }
+    }
+
+    // Create or update Gym with all the form data
+    let gym = await Gym.findOne({ owner: user._id });
+    
+    if (!gym && gymName) {
+      // Create new gym with all provided data
+      gym = await Gym.create({
+        owner: user._id,
+        createdBy: user._id,
+        name: gymName,
+        address: address || "",
+        registration: registrationNumber || "",
+        cnic: cnicNumber || "",
+        sport: sports.length > 0 ? sports.map((s: string) => new Types.ObjectId(s)) : [],
+        proofOfBusiness: proofOfBusiness,
+        personalIdentification: personalInformation,
+        gymImages: gymPhotos,
+      });
+    } else if (gym) {
+      // Update existing gym
+      if (gymName) gym.name = gymName;
+      if (address) gym.address = address;
+      if (registrationNumber) gym.registration = registrationNumber;
+      if (cnicNumber) gym.cnic = cnicNumber;
+      if (sports.length > 0) gym.sport = sports.map((s: string) => new Types.ObjectId(s)) as any;
+      if (proofOfBusiness.length > 0) gym.proofOfBusiness = proofOfBusiness;
+      if (personalInformation.length > 0) gym.personalIdentification = personalInformation;
+      if (gymPhotos.length > 0) gym.gymImages = gymPhotos;
+      await gym.save();
     }
 
     // Generate JWT token
@@ -915,17 +1024,14 @@ export const handleAppleLoginGym = async (req: Request) => {
       throw new Error("User not found after save");
     }
 
-    let gym = null;
-
-    if (populatedUser.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
-    }
+    // Refresh gym data
+    const gymData = await Gym.findOne({ owner: populatedUser._id }).lean();
 
     // Build response matching normal login structure
     const response: any = {
       user: populatedUser,
       token: jwtToken,
-      gym: gym || null,
+      gym: gymData || null,
     };
 
     return response;
