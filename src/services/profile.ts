@@ -613,7 +613,7 @@ export const getAuthenticatedUserProfile = async (
   const user = await User.findById(userId)
     .populate("gym friends")
     .select(
-      "name email phoneNumber gender dob nationality role profileImage preference createdAt updatedAt gym"
+      "name email phoneNumber gender dob nationality role profileImage preference createdAt updatedAt gym adminStatus firstTimeLogin authProvider"
     )
     .lean();
 

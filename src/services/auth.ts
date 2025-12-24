@@ -240,7 +240,9 @@ export const handleLogin = async (req: Request) => {
     let athleteDetails = null;
 
     if (user.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: user._id }).lean();
+      gym = await Gym.findOne({ owner: user._id })
+        .populate("sport", "name")
+        .lean();
     }
 
     if (user.role === "athlete") {
@@ -785,7 +787,7 @@ export const handleGoogleLoginGym = async (req: Request) => {
           authProviderId: googleId,
           role: "gymOwner",
           profileImage: profileImage || "",
-          adminStatus: "approved",
+          adminStatus: "pending",
         });
 
         // Don't create Gym - let it be created via update profile API
@@ -816,7 +818,9 @@ export const handleGoogleLoginGym = async (req: Request) => {
     let gym = null;
 
     if (populatedUser.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
+      gym = await Gym.findOne({ owner: populatedUser._id })
+        .populate("sport", "name")
+        .lean();
     }
 
     // Build response matching normal login structure
@@ -888,7 +892,7 @@ export const handleAppleLoginGym = async (req: Request) => {
           authProviderId: appleId,
           role: "gymOwner",
           profileImage: "",
-          adminStatus: "approved",
+          adminStatus: "pending",
         });
 
         // Don't create Gym - let it be created via update profile API
@@ -919,7 +923,9 @@ export const handleAppleLoginGym = async (req: Request) => {
     let gym = null;
 
     if (populatedUser.role === "gymOwner") {
-      gym = await Gym.findOne({ owner: populatedUser._id }).lean();
+      gym = await Gym.findOne({ owner: populatedUser._id })
+        .populate("sport", "name")
+        .lean();
     }
 
     // Build response matching normal login structure
