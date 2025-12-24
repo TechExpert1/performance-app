@@ -56,13 +56,17 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
       userData.profileImage = req.fileUrls.profile[0];
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: userData.email }).session(
-      session
-    );
+    // Check if user already exists with email provider
+    const existingUser = await User.findOne({ 
+      email: userData.email,
+      authProvider: "email" 
+    }).session(session);
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
+
+    // Set authProvider to email for normal signup
+    userData.authProvider = "email";
 
     // Create new user
     const [createdUser] = await User.create([userData], { session });
@@ -199,7 +203,8 @@ export const handleLogin = async (req: Request) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).populate("gym friends");
+    // Only find users who signed up with email provider
+    const user = await User.findOne({ email, authProvider: "email" }).populate("gym friends");
     if (!user) throw new Error("Invalid credentials");
 
     // Check if gym owner is rejected
@@ -207,11 +212,9 @@ export const handleLogin = async (req: Request) => {
       throw new Error("Your account has been rejected by the administrator");
     }
 
-    // Check if user uses social login
     if (!user.password) {
-      throw new Error("Please use your social login method (Google or Apple)");
+      throw new Error("No password set for this account. Please sign in using your social provider.");
     }
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error("Invalid credentials");
     
@@ -293,7 +296,8 @@ export const handleForgotPassword = async (
         throw new Error("Email is not valid.");
       }
 
-      user = await User.findOne({ email });
+      // Only target email/password accounts for password reset
+      user = await User.findOne({ email, authProvider: "email" });
       if (!user) throw new Error("User not found with this email");
     } else if (verificationMethod === "phone") {
       if (!phoneNumber) {
@@ -435,7 +439,8 @@ export const handleVerifyCode = async (req: Request) => {
     const record = await Member_Awaiting.findOne({ email, code });
     if (!record) throw new Error("You are not a registered member");
 
-    const user = await User.findOne({ email }).lean();
+    // Only consider email-based account for member verification linking
+    const user = await User.findOne({ email, authProvider: "email" }).lean();
     if (!user) throw new Error("User not found for given email");
 
     const gym = await Gym.findOne({ owner: record.createdBy }).lean();
@@ -507,34 +512,21 @@ export const handleGoogleLogin = async (req: Request) => {
     }
 
     // Check if user exists with this Google provider
-    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" });
+    let user = await User.findOne({ authProviderId: googleId, authProvider: "google", role: "athlete" });
 
     if (!user) {
-      // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email });
+      // Create new user with Google (separate from any email accounts)
+      user = await User.create({
+        email,
+        name: name || email.split("@")[0],
+        authProvider: "google",
+        authProviderId: googleId,
+        role: "athlete",
+        profileImage: profileImage || "",
+        adminStatus: "approved",
+      });
 
-      if (user) {
-        // User exists with email provider, link Google account
-        user.authProvider = "google";
-        user.authProviderId = googleId;
-        if (profileImage && !user.profileImage) {
-          user.profileImage = profileImage;
-        }
-        await user.save();
-      } else {
-        // Create new user with Google
-        user = await User.create({
-          email,
-          name: name || email.split("@")[0],
-          authProvider: "google",
-          authProviderId: googleId,
-          role: "athlete",
-          profileImage: profileImage || "",
-          adminStatus: "approved",
-        });
-
-        // Don't create Athlete_User - let it be created via update profile API
-      }
+      // Don't create Athlete_User - let it be created via update profile API
     }
 
     // Generate JWT token
@@ -630,33 +622,23 @@ export const handleAppleLogin = async (req: Request) => {
     }
 
     // Check if user exists with this Apple provider
-    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" });
+    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple", role: "athlete" });
 
     if (!user) {
-      // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email });
+      // Create new user with Apple (separate from any email accounts)
+      const firstName = email.split("@")[0];
+      
+      user = await User.create({
+        email,
+        name: firstName,
+        authProvider: "apple",
+        authProviderId: appleId,
+        role: "athlete",
+        profileImage: "",
+        adminStatus: "approved",
+      });
 
-      if (user) {
-        // User exists with email provider, link Apple account
-        user.authProvider = "apple";
-        user.authProviderId = appleId;
-        await user.save();
-      } else {
-        // Create new user with Apple
-        const firstName = email.split("@")[0];
-        
-        user = await User.create({
-          email,
-          name: firstName,
-          authProvider: "apple",
-          authProviderId: appleId,
-          role: "athlete",
-          profileImage: "",
-          adminStatus: "approved",
-        });
-
-        // Don't create Athlete_User - let it be created via update profile API
-      }
+      // Don't create Athlete_User - let it be created via update profile API
     }
 
     // Generate JWT token
@@ -763,35 +745,22 @@ export const handleGoogleLoginGym = async (req: Request) => {
       throw new Error("Invalid Google ID token");
     }
 
-    // Check if user exists with this Google provider
-    let user = await User.findOne({ authProviderId: googleId, authProvider: "google" });
+    // Check if user exists with this Google provider as gym owner
+    let user = await User.findOne({ authProviderId: googleId, authProvider: "google", role: "gymOwner" });
 
     if (!user) {
-      // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email });
+      // Create new user with Google as gym owner (separate from any email accounts)
+      user = await User.create({
+        email,
+        name: name || email.split("@")[0],
+        authProvider: "google",
+        authProviderId: googleId,
+        role: "gymOwner",
+        profileImage: profileImage || "",
+        adminStatus: "pending",
+      });
 
-      if (user) {
-        // User exists with email provider, link Google account
-        user.authProvider = "google";
-        user.authProviderId = googleId;
-        if (profileImage && !user.profileImage) {
-          user.profileImage = profileImage;
-        }
-        await user.save();
-      } else {
-        // Create new user with Google as gym owner
-        user = await User.create({
-          email,
-          name: name || email.split("@")[0],
-          authProvider: "google",
-          authProviderId: googleId,
-          role: "gymOwner",
-          profileImage: profileImage || "",
-          adminStatus: "pending",
-        });
-
-        // Don't create Gym - let it be created via update profile API
-      }
+      // Don't create Gym - let it be created via update profile API
     }
 
     // Generate JWT token
@@ -869,34 +838,24 @@ export const handleAppleLoginGym = async (req: Request) => {
       throw new Error("Invalid Apple identity token");
     }
 
-    // Check if user exists with this Apple provider
-    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple" });
+    // Check if user exists with this Apple provider as gym owner
+    let user = await User.findOne({ authProviderId: appleId, authProvider: "apple", role: "gymOwner" });
 
     if (!user) {
-      // Check if user exists with this email (from email/password signup)
-      user = await User.findOne({ email });
+      // Create new user with Apple as gym owner (separate from any email accounts)
+      const firstName = email.split("@")[0];
+      
+      user = await User.create({
+        email,
+        name: firstName,
+        authProvider: "apple",
+        authProviderId: appleId,
+        role: "gymOwner",
+        profileImage: "",
+        adminStatus: "pending",
+      });
 
-      if (user) {
-        // User exists with email provider, link Apple account
-        user.authProvider = "apple";
-        user.authProviderId = appleId;
-        await user.save();
-      } else {
-        // Create new user with Apple as gym owner
-        const firstName = email.split("@")[0];
-        
-        user = await User.create({
-          email,
-          name: firstName,
-          authProvider: "apple",
-          authProviderId: appleId,
-          role: "gymOwner",
-          profileImage: "",
-          adminStatus: "pending",
-        });
-
-        // Don't create Gym - let it be created via update profile API
-      }
+      // Don't create Gym - let it be created via update profile API
     }
 
     // Generate JWT token

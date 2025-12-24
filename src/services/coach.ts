@@ -17,12 +17,16 @@ export const createCoach = async (req: AuthenticatedRequest) => {
       profileImage: (req as any).fileUrls?.profile?.[0] || "",
       createdBy: req.user.id, // Set the creator
     };
-    const existingUser = await User.findOne({ email: req.body.email });
+    // Only consider email-password accounts when checking for duplicates
+    const existingUser = await User.findOne({ email: req.body.email, authProvider: "email" });
     if (existingUser) {
       return { message: "User with this email already exists" };
     }
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     data.password = hashedPassword;
+    // Ensure role and authProvider are set correctly for coach
+    data.role = data.role || "coach";
+    data.authProvider = "email";
     const coach = await User.create(data);
     return coach;
   } catch (error) {

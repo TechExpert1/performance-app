@@ -225,7 +225,8 @@ export const addGymMemberProfile = async (req: AuthenticatedRequest) => {
     throw new Error("Email is required");
   }
 
-  const existingUser = await User.findOne({ email });
+  // Check only email/password accounts for conflicts
+  const existingUser = await User.findOne({ email, authProvider: "email" });
   const existingUserAwaiting = await Member_Awaiting.findOne({ email });
   if (existingUser || existingUserAwaiting) {
     throw new Error("User with this email aready exists");
@@ -281,7 +282,8 @@ export const updateAthleteProfile = async (req: AuthenticatedRequest) => {
 
   // Check if email is being updated and if it already exists
   if (email && email !== user.email) {
-    const existingEmail = await User.findOne({ email });
+    // Only check email/password accounts for uniqueness
+    const existingEmail = await User.findOne({ email, authProvider: "email" });
     if (existingEmail) {
       throw new Error("Email already in use");
     }
@@ -460,7 +462,8 @@ export const updateGymOwnerProfile = async (req: AuthenticatedRequest) => {
 
   // Check if email is being updated and if it already exists
   if (email && email !== user.email) {
-    const existingEmail = await User.findOne({ email });
+    // Only check email/password accounts for uniqueness
+    const existingEmail = await User.findOne({ email, authProvider: "email" });
     if (existingEmail) {
       throw new Error("Email already in use");
     }

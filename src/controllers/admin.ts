@@ -497,16 +497,18 @@ export const createSubAdmin = async (req: Request, res: Response) => {
   try {
     const userData = req.body;
 
-    const existingUser = await User.findOne({ email: userData.email });
+    const existingUser = await User.findOne({ email: userData.email, authProvider: "email" });
     if (existingUser) {
       res
         .status(409)
         .json({ message: "Sub Admin with this email already exists" });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     userData.password = hashedPassword;
     userData.role = "salesRep";
+    userData.authProvider = "email";
 
     if (
       req.fileUrls &&
