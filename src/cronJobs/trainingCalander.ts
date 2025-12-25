@@ -28,16 +28,24 @@ cron.schedule("* * * * *", () => {
 
       const clone = new TrainingCalendar({
         user: training.user,
+        coach: training.coach,
         trainingName: training.trainingName,
         sport: training.sport,
         category: training.category,
+        categories: training.categories,
         skill: training.skill,
+        skills: training.skills,
         trainingScope: training.trainingScope,
         date: training.recurrenceEndDate,
+        startTime: training.startTime,
+        finishTime: training.finishTime,
+        gym: training.gym,
         recurrence: training.recurrence,
         recurrenceEndDate: newRecurrenceEndDate,
         recurrenceStatus: "active",
+        classLimit: training.classLimit,
         note: training.note,
+        parentTrainingId: training.parentTrainingId || training._id,
       });
 
       await clone.save();

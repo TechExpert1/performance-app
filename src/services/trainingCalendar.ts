@@ -14,6 +14,74 @@ import Notification from "../models/Notification.js";
 // import { sendPushNotification } from "../config/firebase.js";
 dayjs.extend(isoWeek);
 
+/**
+ * Helper function to generate virtual recurring instances for a training
+ * @param training The training document to generate instances for
+ * @param startDate Start of the date range to generate instances for
+ * @param endDate End of the date range to generate instances for
+ * @returns Array of virtual training instances
+ */
+const generateRecurringInstances = (
+  training: any,
+  startDate: Date,
+  endDate: Date
+): any[] => {
+  const instances: any[] = [];
+
+  if (!training.recurrence || training.recurrenceStatus !== "active") {
+    return instances;
+  }
+
+  const trainingDate = dayjs(training.date);
+  const rangeStart = dayjs(startDate);
+  const rangeEnd = dayjs(endDate);
+
+  // Calculate the interval based on recurrence type
+  const intervalDays = training.recurrence === "weekly" ? 7 : 0;
+  const intervalMonths = training.recurrence === "monthly" ? 1 : 0;
+
+  // Start from the next occurrence after the original date
+  let currentDate = trainingDate;
+  if (intervalDays > 0) {
+    currentDate = currentDate.add(intervalDays, "day");
+  } else if (intervalMonths > 0) {
+    currentDate = currentDate.add(intervalMonths, "month");
+  }
+
+  // Generate instances within the date range (max 52 to prevent infinite loops)
+  let maxIterations = 52;
+  while (currentDate.isBefore(rangeEnd) && maxIterations > 0) {
+    maxIterations--;
+
+    // Check if this date falls within our range
+    if (currentDate.isAfter(rangeStart) || currentDate.isSame(rangeStart, "day")) {
+      // Create a virtual instance
+      const trainingObj = training.toObject ? training.toObject() : { ...training };
+      const virtualInstance = {
+        ...trainingObj,
+        _id: `recur_${training._id}_${currentDate.format("YYYY-MM-DD")}`,
+        parentTrainingId: training._id,
+        isRecurringInstance: true,
+        date: currentDate.toDate(),
+        // Keep original times but with new date
+        createdAt: training.createdAt,
+        updatedAt: training.updatedAt,
+      };
+
+      instances.push(virtualInstance);
+    }
+
+    // Move to next occurrence
+    if (intervalDays > 0) {
+      currentDate = currentDate.add(intervalDays, "day");
+    } else if (intervalMonths > 0) {
+      currentDate = currentDate.add(intervalMonths, "month");
+    }
+  }
+
+  return instances;
+};
+
 export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
   if (!req.user) {
     throw new Error("User not authenticated");
@@ -36,13 +104,17 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     data.recurrenceStatus = "in-active";
   }
 
-  // Set recurrence end date if recurrence is specified
+  // Set recurrence end date and status if recurrence is specified
   if (data.recurrence && data.date) {
     const baseDate = dayjs(data.date);
     if (data.recurrence === "weekly") {
       data.recurrenceEndDate = baseDate.add(7, "day").toDate();
     } else if (data.recurrence === "monthly") {
       data.recurrenceEndDate = baseDate.add(1, "month").toDate();
+    }
+    // Set recurrence status to active when recurrence is specified
+    if (!data.recurrenceStatus || data.recurrenceStatus === "in-active") {
+      data.recurrenceStatus = "active";
     }
   }
 
@@ -71,9 +143,8 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     Array.isArray(attendees) &&
     attendees.length > 0
   ) {
-    const message = `Your training has been scheduled by ${
-      req?.user.name || "gym Owner"
-    }.`;
+    const message = `Your training has been scheduled by ${req?.user.name || "gym Owner"
+      }.`;
 
     const notificationTasks = attendees.map(async (userId: string) => {
       const notification = {
@@ -145,6 +216,27 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
     updateData.recurrenceStatus = "in-active";
   }
 
+  // Fetch current training to get the date if not provided in update
+  const existingTraining = await TrainingCalendar.findById(id);
+  if (!existingTraining) return { message: "Training calendar not found" };
+
+  // Handle recurrence changes - calculate recurrenceEndDate if recurrence is being set/changed
+  if (updateData.recurrence) {
+    const dateToUse = updateData.date || existingTraining.date;
+    if (dateToUse) {
+      const baseDate = dayjs(dateToUse);
+      if (updateData.recurrence === "weekly") {
+        updateData.recurrenceEndDate = baseDate.add(7, "day").toDate();
+      } else if (updateData.recurrence === "monthly") {
+        updateData.recurrenceEndDate = baseDate.add(1, "month").toDate();
+      }
+      // Set recurrence status to active when recurrence is specified
+      if (!updateData.recurrenceStatus || updateData.recurrenceStatus === "in-active") {
+        updateData.recurrenceStatus = "active";
+      }
+    }
+  }
+
   // Update the training calendar
   const updated = await TrainingCalendar.findByIdAndUpdate(id, updateData, {
     new: true,
@@ -174,9 +266,8 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
         updated.trainingScope === "gym"
       ) {
         const user = await User.findById(req.user?.id);
-        const message = `Your training has been updated by ${
-          user?.name || "gym Owner"
-        }.`;
+        const message = `Your training has been updated by ${user?.name || "gym Owner"
+          }.`;
 
         const notificationTasks = attendees.map(async (userId: string) => {
           const notification = {
@@ -342,11 +433,11 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
     );
 
     // Step 5: Fetch full training documents
-  const allTrainings = await TrainingCalendar.find({
-    _id: { $in: attendedTrainingIds },
-  })
-    .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
-    .sort(sortOption);    // Step 6: Group by current month
+    const allTrainings = await TrainingCalendar.find({
+      _id: { $in: attendedTrainingIds },
+    })
+      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
+      .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
     for (let i = 1; i <= daysInMonth; i++) {
@@ -478,7 +569,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
       }).select("training");
 
       const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
-      
+
       console.log("Attendee training IDs count:", attendeeTrainingIds.length);
 
       // Build the $or condition separately
@@ -501,7 +592,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
         // No other conditions, just use $or
         query.$or = orConditions;
       }
-      
+
       console.log("Athlete/Coach query:", JSON.stringify(query, null, 2));
     }
   }
@@ -528,6 +619,58 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   }
 
   const allData = await dataQuery;
+
+  // Generate virtual recurring instances if we have a date range
+  if (startDate && endDate) {
+    // Find all active recurring trainings that could have instances in this date range
+    // These trainings might have their original date before the startDate
+    const recurringQuery: Record<string, any> = {
+      recurrence: { $in: ["weekly", "monthly"] },
+      recurrenceStatus: "active",
+    };
+
+    // Apply the same user-based filtering for recurring trainings
+    if (userId) {
+      const userDoc = await User.findById(userId).select("role");
+      const userRole = userDoc?.role;
+
+      if (userRole === "gymOwner") {
+        recurringQuery.user = userId;
+      } else {
+        const userTrainingMembers = await Training_Member.find({
+          user: userId,
+        }).select("training");
+        const attendeeTrainingIds = userTrainingMembers.map((tm) => tm.training);
+        recurringQuery.$or = [
+          { user: userId },
+          { _id: { $in: attendeeTrainingIds } },
+        ];
+      }
+    }
+
+    const recurringTrainings = await TrainingCalendar.find(recurringQuery)
+      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"]);
+
+    const allRecurringInstances: any[] = [];
+
+    for (const training of recurringTrainings) {
+      const instances = generateRecurringInstances(training, startDate, endDate);
+      allRecurringInstances.push(...instances);
+    }
+
+    // Merge original data with recurring instances and sort by date
+    const mergedData = [...allData, ...allRecurringInstances].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+
+    return {
+      message: "All training calendars fetched",
+      data: mergedData,
+    };
+  }
+
   return {
     message: "All training calendars fetched",
     data: allData,

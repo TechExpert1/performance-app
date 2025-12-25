@@ -20,6 +20,9 @@ export interface ITrainingCalendar {
   recurrenceStatus?: string;
   classLimit?: Number; // Maximum number of attendees (optional, null = unlimited)
   note?: string;
+  parentTrainingId?: Types.ObjectId; // Reference to original training for recurring instances
+  isRecurringInstance?: boolean; // True for virtual recurring instances
   createdAt?: Date;
   updatedAt?: Date;
 }
+
