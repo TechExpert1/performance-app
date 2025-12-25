@@ -57,9 +57,9 @@ export const handleSignup = async (req: AuthenticatedRequest) => {
     }
 
     // Check if user already exists with email provider
-    const existingUser = await User.findOne({ 
+    const existingUser = await User.findOne({
       email: userData.email,
-      authProvider: "email" 
+      authProvider: "email"
     }).session(session);
     if (existingUser) {
       throw new Error("User with this email already exists");
@@ -217,11 +217,11 @@ export const handleLogin = async (req: Request) => {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new Error("Invalid credentials");
-    
+
     // Track first time login status for gym owners
     const isFirstTimeLogin = user.role === "gymOwner" && user.firstTimeLogin === true;
     console.log(`Login: role=${user.role}, adminStatus=${user.adminStatus}, firstTimeLogin=${user.firstTimeLogin}, isFirstTimeLogin=${isFirstTimeLogin}`);
-    
+
     const token = jwt.sign(
       {
         id: user._id,
@@ -232,12 +232,12 @@ export const handleLogin = async (req: Request) => {
       process.env.JWT_SECRET as string
     );
     user.token = token;
-    
+
     // Set firstTimeLogin to false after first login for gym owners
     if (isFirstTimeLogin) {
       user.firstTimeLogin = false;
     }
-    
+
     await user.save();
     let gym = null;
     let athleteDetails = null;
@@ -408,7 +408,7 @@ export const sendResetOTPSMS = async (
 ): Promise<void> => {
   try {
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-    
+
     if (!twilioPhoneNumber) {
       throw new Error("Twilio phone number is not configured");
     }
@@ -478,13 +478,13 @@ export const handleGoogleLogin = async (req: Request) => {
 
     // Verify the Google ID token
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    
+
     if (!googleClientId) {
       throw new Error("Google authentication is not configured");
     }
 
     const client = new OAuth2Client(googleClientId);
-    
+
     let email: string;
     let googleId: string;
     let name: string | undefined;
@@ -497,7 +497,7 @@ export const handleGoogleLogin = async (req: Request) => {
       });
 
       const payload = ticket.getPayload();
-      
+
       if (!payload || !payload.email) {
         throw new Error("Invalid token payload");
       }
@@ -515,6 +515,18 @@ export const handleGoogleLogin = async (req: Request) => {
     let user = await User.findOne({ authProviderId: googleId, authProvider: "google", role: "athlete" });
 
     if (!user) {
+      // Check if email is already used by another account (different role or auth provider)
+      const existingUserWithEmail = await User.findOne({ email });
+
+      if (existingUserWithEmail) {
+        // If the user exists as a gym owner with the same Google ID, inform them
+        if (existingUserWithEmail.authProviderId === googleId && existingUserWithEmail.role === "gymOwner") {
+          throw new Error("This Google account is already registered as a gym owner. Please use a different account for athlete registration.");
+        }
+        // If the email exists with a different auth provider or different Google account
+        throw new Error("An account with this email already exists. Please use a different email or sign in with your existing account.");
+      }
+
       // Create new user with Google (separate from any email accounts)
       user = await User.create({
         email,
@@ -545,7 +557,7 @@ export const handleGoogleLogin = async (req: Request) => {
 
     // Populate user with gym and friends like normal login
     const populatedUser = await User.findById(user._id).populate("gym friends");
-    
+
     if (!populatedUser) {
       throw new Error("User not found after save");
     }
@@ -563,7 +575,7 @@ export const handleGoogleLogin = async (req: Request) => {
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
-      
+
       // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
@@ -601,11 +613,11 @@ export const handleAppleLogin = async (req: Request) => {
     // Decode Apple JWT token (Apple tokens are standard JWTs)
     let email: string;
     let appleId: string;
-    
+
     try {
       // Decode without verification for now (Apple's public keys need to be fetched for full verification)
       const decoded = jwt.decode(token) as any;
-      
+
       if (!decoded || !decoded.sub) {
         throw new Error("Invalid token payload");
       }
@@ -625,9 +637,21 @@ export const handleAppleLogin = async (req: Request) => {
     let user = await User.findOne({ authProviderId: appleId, authProvider: "apple", role: "athlete" });
 
     if (!user) {
+      // Check if email is already used by another account (different role or auth provider)
+      const existingUserWithEmail = await User.findOne({ email });
+
+      if (existingUserWithEmail) {
+        // If the user exists as a gym owner with the same Apple ID, inform them
+        if (existingUserWithEmail.authProviderId === appleId && existingUserWithEmail.role === "gymOwner") {
+          throw new Error("This Apple account is already registered as a gym owner. Please use a different account for athlete registration.");
+        }
+        // If the email exists with a different auth provider or different Apple account
+        throw new Error("An account with this email already exists. Please use a different email or sign in with your existing account.");
+      }
+
       // Create new user with Apple (separate from any email accounts)
       const firstName = email.split("@")[0];
-      
+
       user = await User.create({
         email,
         name: firstName,
@@ -657,7 +681,7 @@ export const handleAppleLogin = async (req: Request) => {
 
     // Populate user with gym and friends like normal login
     const populatedUser = await User.findById(user._id).populate("gym friends");
-    
+
     if (!populatedUser) {
       throw new Error("User not found after save");
     }
@@ -675,7 +699,7 @@ export const handleAppleLogin = async (req: Request) => {
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
-      
+
       // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
         .populate("sportsAndSkillLevels.sport", "name")
@@ -712,13 +736,13 @@ export const handleGoogleLoginGym = async (req: Request) => {
 
     // Verify the Google ID token
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
-    
+
     if (!googleClientId) {
       throw new Error("Google authentication is not configured");
     }
 
     const client = new OAuth2Client(googleClientId);
-    
+
     let email: string;
     let googleId: string;
     let name: string | undefined;
@@ -731,7 +755,7 @@ export const handleGoogleLoginGym = async (req: Request) => {
       });
 
       const payload = ticket.getPayload();
-      
+
       if (!payload || !payload.email) {
         throw new Error("Invalid token payload");
       }
@@ -749,6 +773,18 @@ export const handleGoogleLoginGym = async (req: Request) => {
     let user = await User.findOne({ authProviderId: googleId, authProvider: "google", role: "gymOwner" });
 
     if (!user) {
+      // Check if email is already used by another account (different role or auth provider)
+      const existingUserWithEmail = await User.findOne({ email });
+
+      if (existingUserWithEmail) {
+        // If the user exists as an athlete with the same Google ID, inform them
+        if (existingUserWithEmail.authProviderId === googleId && existingUserWithEmail.role === "athlete") {
+          throw new Error("This Google account is already registered as an athlete. Please use a different account for gym owner registration.");
+        }
+        // If the email exists with a different auth provider or different Google account
+        throw new Error("An account with this email already exists. Please use a different email or sign in with your existing account.");
+      }
+
       // Create new user with Google as gym owner (separate from any email accounts)
       user = await User.create({
         email,
@@ -779,7 +815,7 @@ export const handleGoogleLoginGym = async (req: Request) => {
 
     // Populate user with gym and friends like normal login
     const populatedUser = await User.findById(user._id).populate("gym friends");
-    
+
     if (!populatedUser) {
       throw new Error("User not found after save");
     }
@@ -818,11 +854,11 @@ export const handleAppleLoginGym = async (req: Request) => {
     // Decode Apple JWT token (Apple tokens are standard JWTs)
     let email: string;
     let appleId: string;
-    
+
     try {
       // Decode without verification for now (Apple's public keys need to be fetched for full verification)
       const decoded = jwt.decode(token) as any;
-      
+
       if (!decoded || !decoded.sub) {
         throw new Error("Invalid token payload");
       }
@@ -842,9 +878,21 @@ export const handleAppleLoginGym = async (req: Request) => {
     let user = await User.findOne({ authProviderId: appleId, authProvider: "apple", role: "gymOwner" });
 
     if (!user) {
+      // Check if email is already used by another account (different role or auth provider)
+      const existingUserWithEmail = await User.findOne({ email });
+
+      if (existingUserWithEmail) {
+        // If the user exists as an athlete with the same Apple ID, inform them
+        if (existingUserWithEmail.authProviderId === appleId && existingUserWithEmail.role === "athlete") {
+          throw new Error("This Apple account is already registered as an athlete. Please use a different account for gym owner registration.");
+        }
+        // If the email exists with a different auth provider or different Apple account
+        throw new Error("An account with this email already exists. Please use a different email or sign in with your existing account.");
+      }
+
       // Create new user with Apple as gym owner (separate from any email accounts)
       const firstName = email.split("@")[0];
-      
+
       user = await User.create({
         email,
         name: firstName,
@@ -874,7 +922,7 @@ export const handleAppleLoginGym = async (req: Request) => {
 
     // Populate user with gym and friends like normal login
     const populatedUser = await User.findById(user._id).populate("gym friends");
-    
+
     if (!populatedUser) {
       throw new Error("User not found after save");
     }
@@ -923,10 +971,10 @@ export const handleDeleteAccount = async (req: AuthenticatedRequest) => {
     if (user.role === "athlete") {
       // Delete athlete profile
       await Athlete_User.deleteOne({ userId: userId }).session(session);
-      
+
       // Delete gym memberships
       await Gym_Member.deleteMany({ user: userId }).session(session);
-      
+
       // Remove from member awaiting lists
       await Member_Awaiting.deleteMany({ email: user.email }).session(session);
     }
@@ -934,7 +982,7 @@ export const handleDeleteAccount = async (req: AuthenticatedRequest) => {
     if (user.role === "gymOwner") {
       // Delete owned gyms
       await Gym.deleteMany({ owner: userId }).session(session);
-      
+
       // Delete gym memberships for this gym
       const gyms = await Gym.find({ owner: userId }).session(session);
       const gymIds = gyms.map(g => g._id);
