@@ -35,6 +35,7 @@ import UserPerformanceExerciseRoutes from "./routes/userPerformanceExercise.js";
 import journalRoutes from "./routes/journal.js";
 import feedbackRequestRoutes from "./routes/feedbackRequest.js";
 import badgeRoutes from "./routes/badge.js";
+import customCategorySkillRoutes from "./routes/customCategorySkill.js";
 import { registerSocketHandlers } from "./webSocket/socket.js";
 import "./models/index.js";
 // import "./cronJobs/trainingCalander.js";
@@ -98,6 +99,7 @@ app.use("/chats", chatRoutes);
 app.use("/journals", journalRoutes);
 app.use("/feedback-requests", feedbackRequestRoutes);
 app.use("/badges", badgeRoutes);
+app.use("/custom", customCategorySkillRoutes);
 
 
 // Global error handler middleware (must be after all routes)
