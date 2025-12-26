@@ -248,12 +248,14 @@ export const handleLogin = async (req: Request) => {
         .lean();
     }
 
+    let isPartOfGym = false;
     if (user.role === "athlete") {
       const gymMember = await Gym_Member.findOne({
         user: user._id,
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
+      isPartOfGym = !!gymMember;
       athleteDetails = await Athlete_User.findOne({ userId: user._id })
         .populate("sportsAndSkillLevels.sport", "name")
         .populate("sportsAndSkillLevels.skillSetLevel", "level")
@@ -265,6 +267,7 @@ export const handleLogin = async (req: Request) => {
       token,
       gym: gym || null,
       ...(athleteDetails && { athlete_details: athleteDetails }),
+      ...(user.role === "athlete" && { isPartOfGym }),
       ...(user.role === "gymOwner" && user.adminStatus === "approved" && { firstTimeLogin: isFirstTimeLogin }),
     };
   } catch (error) {
@@ -569,12 +572,14 @@ export const handleGoogleLogin = async (req: Request) => {
       gym = await Gym.findOne({ owner: populatedUser._id }).lean();
     }
 
+    let isPartOfGym = false;
     if (populatedUser.role === "athlete") {
       const gymMember = await Gym_Member.findOne({
         user: populatedUser._id,
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
+      isPartOfGym = !!gymMember;
 
       // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
@@ -590,9 +595,10 @@ export const handleGoogleLogin = async (req: Request) => {
       gym: gym || null,
     };
 
-    // Always include athlete_details if user is athlete
+    // Always include athlete_details and isPartOfGym if user is athlete
     if (populatedUser.role === "athlete") {
       response.athlete_details = athleteDetails;
+      response.isPartOfGym = isPartOfGym;
     }
 
     return response;
@@ -693,12 +699,14 @@ export const handleAppleLogin = async (req: Request) => {
       gym = await Gym.findOne({ owner: populatedUser._id }).lean();
     }
 
+    let isPartOfGym = false;
     if (populatedUser.role === "athlete") {
       const gymMember = await Gym_Member.findOne({
         user: populatedUser._id,
         status: "active",
       }).lean();
       gym = gymMember ? { _id: gymMember.gym } : null;
+      isPartOfGym = !!gymMember;
 
       // Always fetch athlete details for athletes
       athleteDetails = await Athlete_User.findOne({ userId: populatedUser._id })
@@ -714,9 +722,10 @@ export const handleAppleLogin = async (req: Request) => {
       gym: gym || null,
     };
 
-    // Always include athlete_details if user is athlete
+    // Always include athlete_details and isPartOfGym if user is athlete
     if (populatedUser.role === "athlete") {
       response.athlete_details = athleteDetails;
+      response.isPartOfGym = isPartOfGym;
     }
 
     return response;
