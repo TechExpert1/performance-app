@@ -318,6 +318,51 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
 export const getTrainingCalendarById = async (req: Request) => {
   const { id } = req.params;
 
+  // Check if this is a virtual recurring instance ID (format: recur_<parentId>_<date>)
+  if (id.startsWith("recur_")) {
+    const parts = id.split("_");
+    if (parts.length >= 3) {
+      const parentId = parts[1];
+      const dateStr = parts.slice(2).join("_"); // Handle date format YYYY-MM-DD
+
+      // Fetch the parent training
+      const parentTraining = await TrainingCalendar.findById(parentId).populate([
+        "user",
+        "coach",
+        "sport",
+        "category",
+        "categories",
+        "skill",
+        "skills",
+        "gym",
+      ]);
+
+      if (!parentTraining) {
+        return { message: "Training calendar not found" };
+      }
+
+      // Get attendees from parent training (since virtual instances share attendees with parent)
+      const attendees = await Training_Member.find({
+        training: parentId,
+      }).populate("user");
+
+      const validAttendees = attendees.filter(a => a.user !== null);
+
+      // Create virtual instance with the specific date
+      const virtualInstance = {
+        ...parentTraining.toObject(),
+        _id: id,
+        parentTrainingId: parentTraining._id,
+        isRecurringInstance: true,
+        date: new Date(dateStr),
+        attendees: validAttendees,
+      };
+
+      return virtualInstance;
+    }
+  }
+
+  // Regular training - fetch by ID
   const entry = await TrainingCalendar.findById(id).populate([
     "user",
     "coach",
