@@ -140,6 +140,11 @@ export const sportCategoryController = {
         (s: any) => new mongoose.Types.ObjectId(s.sport)
       ) || [];
 
+      // Get user's gym membership to find gym-created custom categories/skills
+      const GymMember = mongoose.model("Gym_Member");
+      const gymMembership = await GymMember.findOne({ user: userId, status: "active" });
+      const userGymId = gymMembership?.gym;
+
       // Aggregate system categories and skills
       const sportsWithSystemCategories = await Sport.aggregate([
         // Only include sports that user selected during signup
@@ -218,40 +223,60 @@ export const sportCategoryController = {
         },
       ]);
 
-      // Get custom user categories for user's sports
-      const customCategories = await UserSportCategory.aggregate([
-        {
-          $match: {
-            user: userId,
-            sport: { $in: userSportIds }
-          }
-        },
-        {
-          $lookup: {
-            from: "user_sport_category_skills",
-            localField: "_id",
-            foreignField: "category",
-            as: "skills",
-          },
-        },
-        // Add isCustom: true to custom skills
-        {
-          $addFields: {
-            skills: {
-              $map: {
-                input: "$skills",
-                as: "skill",
-                in: { $mergeObjects: ["$$skill", { isCustom: true }] }
-              }
-            },
-            isCustom: true
-          }
-        },
-      ]);
+      // Get custom categories from Custom_Category model
+      // Include categories created by the user OR by their gym
+      const CustomCategory = mongoose.model("Custom_Category");
+      const CustomSkill = mongoose.model("Custom_Skill");
+
+      const customCategoryQuery: any = {
+        sport: { $in: userSportIds },
+        $or: [
+          { createdBy: userId }
+        ]
+      };
+
+      // Add gym condition if user is a gym member
+      if (userGymId) {
+        customCategoryQuery.$or.push({ gym: userGymId });
+      }
+
+      const customCategories = await CustomCategory.find(customCategoryQuery).lean();
+
+      // Get custom skills for these categories
+      const customCategoryIds = customCategories.map((cat: any) => cat._id);
+      const customSkillQuery: any = {
+        category: { $in: customCategoryIds },
+        $or: [
+          { createdBy: userId }
+        ]
+      };
+
+      if (userGymId) {
+        customSkillQuery.$or.push({ gym: userGymId });
+      }
+
+      const customSkills = await CustomSkill.find(customSkillQuery).lean();
+
+      // Group skills by category and add isCustom flag
+      const skillsByCategoryId: Record<string, any[]> = {};
+      for (const skill of customSkills) {
+        const catId = skill.category.toString();
+        if (!skillsByCategoryId[catId]) {
+          skillsByCategoryId[catId] = [];
+        }
+        skillsByCategoryId[catId].push({ ...skill, isCustom: true });
+      }
+
+      // Build custom categories with skills and isCustom flag
+      const customCategoriesWithSkills = customCategories.map((cat: any) => ({
+        ...cat,
+        isCustom: true,
+        skills: skillsByCategoryId[cat._id.toString()] || []
+      }));
 
       // Build a map of custom categories by sport
       const customCategoriesBySport: Record<string, any[]> = {};
-      for (const cat of customCategories) {
+      for (const cat of customCategoriesWithSkills) {
         const sportId = cat.sport.toString();
         if (!customCategoriesBySport[sportId]) {
           customCategoriesBySport[sportId] = [];

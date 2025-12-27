@@ -105,6 +105,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
   // Get the authenticated user's selected sports from Athlete_User
   const userId = (req as any).user?.id;
   let sportIds: mongoose.Types.ObjectId[] = [];
+  let userGymId: mongoose.Types.ObjectId | null = null;
 
   if (userId) {
     const athleteUser = await Athlete_User.findOne({ userId }).select("sportsAndSkillLevels");
@@ -113,6 +114,11 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         (s: any) => new mongoose.Types.ObjectId(s.sport)
       );
     }
+
+    // Get user's gym membership
+    const GymMember = mongoose.model("Gym_Member");
+    const gymMembership = await GymMember.findOne({ user: userId, status: "active" });
+    userGymId = gymMembership?.gym || null;
   }
 
   // Build the aggregation pipeline
@@ -147,6 +153,19 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
         as: "categories.skills",
       },
     },
+    // Add isCustom: false to system categories and skills
+    {
+      $addFields: {
+        "categories.isCustom": false,
+        "categories.skills": {
+          $map: {
+            input: "$categories.skills",
+            as: "skill",
+            in: { $mergeObjects: ["$$skill", { isCustom: false }] }
+          }
+        }
+      }
+    },
     {
       $group: {
         _id: "$_id",
@@ -172,7 +191,7 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
           $filter: {
             input: "$categories",
             as: "cat",
-            cond: { $ne: ["$$cat", null] },
+            cond: { $and: [{ $ne: ["$$cat", null] }, { $ne: ["$$cat._id", null] }] },
           },
         },
       },
@@ -182,8 +201,84 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
     }
   );
 
-  const result = await Sport.aggregate(pipeline);
-  return result;
+  const sportsWithSystemCategories = await Sport.aggregate(pipeline);
+
+  // If user is authenticated, include custom categories/skills
+  if (userId) {
+    const CustomCategory = mongoose.model("Custom_Category");
+    const CustomSkill = mongoose.model("Custom_Skill");
+
+    // Build query for custom categories (created by user or their gym)
+    const customCategoryQuery: any = {
+      $or: [{ createdBy: new mongoose.Types.ObjectId(userId) }]
+    };
+
+    // Filter by user's sports if they have selected any
+    if (sportIds.length > 0) {
+      customCategoryQuery.sport = { $in: sportIds };
+    }
+
+    // Include gym-created categories if user is a gym member
+    if (userGymId) {
+      customCategoryQuery.$or.push({ gym: userGymId });
+    }
+
+    const customCategories = await CustomCategory.find(customCategoryQuery).lean();
+
+    // Get custom skills for these categories
+    const customCategoryIds = customCategories.map((cat: any) => cat._id);
+    const customSkillQuery: any = {
+      category: { $in: customCategoryIds },
+      $or: [{ createdBy: new mongoose.Types.ObjectId(userId) }]
+    };
+
+    if (userGymId) {
+      customSkillQuery.$or.push({ gym: userGymId });
+    }
+
+    const customSkills = await CustomSkill.find(customSkillQuery).lean();
+
+    // Group skills by category
+    const skillsByCategoryId: Record<string, any[]> = {};
+    for (const skill of customSkills) {
+      const catId = skill.category.toString();
+      if (!skillsByCategoryId[catId]) {
+        skillsByCategoryId[catId] = [];
+      }
+      skillsByCategoryId[catId].push({ ...skill, isCustom: true });
+    }
+
+    // Build custom categories with skills
+    const customCategoriesWithSkills = customCategories.map((cat: any) => ({
+      ...cat,
+      isCustom: true,
+      skills: skillsByCategoryId[cat._id.toString()] || []
+    }));
+
+    // Group custom categories by sport
+    const customCategoriesBySport: Record<string, any[]> = {};
+    for (const cat of customCategoriesWithSkills) {
+      const sportId = cat.sport.toString();
+      if (!customCategoriesBySport[sportId]) {
+        customCategoriesBySport[sportId] = [];
+      }
+      customCategoriesBySport[sportId].push(cat);
+    }
+
+    // Merge custom categories into each sport
+    const result = sportsWithSystemCategories.map((sport: any) => {
+      const sportId = sport._id.toString();
+      const customCats = customCategoriesBySport[sportId] || [];
+      return {
+        ...sport,
+        categories: [...(sport.categories || []), ...customCats],
+      };
+    });
+
+    return result;
+  }
+
+  return sportsWithSystemCategories;
 };
 
 // Get all sports with optional filters, pagination, and sorting
