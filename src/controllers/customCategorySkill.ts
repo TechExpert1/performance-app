@@ -5,6 +5,8 @@ import {
     addCustomSkill,
     getCustomCategories,
     getCustomSkills,
+    updateCustomCategory,
+    updateCustomSkill,
     deleteCustomCategory,
     deleteCustomSkill,
 } from "../services/customCategorySkill.js";
@@ -62,6 +64,36 @@ export const customCategorySkillController = {
     getSkills: async (req: AuthenticatedRequest, res: Response) => {
         try {
             const result = await getCustomSkills(req);
+            res.status(200).json(result);
+        } catch (err) {
+            res
+                .status(422)
+                .json({ error: err instanceof Error ? err.message : "Unknown error" });
+        }
+    },
+
+    /**
+     * PATCH /custom/categories/:id
+     * Body: { categoryName: string }
+     */
+    updateCategory: async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const result = await updateCustomCategory(req);
+            res.status(200).json(result);
+        } catch (err) {
+            res
+                .status(422)
+                .json({ error: err instanceof Error ? err.message : "Unknown error" });
+        }
+    },
+
+    /**
+     * PATCH /custom/skills/:id
+     * Body: { skillName: string }
+     */
+    updateSkill: async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const result = await updateCustomSkill(req);
             res.status(200).json(result);
         } catch (err) {
             res

@@ -200,6 +200,70 @@ export const getCustomSkills = async (
 };
 
 /**
+ * Update a custom category (only by creator)
+ */
+export const updateCustomCategory = async (
+    req: AuthenticatedRequest
+): Promise<ServiceResponse<CustomCategoryDocument>> => {
+    const { id } = req.params;
+    const { categoryName } = req.body;
+    const userId = req.user!.id;
+
+    if (!categoryName) {
+        throw new Error("categoryName is required");
+    }
+
+    const category = await CustomCategory.findOne({
+        _id: id,
+        createdBy: userId,
+    });
+
+    if (!category) {
+        throw new Error("Category not found or you don't have permission to update it");
+    }
+
+    category.name = categoryName;
+    await category.save();
+
+    return {
+        message: "Custom category updated successfully",
+        category,
+    };
+};
+
+/**
+ * Update a custom skill (only by creator)
+ */
+export const updateCustomSkill = async (
+    req: AuthenticatedRequest
+): Promise<ServiceResponse<CustomSkillDocument>> => {
+    const { id } = req.params;
+    const { skillName } = req.body;
+    const userId = req.user!.id;
+
+    if (!skillName) {
+        throw new Error("skillName is required");
+    }
+
+    const skill = await CustomSkill.findOne({
+        _id: id,
+        createdBy: userId,
+    });
+
+    if (!skill) {
+        throw new Error("Skill not found or you don't have permission to update it");
+    }
+
+    skill.name = skillName;
+    await skill.save();
+
+    return {
+        message: "Custom skill updated successfully",
+        skill,
+    };
+};
+
+/**
  * Delete a custom category (only by creator)
  */
 export const deleteCustomCategory = async (
