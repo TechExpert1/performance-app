@@ -140,7 +140,8 @@ export const sportCategoryController = {
         (s: any) => new mongoose.Types.ObjectId(s.sport)
       ) || [];
 
-      const sports = await Sport.aggregate([
+      // Aggregate system categories and skills
+      const sportsWithSystemCategories = await Sport.aggregate([
         // Only include sports that user selected during signup
         {
           $match: {
@@ -152,22 +153,35 @@ export const sportCategoryController = {
             from: "sport_categories",
             localField: "_id",
             foreignField: "sport",
-            as: "categories",
+            as: "systemCategories",
           },
         },
         {
           $unwind: {
-            path: "$categories",
+            path: "$systemCategories",
             preserveNullAndEmptyArrays: true,
           },
         },
         {
           $lookup: {
             from: "sport_category_skills",
-            localField: "categories._id",
+            localField: "systemCategories._id",
             foreignField: "category",
-            as: "categories.skills",
+            as: "systemCategories.skills",
           },
+        },
+        // Add isCustom: false to system skills
+        {
+          $addFields: {
+            "systemCategories.skills": {
+              $map: {
+                input: "$systemCategories.skills",
+                as: "skill",
+                in: { $mergeObjects: ["$$skill", { isCustom: false }] }
+              }
+            },
+            "systemCategories.isCustom": false
+          }
         },
         {
           $group: {
@@ -178,7 +192,7 @@ export const sportCategoryController = {
             image: { $first: "$image" },
             createdAt: { $first: "$createdAt" },
             updatedAt: { $first: "$updatedAt" },
-            categories: { $push: "$categories" },
+            systemCategories: { $push: "$systemCategories" },
           },
         },
         {
@@ -190,11 +204,11 @@ export const sportCategoryController = {
             skillLevelSet: 1,
             createdAt: 1,
             updatedAt: 1,
-            categories: {
+            systemCategories: {
               $filter: {
-                input: "$categories",
+                input: "$systemCategories",
                 as: "cat",
-                cond: { $ne: ["$$cat", null] },
+                cond: { $and: [{ $ne: ["$$cat", null] }, { $ne: ["$$cat._id", null] }] },
               },
             },
           },
@@ -204,7 +218,62 @@ export const sportCategoryController = {
         },
       ]);
 
-      res.status(200).json(sports);
+      // Get custom user categories for user's sports
+      const customCategories = await UserSportCategory.aggregate([
+        {
+          $match: {
+            user: userId,
+            sport: { $in: userSportIds }
+          }
+        },
+        {
+          $lookup: {
+            from: "user_sport_category_skills",
+            localField: "_id",
+            foreignField: "category",
+            as: "skills",
+          },
+        },
+        // Add isCustom: true to custom skills
+        {
+          $addFields: {
+            skills: {
+              $map: {
+                input: "$skills",
+                as: "skill",
+                in: { $mergeObjects: ["$$skill", { isCustom: true }] }
+              }
+            },
+            isCustom: true
+          }
+        },
+      ]);
+
+      // Build a map of custom categories by sport
+      const customCategoriesBySport: Record<string, any[]> = {};
+      for (const cat of customCategories) {
+        const sportId = cat.sport.toString();
+        if (!customCategoriesBySport[sportId]) {
+          customCategoriesBySport[sportId] = [];
+        }
+        customCategoriesBySport[sportId].push(cat);
+      }
+
+      // Merge system and custom categories for each sport
+      const result = sportsWithSystemCategories.map((sport) => {
+        const sportId = sport._id.toString();
+        const customCats = customCategoriesBySport[sportId] || [];
+        return {
+          ...sport,
+          categories: [...(sport.systemCategories || []), ...customCats],
+          systemCategories: undefined, // Remove the temporary field
+        };
+      });
+
+      // Clean up the response
+      const cleanResult = result.map(({ systemCategories, ...rest }) => rest);
+
+      res.status(200).json(cleanResult);
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err });
     }
