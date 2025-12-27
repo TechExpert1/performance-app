@@ -225,10 +225,8 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
 
     const customCategories = await CustomCategory.find(customCategoryQuery).lean();
 
-    // Get custom skills for these categories
-    const customCategoryIds = customCategories.map((cat: any) => cat._id);
+    // Get ALL custom skills visible to user (they can belong to system OR custom categories)
     const customSkillQuery: any = {
-      category: { $in: customCategoryIds },
       $or: [{ createdBy: new mongoose.Types.ObjectId(userId) }]
     };
 
@@ -236,23 +234,23 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
       customSkillQuery.$or.push({ gym: userGymId });
     }
 
-    const customSkills = await CustomSkill.find(customSkillQuery).lean();
+    const allCustomSkills = await CustomSkill.find(customSkillQuery).lean();
 
-    // Group skills by category
-    const skillsByCategoryId: Record<string, any[]> = {};
-    for (const skill of customSkills) {
+    // Group all custom skills by category ID
+    const customSkillsByCategoryId: Record<string, any[]> = {};
+    for (const skill of allCustomSkills) {
       const catId = skill.category.toString();
-      if (!skillsByCategoryId[catId]) {
-        skillsByCategoryId[catId] = [];
+      if (!customSkillsByCategoryId[catId]) {
+        customSkillsByCategoryId[catId] = [];
       }
-      skillsByCategoryId[catId].push({ ...skill, isCustom: true });
+      customSkillsByCategoryId[catId].push({ ...skill, isCustom: true });
     }
 
-    // Build custom categories with skills
+    // Build custom categories with their skills
     const customCategoriesWithSkills = customCategories.map((cat: any) => ({
       ...cat,
       isCustom: true,
-      skills: skillsByCategoryId[cat._id.toString()] || []
+      skills: customSkillsByCategoryId[cat._id.toString()] || []
     }));
 
     // Group custom categories by sport
@@ -266,12 +264,23 @@ export const getAllSportsWithCategoriesAndSkills = async (req: Request) => {
     }
 
     // Merge custom categories into each sport
+    // Also add custom skills to system categories
     const result = sportsWithSystemCategories.map((sport: any) => {
       const sportId = sport._id.toString();
       const customCats = customCategoriesBySport[sportId] || [];
+
+      // For each system category, append any custom skills that belong to it
+      const systemCategoriesWithCustomSkills = (sport.categories || []).map((sysCat: any) => {
+        const customSkillsForSysCat = customSkillsByCategoryId[sysCat._id.toString()] || [];
+        return {
+          ...sysCat,
+          skills: [...(sysCat.skills || []), ...customSkillsForSysCat]
+        };
+      });
+
       return {
         ...sport,
-        categories: [...(sport.categories || []), ...customCats],
+        categories: [...systemCategoriesWithCustomSkills, ...customCats],
       };
     });
 
