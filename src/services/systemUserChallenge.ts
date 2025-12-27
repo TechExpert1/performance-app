@@ -15,15 +15,23 @@ export const createSystemUserChallenge = async (req: AuthenticatedRequest) => {
       ...req.body,
     };
 
-    const existing = await SystemUserChallenge.findOne({
+    // Check if user has an ACTIVE participation in this challenge
+    // Users can rejoin after completing a challenge, but not while one is still active
+    const existingActive = await SystemUserChallenge.findOne({
       user: req.user.id,
       challenge: req.body.challenge,
+      status: "active",
     });
 
-    if (existing) {
-      throw new Error("User already participating in this challenge");
+    if (existingActive) {
+      // User already has an active participation, return the existing one
+      return {
+        message: "User already has an active participation in this challenge",
+        data: existingActive,
+      };
     }
 
+    // Create new participation (allowed even if user completed this challenge before)
     const entry = await SystemUserChallenge.create(data);
 
     return {
