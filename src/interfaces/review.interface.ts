@@ -9,7 +9,7 @@ export interface IReview {
   matchType?: string; // "Competition" or "Roll/Sparring" (BJJ) or "Sparring" (Boxing)
   matchResult?: string; // "Win", "Loss", "Draw"
   tagFriend?: Types.ObjectId;
-  opponent?: string;
+  opponent?: Types.ObjectId; // Reference to User
   clubOrTeam?: string;
   media?: [string];
   coachFeedback?: {

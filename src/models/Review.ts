@@ -23,7 +23,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     matchType: { type: String }, // Competition, Roll/Sparring, Sparring
     matchResult: { type: String }, // Win, Loss, Draw
     tagFriend: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Tagged opponent for BJJ Roll/Sparring
-    opponent: { type: String },
+    opponent: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Opponent user reference
     clubOrTeam: { type: String },
     media: [{ type: String }],
     coachFeedback: {

@@ -564,6 +564,7 @@ export const getReviewById = async (req: Request) => {
     { path: "sport" },
     { path: "category" },
     { path: "skill" },
+    { path: "opponent" },
     { path: "coachFeedback.coach" },
     { path: "peerFeedback.friend" },
     { path: "coachToReview" },
