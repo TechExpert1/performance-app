@@ -971,12 +971,8 @@
                                             "value": "3"
                                         },
                                         {
-                                            "key": "timeOfStoppageMinutes",
-                                            "value": "1"
-                                        },
-                                        {
-                                            "key": "timeOfStoppageSeconds",
-                                            "value": "47"
+                                            "key": "timeOfStoppage",
+                                            "value": "1:47"
                                         },
                                         {
                                             "key": "boxingWeightClass",
@@ -1041,12 +1037,8 @@
                                             "value": "5"
                                         },
                                         {
-                                            "key": "timeOfStoppageMinutes",
-                                            "value": "2"
-                                        },
-                                        {
-                                            "key": "timeOfStoppageSeconds",
-                                            "value": "30"
+                                            "key": "timeOfStoppage",
+                                            "value": "2:30"
                                         },
                                         {
                                             "key": "boxingWeightClass",
@@ -1397,12 +1389,8 @@
                                             "value": "8"
                                         },
                                         {
-                                            "key": "timeOfStoppageMinutes",
-                                            "value": "2"
-                                        },
-                                        {
-                                            "key": "timeOfStoppageSeconds",
-                                            "value": "15"
+                                            "key": "timeOfStoppage",
+                                            "value": "2:15"
                                         },
                                         {
                                             "key": "boxingWeightClass",
@@ -2139,14 +2127,9 @@
                                     "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (1-12)"
                                 },
                                 {
-                                    "key": "timeOfStoppageMinutes",
-                                    "value": "1",
-                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (0-3)"
-                                },
-                                {
-                                    "key": "timeOfStoppageSeconds",
-                                    "value": "47",
-                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (0-59)"
+                                    "key": "timeOfStoppage",
+                                    "value": "1:47",
+                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (format: M:SS)"
                                 },
                                 {
                                     "key": "boxingWeightClass",
@@ -2430,14 +2413,9 @@
                                     "description": "BOXING - Round of stoppage if KO/TKO (1-12)"
                                 },
                                 {
-                                    "key": "timeOfStoppageMinutes",
-                                    "value": "1",
-                                    "description": "BOXING - Stoppage time minutes if KO/TKO (0-3)"
-                                },
-                                {
-                                    "key": "timeOfStoppageSeconds",
-                                    "value": "47",
-                                    "description": "BOXING - Stoppage time seconds if KO/TKO (0-59)"
+                                    "key": "timeOfStoppage",
+                                    "value": "1:47",
+                                    "description": "BOXING - Stoppage time if KO/TKO (format: M:SS, e.g., 2:59)"
                                 },
                                 {
                                     "key": "boxingWeightClass",

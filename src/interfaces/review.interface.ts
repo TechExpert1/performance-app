@@ -71,8 +71,7 @@ export interface IReview {
 
   // KO/TKO Details
   roundOfStoppage?: number; // 1-12
-  timeOfStoppageMinutes?: number; // 0-3
-  timeOfStoppageSeconds?: number; // 0-59
+  timeOfStoppage?: string; // Format: "M:SS" (e.g., "2:59")
 
   // Weight Class (Boxing)
   boxingWeightClass?: string; // Minimumweight, Flyweight, Welterweight, etc.

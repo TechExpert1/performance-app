@@ -85,8 +85,7 @@ const reviewSchema = new Schema<ReviewDocument>(
 
     // KO/TKO Details
     roundOfStoppage: { type: Number, min: 1, max: 12 },
-    timeOfStoppageMinutes: { type: Number },
-    timeOfStoppageSeconds: { type: Number },
+    timeOfStoppage: { type: String }, // Format: "M:SS" (e.g., "2:59")
 
     // Weight Class (Boxing)
     boxingWeightClass: { type: String }, // Minimumweight, Flyweight, Welterweight, etc.
