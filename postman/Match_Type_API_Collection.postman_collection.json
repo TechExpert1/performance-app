@@ -1,0 +1,2514 @@
+{
+    "info": {
+        "name": "PRYMO Match Type API",
+        "description": "Complete API collection for BJJ and Boxing match type logging",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000/api"
+        },
+        {
+            "key": "token",
+            "value": "YOUR_AUTH_TOKEN"
+        },
+        {
+            "key": "bjjSportId",
+            "value": "BJJ_SPORT_ID"
+        },
+        {
+            "key": "boxingSportId",
+            "value": "BOXING_SPORT_ID"
+        },
+        {
+            "key": "coachId",
+            "value": "COACH_USER_ID"
+        },
+        {
+            "key": "tagFriendId",
+            "value": "FRIEND_USER_ID"
+        }
+    ],
+    "item": [
+        {
+            "name": "BJJ",
+            "item": [
+                {
+                    "name": "Competition",
+                    "item": [
+                        {
+                            "name": "Win by Submission",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Rear Naked Choke"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "6 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Blue"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Feather (<70kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "John Doe"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Great match!"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Submission (Custom)",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Other"
+                                        },
+                                        {
+                                            "key": "submissionCustom",
+                                            "value": "Twister"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "8 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "No-Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Purple"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Light (<76kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Alex Smith"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Points",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Points"
+                                        },
+                                        {
+                                            "key": "yourScore",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "opponentScore",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "7 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Brown"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Middle (<82.3kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Mike Johnson"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Advantage",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Advantage"
+                                        },
+                                        {
+                                            "key": "yourScore",
+                                            "value": "2"
+                                        },
+                                        {
+                                            "key": "opponentScore",
+                                            "value": "2"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "5 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "White"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Rooster (<57.5kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "David Lee"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Referee Decision",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Referee Decision"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "10 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Black"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Heavy (<94.3kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Carlos Silva"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by DQ",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Opponent Disqualified"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "6 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Blue"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Ultra Heavy (>100.5kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Tom Brown"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Loss",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Loss"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Armbar"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "6 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Purple"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Light Feather (<64kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "James Wilson"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Need to work on arm defense"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Draw",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Draw"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Points"
+                                        },
+                                        {
+                                            "key": "yourScore",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "opponentScore",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "10 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Brown"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Medium-Heavy (<88.3kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Ryan Garcia"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Custom Duration",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Points"
+                                        },
+                                        {
+                                            "key": "yourScore",
+                                            "value": "12"
+                                        },
+                                        {
+                                            "key": "opponentScore",
+                                            "value": "0"
+                                        },
+                                        {
+                                            "key": "matchDuration",
+                                            "value": "Other"
+                                        },
+                                        {
+                                            "key": "matchDurationCustom",
+                                            "value": "15"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "No-Gi"
+                                        },
+                                        {
+                                            "key": "beltDivision",
+                                            "value": "Black"
+                                        },
+                                        {
+                                            "key": "bjjWeightClass",
+                                            "value": "Super Heavy (<100.5kg)"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Marcus Thompson"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Roll-Sparring",
+                    "item": [
+                        {
+                            "name": "Win by Submission",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Roll/Sparring"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Triangle Choke"
+                                        },
+                                        {
+                                            "key": "rollDuration",
+                                            "value": "5 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Training Partner"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Good flow today"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Points",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Roll/Sparring"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Points"
+                                        },
+                                        {
+                                            "key": "yourScore",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "opponentScore",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "rollDuration",
+                                            "value": "6 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "No-Gi"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Gym Partner"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "No Result Flow Roll",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Roll/Sparring"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Draw"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "No Result / Flow Roll"
+                                        },
+                                        {
+                                            "key": "rollDuration",
+                                            "value": "8 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Drill Partner"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Focused on technique"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "With Tagged Opponent",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Roll/Sparring"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Guillotine"
+                                        },
+                                        {
+                                            "key": "rollDuration",
+                                            "value": "5 min"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "No-Gi"
+                                        },
+                                        {
+                                            "key": "tagFriend",
+                                            "value": "{{tagFriendId}}"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Good roll with gym mate"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Custom Duration",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{bjjSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Roll/Sparring"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Loss"
+                                        },
+                                        {
+                                            "key": "methodOfVictory",
+                                            "value": "Submission"
+                                        },
+                                        {
+                                            "key": "submissionUsed",
+                                            "value": "Kimura"
+                                        },
+                                        {
+                                            "key": "rollDuration",
+                                            "value": "Other"
+                                        },
+                                        {
+                                            "key": "rollDurationCustom",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "giNoGi",
+                                            "value": "Gi"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Senior Belt"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Boxing",
+            "item": [
+                {
+                    "name": "Competition",
+                    "item": [
+                        {
+                            "name": "Win by KO",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Mike Smith"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Amateur Championship 2024"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "KO"
+                                        },
+                                        {
+                                            "key": "roundOfStoppage",
+                                            "value": "3"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageMinutes",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageSeconds",
+                                            "value": "47"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Welterweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "9"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Best performance!"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by TKO",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "James Brown"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Regional Title Fight"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "TKO"
+                                        },
+                                        {
+                                            "key": "roundOfStoppage",
+                                            "value": "5"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageMinutes",
+                                            "value": "2"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageSeconds",
+                                            "value": "30"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Middleweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "8"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Unanimous Decision",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Carlos Martinez"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "National Championship"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Points Decision"
+                                        },
+                                        {
+                                            "key": "decisionType",
+                                            "value": "Unanimous"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Lightweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "7"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Split Decision",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "David Wilson"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Friday Night Fights"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Points Decision"
+                                        },
+                                        {
+                                            "key": "decisionType",
+                                            "value": "Split"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Super Welterweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "6"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Referee Stoppage",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Tom Garcia"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "City Boxing Night"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Referee Stoppage"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Featherweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "8"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by Corner Stoppage",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Ryan Lee"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Amateur Open"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Corner Stoppage"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "6"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Bantamweight"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Win by DQ",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Alex Thompson"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "State Finals"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Opponent Disqualified"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "3"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Heavyweight"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Loss",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Loss"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Champion Fighter"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Title Shot"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "TKO"
+                                        },
+                                        {
+                                            "key": "roundOfStoppage",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageMinutes",
+                                            "value": "2"
+                                        },
+                                        {
+                                            "key": "timeOfStoppageSeconds",
+                                            "value": "15"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Light Heavyweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "5"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Need more conditioning"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "With Coach Review Request",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Competition"
+                                        },
+                                        {
+                                            "key": "matchResult",
+                                            "value": "Win"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Opponent Name"
+                                        },
+                                        {
+                                            "key": "eventName",
+                                            "value": "Championship"
+                                        },
+                                        {
+                                            "key": "boxingVictoryMethod",
+                                            "value": "Points Decision"
+                                        },
+                                        {
+                                            "key": "decisionType",
+                                            "value": "Unanimous"
+                                        },
+                                        {
+                                            "key": "roundsFought",
+                                            "value": "12"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Cruiserweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "requestCoachReview",
+                                            "value": "true"
+                                        },
+                                        {
+                                            "key": "coachToReview",
+                                            "value": "{{coachId}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Sparring",
+                    "item": [
+                        {
+                            "name": "Basic Sparring",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Sparring"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Training Partner"
+                                        },
+                                        {
+                                            "key": "roundsSparred",
+                                            "value": "6"
+                                        },
+                                        {
+                                            "key": "timePerRound",
+                                            "value": "3 min"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "7"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Worked on head movement"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "With Weight Class",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Sparring"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Gym Partner"
+                                        },
+                                        {
+                                            "key": "roundsSparred",
+                                            "value": "8"
+                                        },
+                                        {
+                                            "key": "timePerRound",
+                                            "value": "2 min"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Middleweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "8"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Custom Round Time",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Sparring"
+                                        },
+                                        {
+                                            "key": "opponent",
+                                            "value": "Sparring Partner"
+                                        },
+                                        {
+                                            "key": "roundsSparred",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "timePerRound",
+                                            "value": "Other"
+                                        },
+                                        {
+                                            "key": "timePerRoundCustom",
+                                            "value": "4"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "6"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "With Tagged Opponent and Gym",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": "{{baseUrl}}/reviews",
+                                "body": {
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "sessionType",
+                                            "value": "Match Type"
+                                        },
+                                        {
+                                            "key": "sport",
+                                            "value": "{{boxingSportId}}"
+                                        },
+                                        {
+                                            "key": "matchType",
+                                            "value": "Sparring"
+                                        },
+                                        {
+                                            "key": "tagFriend",
+                                            "value": "{{tagFriendId}}"
+                                        },
+                                        {
+                                            "key": "gymName",
+                                            "value": "Champions Boxing Gym"
+                                        },
+                                        {
+                                            "key": "roundsSparred",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "timePerRound",
+                                            "value": "3 min"
+                                        },
+                                        {
+                                            "key": "boxingWeightClass",
+                                            "value": "Welterweight"
+                                        },
+                                        {
+                                            "key": "rating",
+                                            "value": "9"
+                                        },
+                                        {
+                                            "key": "notes",
+                                            "value": "Great sparring session!"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Common Operations",
+            "item": [
+                {
+                    "name": "Get Review by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews/:id"
+                    }
+                },
+                {
+                    "name": "Update Review",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews/:id",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "notes",
+                                    "value": "Updated notes"
+                                },
+                                {
+                                    "key": "rating",
+                                    "value": "9"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Review",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews/:id"
+                    }
+                },
+                {
+                    "name": "Get All Reviews (Match Type)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reviews?sessionType=Match Type&page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reviews"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Match Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/reviews?sessionType=Match Type&stats=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "reviews"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type"
+                                },
+                                {
+                                    "key": "stats",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "All Fields Reference",
+            "item": [
+                {
+                    "name": "BJJ Competition - ALL FIELDS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type",
+                                    "description": "Required - Always 'Match Type' for matches"
+                                },
+                                {
+                                    "key": "sport",
+                                    "value": "{{bjjSportId}}",
+                                    "description": "Required - BJJ Sport ObjectId"
+                                },
+                                {
+                                    "key": "matchType",
+                                    "value": "Competition",
+                                    "description": "Required - 'Competition' or 'Roll/Sparring'"
+                                },
+                                {
+                                    "key": "matchResult",
+                                    "value": "Win",
+                                    "description": "Required - 'Win', 'Loss', or 'Draw'"
+                                },
+                                {
+                                    "key": "methodOfVictory",
+                                    "value": "Submission",
+                                    "description": "Required - 'Submission', 'Points', 'Advantage', 'Referee Decision', 'Opponent Disqualified'"
+                                },
+                                {
+                                    "key": "submissionUsed",
+                                    "value": "Rear Naked Choke",
+                                    "description": "Conditional - Required if methodOfVictory='Submission'"
+                                },
+                                {
+                                    "key": "submissionCustom",
+                                    "value": "Custom Submission",
+                                    "description": "Conditional - Required if submissionUsed='Other'"
+                                },
+                                {
+                                    "key": "yourScore",
+                                    "value": "10",
+                                    "description": "Conditional - Required if methodOfVictory='Points' or 'Advantage' (0-50)"
+                                },
+                                {
+                                    "key": "opponentScore",
+                                    "value": "4",
+                                    "description": "Conditional - Required if methodOfVictory='Points' or 'Advantage' (0-50)"
+                                },
+                                {
+                                    "key": "matchDuration",
+                                    "value": "6 min",
+                                    "description": "Optional - '5 min', '6 min', '7 min', '8 min', '10 min', 'Other'"
+                                },
+                                {
+                                    "key": "matchDurationCustom",
+                                    "value": "15",
+                                    "description": "Conditional - Required if matchDuration='Other' (minutes)"
+                                },
+                                {
+                                    "key": "giNoGi",
+                                    "value": "Gi",
+                                    "description": "Optional - 'Gi' or 'No-Gi'"
+                                },
+                                {
+                                    "key": "beltDivision",
+                                    "value": "Blue",
+                                    "description": "Optional - 'White', 'Blue', 'Purple', 'Brown', 'Black'"
+                                },
+                                {
+                                    "key": "bjjWeightClass",
+                                    "value": "Feather (<70kg)",
+                                    "description": "Optional - BJJ weight classes"
+                                },
+                                {
+                                    "key": "opponent",
+                                    "value": "John Doe",
+                                    "description": "Required - Opponent name"
+                                },
+                                {
+                                    "key": "rating",
+                                    "value": "8",
+                                    "description": "Optional - Performance rating 1-10"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Match notes and reflection",
+                                    "description": "Optional - Text notes"
+                                },
+                                {
+                                    "key": "videoUrl",
+                                    "value": "https://example.com/video.mp4",
+                                    "description": "Optional - Video URL (30 sec max)"
+                                },
+                                {
+                                    "key": "videoThumbnail",
+                                    "value": "https://example.com/thumb.jpg",
+                                    "description": "Optional - Video thumbnail URL"
+                                },
+                                {
+                                    "key": "requestPeerFeedback",
+                                    "value": "true",
+                                    "description": "Optional - Request peer feedback toggle"
+                                },
+                                {
+                                    "key": "requestCoachReview",
+                                    "value": "true",
+                                    "description": "Optional - Request coach review toggle"
+                                },
+                                {
+                                    "key": "coachToReview",
+                                    "value": "{{coachId}}",
+                                    "description": "Conditional - Coach ObjectId if requestCoachReview=true"
+                                },
+                                {
+                                    "key": "private",
+                                    "value": "false",
+                                    "description": "Optional - Private entry toggle"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "BJJ Roll/Sparring - ALL FIELDS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type",
+                                    "description": "Required - Always 'Match Type' for matches"
+                                },
+                                {
+                                    "key": "sport",
+                                    "value": "{{bjjSportId}}",
+                                    "description": "Required - BJJ Sport ObjectId"
+                                },
+                                {
+                                    "key": "matchType",
+                                    "value": "Roll/Sparring",
+                                    "description": "Required - 'Competition' or 'Roll/Sparring'"
+                                },
+                                {
+                                    "key": "matchResult",
+                                    "value": "Win",
+                                    "description": "Required - 'Win', 'Loss', or 'Draw'"
+                                },
+                                {
+                                    "key": "methodOfVictory",
+                                    "value": "Submission",
+                                    "description": "Required - 'Submission', 'Points', 'No Result / Flow Roll'"
+                                },
+                                {
+                                    "key": "submissionUsed",
+                                    "value": "Triangle Choke",
+                                    "description": "Conditional - Required if methodOfVictory='Submission'"
+                                },
+                                {
+                                    "key": "submissionCustom",
+                                    "value": "Custom Submission",
+                                    "description": "Conditional - Required if submissionUsed='Other'"
+                                },
+                                {
+                                    "key": "yourScore",
+                                    "value": "8",
+                                    "description": "Conditional - Required if methodOfVictory='Points' (0-50)"
+                                },
+                                {
+                                    "key": "opponentScore",
+                                    "value": "4",
+                                    "description": "Conditional - Required if methodOfVictory='Points' (0-50)"
+                                },
+                                {
+                                    "key": "rollDuration",
+                                    "value": "5 min",
+                                    "description": "Optional - '3 min', '5 min', '6 min', '8 min', 'Other'"
+                                },
+                                {
+                                    "key": "rollDurationCustom",
+                                    "value": "10",
+                                    "description": "Conditional - Required if rollDuration='Other' (minutes)"
+                                },
+                                {
+                                    "key": "giNoGi",
+                                    "value": "No-Gi",
+                                    "description": "Optional - 'Gi' or 'No-Gi'"
+                                },
+                                {
+                                    "key": "tagFriend",
+                                    "value": "{{tagFriendId}}",
+                                    "description": "Optional - Tagged opponent ObjectId (creates mirrored entry)"
+                                },
+                                {
+                                    "key": "opponent",
+                                    "value": "Training Partner",
+                                    "description": "Required if tagFriend not provided"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Roll notes and reflection",
+                                    "description": "Optional - Text notes"
+                                },
+                                {
+                                    "key": "videoUrl",
+                                    "value": "https://example.com/video.mp4",
+                                    "description": "Optional - Video URL (30 sec max)"
+                                },
+                                {
+                                    "key": "videoThumbnail",
+                                    "value": "https://example.com/thumb.jpg",
+                                    "description": "Optional - Video thumbnail URL"
+                                },
+                                {
+                                    "key": "private",
+                                    "value": "false",
+                                    "description": "Optional - Private entry toggle"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Boxing Competition - ALL FIELDS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type",
+                                    "description": "Required - Always 'Match Type' for matches"
+                                },
+                                {
+                                    "key": "sport",
+                                    "value": "{{boxingSportId}}",
+                                    "description": "Required - Boxing Sport ObjectId"
+                                },
+                                {
+                                    "key": "matchType",
+                                    "value": "Competition",
+                                    "description": "Required - 'Competition' or 'Sparring'"
+                                },
+                                {
+                                    "key": "matchResult",
+                                    "value": "Win",
+                                    "description": "Required - 'Win', 'Loss', or 'Draw'"
+                                },
+                                {
+                                    "key": "opponent",
+                                    "value": "Mike Smith",
+                                    "description": "Required - Opponent name"
+                                },
+                                {
+                                    "key": "eventName",
+                                    "value": "Championship 2024",
+                                    "description": "Required - Event name"
+                                },
+                                {
+                                    "key": "boxingVictoryMethod",
+                                    "value": "KO",
+                                    "description": "Required - 'KO', 'TKO', 'Points Decision', 'Referee Stoppage', 'Corner Stoppage', 'Opponent Disqualified'"
+                                },
+                                {
+                                    "key": "decisionType",
+                                    "value": "Unanimous",
+                                    "description": "Conditional - Required if boxingVictoryMethod='Points Decision' ('Unanimous', 'Split', 'Majority', 'Other')"
+                                },
+                                {
+                                    "key": "roundsFought",
+                                    "value": "10",
+                                    "description": "Conditional - Required if boxingVictoryMethod='Points Decision' (1-12)"
+                                },
+                                {
+                                    "key": "roundOfStoppage",
+                                    "value": "3",
+                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (1-12)"
+                                },
+                                {
+                                    "key": "timeOfStoppageMinutes",
+                                    "value": "1",
+                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (0-3)"
+                                },
+                                {
+                                    "key": "timeOfStoppageSeconds",
+                                    "value": "47",
+                                    "description": "Conditional - Required if boxingVictoryMethod='KO' or 'TKO' (0-59)"
+                                },
+                                {
+                                    "key": "boxingWeightClass",
+                                    "value": "Welterweight",
+                                    "description": "Optional - Boxing weight class"
+                                },
+                                {
+                                    "key": "rating",
+                                    "value": "9",
+                                    "description": "Optional - Performance rating 1-10"
+                                },
+                                {
+                                    "key": "requestPeerFeedback",
+                                    "value": "true",
+                                    "description": "Optional - Request peer feedback toggle"
+                                },
+                                {
+                                    "key": "requestCoachReview",
+                                    "value": "true",
+                                    "description": "Optional - Request coach review toggle"
+                                },
+                                {
+                                    "key": "coachToReview",
+                                    "value": "{{coachId}}",
+                                    "description": "Conditional - Coach ObjectId if requestCoachReview=true"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Fight notes and reflection",
+                                    "description": "Optional - Text notes"
+                                },
+                                {
+                                    "key": "videoUrl",
+                                    "value": "https://example.com/video.mp4",
+                                    "description": "Optional - Video URL (30 sec max)"
+                                },
+                                {
+                                    "key": "videoThumbnail",
+                                    "value": "https://example.com/thumb.jpg",
+                                    "description": "Optional - Video thumbnail URL"
+                                },
+                                {
+                                    "key": "private",
+                                    "value": "false",
+                                    "description": "Optional - Private entry toggle"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Boxing Sparring - ALL FIELDS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type",
+                                    "description": "Required - Always 'Match Type' for matches"
+                                },
+                                {
+                                    "key": "sport",
+                                    "value": "{{boxingSportId}}",
+                                    "description": "Required - Boxing Sport ObjectId"
+                                },
+                                {
+                                    "key": "matchType",
+                                    "value": "Sparring",
+                                    "description": "Required - 'Competition' or 'Sparring'"
+                                },
+                                {
+                                    "key": "opponent",
+                                    "value": "Training Partner",
+                                    "description": "Required - Opponent name or use tagFriend"
+                                },
+                                {
+                                    "key": "tagFriend",
+                                    "value": "{{tagFriendId}}",
+                                    "description": "Optional - Tagged opponent ObjectId"
+                                },
+                                {
+                                    "key": "gymName",
+                                    "value": "Champions Boxing Gym",
+                                    "description": "Optional - Gym name (auto-filled if tagFriend used)"
+                                },
+                                {
+                                    "key": "roundsSparred",
+                                    "value": "6",
+                                    "description": "Required - Rounds sparred (1-12)"
+                                },
+                                {
+                                    "key": "timePerRound",
+                                    "value": "3 min",
+                                    "description": "Required - '1 min', '2 min', '3 min', '4 min', '5 min', 'Other'"
+                                },
+                                {
+                                    "key": "timePerRoundCustom",
+                                    "value": "4",
+                                    "description": "Conditional - Required if timePerRound='Other' (minutes)"
+                                },
+                                {
+                                    "key": "boxingWeightClass",
+                                    "value": "Middleweight",
+                                    "description": "Optional - Boxing weight class"
+                                },
+                                {
+                                    "key": "rating",
+                                    "value": "8",
+                                    "description": "Optional - Performance rating 1-10"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Sparring notes and reflection",
+                                    "description": "Optional - Text notes"
+                                },
+                                {
+                                    "key": "videoUrl",
+                                    "value": "https://example.com/video.mp4",
+                                    "description": "Optional - Video URL (30 sec max)"
+                                },
+                                {
+                                    "key": "videoThumbnail",
+                                    "value": "https://example.com/thumb.jpg",
+                                    "description": "Optional - Video thumbnail URL"
+                                },
+                                {
+                                    "key": "private",
+                                    "value": "false",
+                                    "description": "Optional - Private entry toggle"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "⭐ MASTER - ALL MATCH TYPE FIELDS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/reviews",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "sessionType",
+                                    "value": "Match Type",
+                                    "description": "REQUIRED - Always 'Match Type'"
+                                },
+                                {
+                                    "key": "sport",
+                                    "value": "{{bjjSportId}}",
+                                    "description": "REQUIRED - Sport ObjectId (BJJ or Boxing)"
+                                },
+                                {
+                                    "key": "matchType",
+                                    "value": "Competition",
+                                    "description": "REQUIRED - 'Competition', 'Roll/Sparring' (BJJ), 'Sparring' (Boxing)"
+                                },
+                                {
+                                    "key": "matchResult",
+                                    "value": "Win",
+                                    "description": "REQUIRED - 'Win', 'Loss', 'Draw'"
+                                },
+                                {
+                                    "key": "opponent",
+                                    "value": "John Doe",
+                                    "description": "REQUIRED - Opponent name (manual entry)"
+                                },
+                                {
+                                    "key": "tagFriend",
+                                    "value": "{{tagFriendId}}",
+                                    "description": "OPTIONAL - Tag gym member (creates mirrored entry for Roll/Sparring)"
+                                },
+                                {
+                                    "key": "clubOrTeam",
+                                    "value": "Team Name",
+                                    "description": "OPTIONAL - Club or team name"
+                                },
+                                {
+                                    "key": "media",
+                                    "type": "file",
+                                    "description": "OPTIONAL - Video file upload (30 sec max)"
+                                },
+                                {
+                                    "key": "methodOfVictory",
+                                    "value": "Submission",
+                                    "description": "BJJ - 'Submission', 'Points', 'Advantage', 'Referee Decision', 'Opponent Disqualified'"
+                                },
+                                {
+                                    "key": "submissionUsed",
+                                    "value": "Rear Naked Choke",
+                                    "description": "BJJ - If methodOfVictory='Submission': Armbar, Triangle Choke, Rear Naked Choke, Guillotine, Kimura, Americana, Ankle Lock, Kneebar, Wrist Lock, Toe Hold, Bow and Arrow Choke, North-South Choke, Ezekiel Choke, Calf Slicer, Other"
+                                },
+                                {
+                                    "key": "submissionCustom",
+                                    "value": "Custom Submission",
+                                    "description": "BJJ - Custom submission if submissionUsed='Other'"
+                                },
+                                {
+                                    "key": "yourScore",
+                                    "value": "10",
+                                    "description": "BJJ - Your score if methodOfVictory='Points' or 'Advantage' (0-50)"
+                                },
+                                {
+                                    "key": "opponentScore",
+                                    "value": "4",
+                                    "description": "BJJ - Opponent score if methodOfVictory='Points' or 'Advantage' (0-50)"
+                                },
+                                {
+                                    "key": "matchDuration",
+                                    "value": "6 min",
+                                    "description": "BJJ Competition - '5 min', '6 min', '7 min', '8 min', '10 min', 'Other'"
+                                },
+                                {
+                                    "key": "matchDurationCustom",
+                                    "value": "15",
+                                    "description": "BJJ Competition - Custom minutes if matchDuration='Other'"
+                                },
+                                {
+                                    "key": "rollDuration",
+                                    "value": "5 min",
+                                    "description": "BJJ Roll/Sparring - '3 min', '5 min', '6 min', '8 min', 'Other'"
+                                },
+                                {
+                                    "key": "rollDurationCustom",
+                                    "value": "10",
+                                    "description": "BJJ Roll/Sparring - Custom minutes if rollDuration='Other'"
+                                },
+                                {
+                                    "key": "giNoGi",
+                                    "value": "Gi",
+                                    "description": "BJJ - 'Gi' or 'No-Gi'"
+                                },
+                                {
+                                    "key": "beltDivision",
+                                    "value": "Blue",
+                                    "description": "BJJ Competition - 'White', 'Blue', 'Purple', 'Brown', 'Black'"
+                                },
+                                {
+                                    "key": "bjjWeightClass",
+                                    "value": "Feather (<70kg)",
+                                    "description": "BJJ - Rooster (<57.5kg), Light Feather (<64kg), Feather (<70kg), Light (<76kg), Middle (<82.3kg), Medium-Heavy (<88.3kg), Heavy (<94.3kg), Super Heavy (<100.5kg), Ultra Heavy (>100.5kg)"
+                                },
+                                {
+                                    "key": "eventName",
+                                    "value": "Championship 2024",
+                                    "description": "BOXING Competition - Event name"
+                                },
+                                {
+                                    "key": "boxingVictoryMethod",
+                                    "value": "KO",
+                                    "description": "BOXING - 'KO', 'TKO', 'Points Decision', 'Referee Stoppage', 'Corner Stoppage', 'Opponent Disqualified'"
+                                },
+                                {
+                                    "key": "decisionType",
+                                    "value": "Unanimous",
+                                    "description": "BOXING - If boxingVictoryMethod='Points Decision': 'Unanimous', 'Split', 'Majority', 'Other'"
+                                },
+                                {
+                                    "key": "roundsFought",
+                                    "value": "10",
+                                    "description": "BOXING Competition - Rounds fought if Points Decision (1-12)"
+                                },
+                                {
+                                    "key": "roundOfStoppage",
+                                    "value": "3",
+                                    "description": "BOXING - Round of stoppage if KO/TKO (1-12)"
+                                },
+                                {
+                                    "key": "timeOfStoppageMinutes",
+                                    "value": "1",
+                                    "description": "BOXING - Stoppage time minutes if KO/TKO (0-3)"
+                                },
+                                {
+                                    "key": "timeOfStoppageSeconds",
+                                    "value": "47",
+                                    "description": "BOXING - Stoppage time seconds if KO/TKO (0-59)"
+                                },
+                                {
+                                    "key": "boxingWeightClass",
+                                    "value": "Welterweight",
+                                    "description": "BOXING - Minimumweight, Light Flyweight, Flyweight, Super Flyweight, Bantamweight, Super Bantamweight, Featherweight, Super Featherweight, Lightweight, Super Lightweight, Welterweight, Super Welterweight, Middleweight, Super Middleweight, Light Heavyweight, Cruiserweight, Heavyweight, Super Heavyweight"
+                                },
+                                {
+                                    "key": "roundsSparred",
+                                    "value": "6",
+                                    "description": "BOXING Sparring - Rounds sparred (1-12)"
+                                },
+                                {
+                                    "key": "timePerRound",
+                                    "value": "3 min",
+                                    "description": "BOXING Sparring - '1 min', '2 min', '3 min', '4 min', '5 min', 'Other'"
+                                },
+                                {
+                                    "key": "timePerRoundCustom",
+                                    "value": "4",
+                                    "description": "BOXING Sparring - Custom minutes if timePerRound='Other'"
+                                },
+                                {
+                                    "key": "gymName",
+                                    "value": "Champions Gym",
+                                    "description": "BOXING Sparring - Gym name (auto-filled if tagFriend used)"
+                                },
+                                {
+                                    "key": "rating",
+                                    "value": "8",
+                                    "description": "COMMON - Performance rating (1-10)"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Match notes and reflection text",
+                                    "description": "COMMON - Notes/Reflection text"
+                                },
+                                {
+                                    "key": "requestPeerFeedback",
+                                    "value": "true",
+                                    "description": "COMMON - Request peer feedback (auto-ON if teammate tagged)"
+                                },
+                                {
+                                    "key": "requestCoachReview",
+                                    "value": "true",
+                                    "description": "COMMON - Request coach review toggle"
+                                },
+                                {
+                                    "key": "coachToReview",
+                                    "value": "{{coachId}}",
+                                    "description": "COMMON - Coach ObjectId if requestCoachReview=true"
+                                },
+                                {
+                                    "key": "private",
+                                    "value": "false",
+                                    "description": "COMMON - Private entry toggle"
+                                },
+                                {
+                                    "key": "comment",
+                                    "value": "Additional comments",
+                                    "description": "COMMON - Comment text"
+                                },
+                                {
+                                    "key": "score",
+                                    "value": "10-4",
+                                    "description": "LEGACY - Score string (use yourScore/opponentScore instead)"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
