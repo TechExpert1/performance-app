@@ -1,0 +1,190 @@
+{
+	"info": {
+		"_postman_id": "graph-apis-collection",
+		"name": "Performance Graphs API",
+		"description": "Collection of APIs for Performance Graph visualizations including Performance Challenge Graph, Performance Graph, and Exercise Completed Graph.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Performance Challenge Graph",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"description": "JWT authentication token for the logged-in user"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/system-user-challenges/graph?type=categories&categoryId=&packId=&challengeId=&timeFilter=all",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"system-user-challenges",
+						"graph"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "categories",
+							"description": "Type of data to retrieve. Options: 'categories' (list all challenge categories with colors), 'packs' (get packs for a category), 'challenges' (get challenges in a pack), 'data' (get graph data for a specific challenge), 'my-challenges' (get user's enrolled challenges), 'overview' (get overview stats for all categories)"
+						},
+						{
+							"key": "categoryId",
+							"value": "",
+							"description": "Required when type='packs' or type='challenges'. The ID of the challenge category (Strength, Power, Speed, or Endurance)"
+						},
+						{
+							"key": "packId",
+							"value": "",
+							"description": "Required when type='challenges'. The ID of the challenge pack within a category"
+						},
+						{
+							"key": "challengeId",
+							"value": "",
+							"description": "Required when type='data'. The ID of the specific challenge to get graph data for"
+						},
+						{
+							"key": "timeFilter",
+							"value": "all",
+							"description": "Time filter for graph data. Options: '7D' (last 7 days), '30D' (last 30 days), '90D' (last 90 days), 'all' (all time). Default: 'all'"
+						}
+					]
+				},
+				"description": "Unified API for Performance Challenge Graph visualization.\n\n**Flow:**\n1. First call with `type=categories` to get all 4 categories (Strength, Power, Speed, Endurance)\n2. Then call with `type=packs&categoryId=xxx` to get packs in selected category\n3. Then call with `type=challenges&categoryId=xxx&packId=xxx` to get challenges in selected pack\n4. Finally call with `type=data&challengeId=xxx&timeFilter=xxx` to get graph data\n\n**Alternative flows:**\n- Use `type=my-challenges` to get all challenges the user has enrolled in\n- Use `type=overview` to get progress overview for all categories\n\n**Category Colors:**\n- Strength: #FF0000 (Red)\n- Power: #FFA500 (Orange)\n- Speed: #0000FF (Blue)\n- Endurance: #00FF00 (Green)\n\n**Graph Data Response:**\n- `graphData`: Array of data points with date, result, and target\n- `direction`: 'up' (higher is better) or 'down' (lower is better)\n- `currentLevel`: User's current performance level\n- `unit`: Unit of measurement for the challenge"
+			},
+			"response": []
+		},
+		{
+			"name": "Performance Graph",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"description": "JWT authentication token for the logged-in user"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/physical-performances/graph?type=categories&categoryId=&exerciseId=&timeFilter=all",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"physical-performances",
+						"graph"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "categories",
+							"description": "Type of data to retrieve. Options: 'categories' (list all exercise categories with colors and totals), 'exercises' (get exercises for a category with PB indicators), 'data' (get graph data for a specific exercise)"
+						},
+						{
+							"key": "categoryId",
+							"value": "",
+							"description": "Required when type='exercises'. The ID of the challenge category (Strength, Power, Speed, or Endurance)"
+						},
+						{
+							"key": "exerciseId",
+							"value": "",
+							"description": "Required when type='data'. The ID of the specific exercise to get performance graph data for"
+						},
+						{
+							"key": "timeFilter",
+							"value": "all",
+							"description": "Time filter for graph data. Options: '7D' (last 7 days), '30D' (last 30 days), '90D' (last 90 days), 'all' (all time). Default: 'all'"
+						}
+					]
+				},
+				"description": "Unified API for Performance Graph visualization from Physical Performance tab.\n\n**Flow:**\n1. First call with `type=categories` to get all 4 categories with total logged counts\n2. Then call with `type=exercises&categoryId=xxx` to get exercises in selected category (shows PB indicators)\n3. Finally call with `type=data&exerciseId=xxx&timeFilter=xxx` to get performance graph data\n\n**Category Colors:**\n- Strength: #FF0000 (Red)\n- Power: #FFA500 (Orange)\n- Speed: #0000FF (Blue)\n- Endurance: #00FF00 (Green)\n\n**Categories Response includes:**\n- `totalLogged`: Total number of times exercises in this category have been logged\n\n**Exercises Response includes:**\n- `isPB`: Boolean indicating if this exercise has a Personal Best\n- `pbValue`: The Personal Best value (if exists)\n- `pbUnit`: Unit for the PB value\n- `totalSets`: Total sets logged for this exercise\n- `totalReps`: Total reps logged for this exercise\n\n**Graph Data Response:**\n- `graphData`: Array of data points with date, value, and isPB marker\n- `personalBest`: Object with value, date, and unit of the all-time PB\n- `totalSets`: Total sets logged in the time period\n- `totalReps`: Total reps logged in the time period\n- `unit`: Unit of measurement for the exercise"
+			},
+			"response": []
+		},
+		{
+			"name": "Exercise Completed Graph",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"description": "JWT authentication token for the logged-in user"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/physical-performances/exercise-completed?view=weekly&date=2026-01-03&year=2026&userId=",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"physical-performances",
+						"exercise-completed"
+					],
+					"query": [
+						{
+							"key": "view",
+							"value": "weekly",
+							"description": "View type for the graph. Options: 'weekly' (shows Mon-Sun bars for the week), 'monthly' (shows Jan-Dec bars for the year). Default: 'weekly'"
+						},
+						{
+							"key": "date",
+							"value": "2026-01-03",
+							"description": "Used when view='weekly'. The date to determine which week to show (format: YYYY-MM-DD). Shows the week containing this date. Default: current date"
+						},
+						{
+							"key": "year",
+							"value": "2026",
+							"description": "Used when view='monthly'. The year to show monthly data for (format: YYYY). Default: current year"
+						},
+						{
+							"key": "userId",
+							"value": "",
+							"description": "Optional. User ID to get data for. If not provided, uses the authenticated user's ID. Useful for coaches viewing athlete data"
+						}
+					]
+				},
+				"description": "API for Exercise Completed Graph - a vertical bar chart showing total sets logged.\n\n**Weekly View:**\n- Shows 7 bars for Monday through Sunday\n- Each bar represents total sets logged on that day\n- Tooltip shows breakdown by category (Strength, Power, Speed, Endurance)\n- Use `date` parameter to navigate between weeks\n\n**Monthly View:**\n- Shows 12 bars for January through December\n- Each bar represents total sets logged in that month\n- Tooltip shows breakdown by category\n- Use `year` parameter to navigate between years\n\n**Response Structure:**\n- `view`: 'weekly' or 'monthly'\n- `period`: Object describing the time period (week range or year)\n- `data`: Array of bar data with:\n  - `label`: Day name (Mon-Sun) or month name (Jan-Dec)\n  - `date`/`month`: The specific date or month number\n  - `totalSets`: Total sets for that period\n  - `categories`: Object with set counts per category (strength, power, speed, endurance)\n- `summary`: Object with:\n  - `totalSets`: Grand total sets in the period\n  - `categoryTotals`: Breakdown by category\n  - `averagePerDay`/`averagePerMonth`: Average sets\n\n**Category Colors for Tooltip:**\n- Strength: #FF0000 (Red)\n- Power: #FFA500 (Orange)\n- Speed: #0000FF (Blue)\n- Endurance: #00FF00 (Green)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000/api",
+			"type": "string",
+			"description": "Base URL for the API server"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string",
+			"description": "JWT authentication token obtained after login"
+		}
+	]
+}
