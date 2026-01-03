@@ -14,6 +14,9 @@ const router = express.Router();
 // - timeFilter: 7D | 30D | 90D | all (for type=data, default: 30D)
 router.get("/graph", userAuth, PhysicalPerformanceController.graph);
 
+// Get all IDs for Performance Graph (categories, exercises)
+router.get("/graph/ids", userAuth, PhysicalPerformanceController.graphIds);
+
 // ========================================
 // EXERCISE COMPLETED GRAPH ROUTE
 // ========================================

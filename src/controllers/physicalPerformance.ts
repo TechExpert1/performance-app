@@ -7,6 +7,7 @@ import {
   getAllPerformances,
   getPerformanceGraph,
   getExerciseCompletedGraph,
+  getPerformanceGraphIds,
 } from "../services/physicalPerformance.js";
 
 export const PhysicalPerformanceController = {
@@ -84,6 +85,19 @@ export const PhysicalPerformanceController = {
   exerciseCompleted: async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await getExerciseCompletedGraph(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(422).json({ error: (err as Error).message });
+    }
+  },
+
+  /**
+   * Get all IDs for Performance Graph
+   * Returns all categories and exercises with their IDs
+   */
+  graphIds: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await getPerformanceGraphIds();
       res.status(200).json(result);
     } catch (err) {
       res.status(422).json({ error: (err as Error).message });

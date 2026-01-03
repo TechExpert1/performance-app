@@ -17,6 +17,9 @@ const router = express.Router();
 // - category: optional filter for type=my-challenges
 router.get("/graph", userAuth, SystemUserChallengeController.graph);
 
+// Get all IDs for Performance Challenge Graph (categories, packs, challenges)
+router.get("/graph/ids", userAuth, SystemUserChallengeController.graphIds);
+
 // ========================================
 // EXISTING ROUTES
 // ========================================

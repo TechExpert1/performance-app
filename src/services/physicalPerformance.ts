@@ -1104,3 +1104,81 @@ async function getMonthlyData(
     totals: yearTotals,
   };
 }
+
+/**
+ * Get all IDs needed for Performance Graph
+ * Returns all categories and exercises with their IDs
+ */
+export const getPerformanceGraphIds = async () => {
+  try {
+    const categoryColors: { [key: string]: string } = {
+      Strength: "#FF0000",
+      Power: "#FFA500",
+      Speed: "#0000FF",
+      Endurance: "#00FF00",
+    };
+
+    // Get all 4 categories
+    const categories = await ChallengeCategory.find({
+      name: { $in: ["Strength", "Power", "Speed", "Endurance"] },
+    })
+      .select("_id name image")
+      .lean();
+
+    const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
+    const sortedCategories = orderedCategories
+      .map((name) => {
+        const cat = categories.find((c) => c.name === name);
+        if (cat) {
+          return {
+            _id: cat._id,
+            name: cat.name,
+            image: cat.image,
+            color: categoryColors[cat.name] || "#808080",
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // Get all exercises for each category
+    const exercises = await ChallengeCategoryExercise.find({
+      challengeCategory: { $in: sortedCategories.map((c) => c!._id) },
+    })
+      .select("_id name challengeCategory")
+      .populate("challengeCategory", "name")
+      .lean();
+
+    // Structure the response
+    const categoriesWithExercises = sortedCategories.map((category) => {
+      const categoryExercises = exercises
+        .filter(
+          (e: any) =>
+            e.challengeCategory &&
+            e.challengeCategory._id.toString() === category!._id.toString()
+        )
+        .map((exercise: any) => ({
+          _id: exercise._id,
+          name: exercise.name,
+        }));
+
+      return {
+        ...category,
+        exercises: categoryExercises,
+      };
+    });
+
+    return {
+      message: "All Performance Graph IDs fetched successfully",
+      data: {
+        categories: categoriesWithExercises,
+        summary: {
+          totalCategories: sortedCategories.length,
+          totalExercises: exercises.length,
+        },
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+}

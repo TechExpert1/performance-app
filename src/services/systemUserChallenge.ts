@@ -806,3 +806,114 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
     throw error;
   }
 };
+
+/**
+ * Get all IDs needed for Performance Challenge Graph
+ * Returns all categories, packs, and challenges with their IDs
+ */
+export const getPerformanceChallengeGraphIds = async () => {
+  try {
+    const categoryColors: { [key: string]: string } = {
+      Strength: "#FF0000",
+      Power: "#FFA500",
+      Speed: "#0000FF",
+      Endurance: "#00FF00",
+    };
+
+    // Get all 4 categories
+    const categories = await ChallengeCategory.find({
+      name: { $in: ["Strength", "Power", "Speed", "Endurance"] },
+    })
+      .select("_id name image")
+      .lean();
+
+    const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
+    const sortedCategories = orderedCategories
+      .map((name) => {
+        const cat = categories.find((c) => c.name === name);
+        if (cat) {
+          return {
+            _id: cat._id,
+            name: cat.name,
+            image: cat.image,
+            color: categoryColors[cat.name] || "#808080",
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    // Get all packs (SystemChallengeTypes) for each category
+    const packs = await SystemChallengeType.find({
+      category: { $in: sortedCategories.map((c) => c!._id) },
+    })
+      .select("_id name category image")
+      .populate("category", "name")
+      .lean();
+
+    // Get all challenges for each pack
+    const challenges = await SystemChallenge.find({
+      type: { $in: packs.map((p) => p._id) },
+    })
+      .select("_id name type unit targetUnit direction targetValue")
+      .populate({
+        path: "type",
+        select: "name category",
+        populate: {
+          path: "category",
+          select: "name",
+        },
+      })
+      .lean();
+
+    // Structure the response
+    const categoriesWithPacks = sortedCategories.map((category) => {
+      const categoryPacks = packs
+        .filter(
+          (p) =>
+            p.category &&
+            (p.category as any)._id.toString() === category!._id.toString()
+        )
+        .map((pack) => {
+          const packChallenges = challenges
+            .filter(
+              (c) => c.type && (c.type as any)._id.toString() === pack._id.toString()
+            )
+            .map((challenge) => ({
+              _id: challenge._id,
+              name: challenge.name,
+              unit: challenge.unit,
+              targetUnit: challenge.targetUnit,
+              direction: challenge.direction,
+              targetValue: challenge.targetValue,
+            }));
+
+          return {
+            _id: pack._id,
+            name: pack.name,
+            image: pack.image,
+            challenges: packChallenges,
+          };
+        });
+
+      return {
+        ...category,
+        packs: categoryPacks,
+      };
+    });
+
+    return {
+      message: "All Performance Challenge Graph IDs fetched successfully",
+      data: {
+        categories: categoriesWithPacks,
+        summary: {
+          totalCategories: sortedCategories.length,
+          totalPacks: packs.length,
+          totalChallenges: challenges.length,
+        },
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
