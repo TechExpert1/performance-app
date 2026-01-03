@@ -877,9 +877,9 @@ export const getPerformanceChallengeGraphIds = async () => {
         .map((pack) => {
           const packChallenges = challenges
             .filter(
-              (c) => c.type && (c.type as any)._id.toString() === pack._id.toString()
+              (c: any) => c.type && c.type._id.toString() === pack._id.toString()
             )
-            .map((challenge) => ({
+            .map((challenge: any) => ({
               _id: challenge._id,
               name: challenge.name,
               unit: challenge.unit,
