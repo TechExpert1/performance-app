@@ -5,17 +5,18 @@ import { userAuth } from "../middlewares/user.js";
 const router = express.Router();
 
 // ========================================
-// PERFORMANCE GRAPH ROUTE
+// PERFORMANCE GRAPH ROUTES
 // ========================================
+// Get all IDs for Performance Graph (categories, exercises)
+// NOTE: This route MUST come before /graph to avoid being caught by it
+router.get("/graph/ids", userAuth, PhysicalPerformanceController.graphIds);
+
 // Single unified endpoint with query parameters:
 // - type: categories | exercises | data
 // - categoryId: required when type=exercises
 // - exerciseId: required when type=data
 // - timeFilter: 7D | 30D | 90D | all (for type=data, default: 30D)
 router.get("/graph", userAuth, PhysicalPerformanceController.graph);
-
-// Get all IDs for Performance Graph (categories, exercises)
-router.get("/graph/ids", userAuth, PhysicalPerformanceController.graphIds);
 
 // ========================================
 // EXERCISE COMPLETED GRAPH ROUTE

@@ -6,8 +6,12 @@ import { newMulterUpload, uploadMultipleToS3 } from "../helpers/s3Utils.js";
 const router = express.Router();
 
 // ========================================
-// PERFORMANCE CHALLENGE GRAPH ROUTE
+// PERFORMANCE CHALLENGE GRAPH ROUTES
 // ========================================
+// Get all IDs for Performance Challenge Graph (categories, packs, challenges)
+// NOTE: This route MUST come before /graph to avoid being caught by it
+router.get("/graph/ids", userAuth, SystemUserChallengeController.graphIds);
+
 // Single unified endpoint with query parameters:
 // - type: categories | packs | challenges | data | my-challenges | overview
 // - categoryId: required when type=packs
@@ -16,9 +20,6 @@ const router = express.Router();
 // - timeFilter: 7D | 30D | 90D | all (for type=data, default: 30D)
 // - category: optional filter for type=my-challenges
 router.get("/graph", userAuth, SystemUserChallengeController.graph);
-
-// Get all IDs for Performance Challenge Graph (categories, packs, challenges)
-router.get("/graph/ids", userAuth, SystemUserChallengeController.graphIds);
 
 // ========================================
 // EXISTING ROUTES
