@@ -853,11 +853,11 @@ export const getPerformanceChallengeGraphIds = async () => {
 
     // Get all challenges for each pack
     const challenges = await SystemChallenge.find({
-      type: { $in: packs.map((p) => p._id) },
+      categoryType: { $in: packs.map((p) => p._id) },
     })
-      .select("_id name type unit targetUnit direction targetValue")
+      .select("_id title categoryType unit targetUnit direction targetValue")
       .populate({
-        path: "type",
+        path: "categoryType",
         select: "name category",
         populate: {
           path: "category",
@@ -877,11 +877,11 @@ export const getPerformanceChallengeGraphIds = async () => {
         .map((pack) => {
           const packChallenges = challenges
             .filter(
-              (c: any) => c.type && c.type._id.toString() === pack._id.toString()
+              (c: any) => c.categoryType && c.categoryType._id.toString() === pack._id.toString()
             )
             .map((challenge: any) => ({
               _id: challenge._id,
-              name: challenge.name,
+              name: challenge.title,
               unit: challenge.unit,
               targetUnit: challenge.targetUnit,
               direction: challenge.direction,
