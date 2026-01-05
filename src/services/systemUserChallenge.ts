@@ -317,34 +317,35 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
       throw new Error("User is not authenticated.");
     }
 
-    const { challengeId, timeFilter = "30D" } = req.query;
+    const { 
+      type = "categories", // kept for backwards compatibility, has no effect
+      categoryId, 
+      packId, 
+      challengeId, 
+      timeFilter = "30D",
+    } = req.query;
 
-    if (!challengeId) {
-      throw new Error("challengeId is required");
+    if (!categoryId) {
+      throw new Error("categoryId is required");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(challengeId as string)) {
-      throw new Error("Invalid challenge ID");
+    if (!mongoose.Types.ObjectId.isValid(categoryId as string)) {
+      throw new Error("Invalid category ID");
     }
 
-    const challenge = await SystemChallenge.findById(challengeId)
-      .populate("category", "name")
-      .populate("format", "name")
-      .populate("categoryType", "name")
+    // Get category details
+    const category = await ChallengeCategory.findById(categoryId)
+      .select("_id name")
       .lean();
 
-    if (!challenge) {
-      throw new Error("Challenge not found");
+    if (!category) {
+      throw new Error("Category not found");
     }
 
-    const categoryName = (challenge.category as any)?.name || "";
-    const formatName = (challenge.format as any)?.name || "";
+    const categoryName = category.name;
+    const isLowerBetter = categoryName === "Speed" || categoryName === "Endurance";
 
-    const isLowerBetter =
-      categoryName === "Speed" ||
-      formatName.toLowerCase().includes("time") ||
-      formatName.toLowerCase().includes("fastest");
-
+    // Calculate date range based on time filter
     const now = new Date();
     let startDate: Date | null = null;
 
@@ -364,17 +365,37 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
         break;
     }
 
-    const query: any = {
+    // Build query to get user's completed challenges for this category
+    const challengeQuery: any = { category: categoryId };
+    
+    // If packId provided, filter by pack
+    if (packId && mongoose.Types.ObjectId.isValid(packId as string)) {
+      challengeQuery.categoryType = packId;
+    }
+
+    // If challengeId provided, filter by specific challenge
+    if (challengeId && mongoose.Types.ObjectId.isValid(challengeId as string)) {
+      challengeQuery._id = challengeId;
+    }
+
+    const challenges = await SystemChallenge.find(challengeQuery)
+      .select("_id title levels")
+      .lean();
+
+    const challengeIds = challenges.map((c) => c._id);
+
+    const userChallengesQuery: any = {
       user: req.user.id,
-      challenge: challengeId,
+      challenge: { $in: challengeIds },
       status: "completed",
     };
 
     if (startDate) {
-      query.updatedAt = { $gte: startDate };
+      userChallengesQuery.updatedAt = { $gte: startDate };
     }
 
-    const userChallenges = await SystemUserChallenge.find(query)
+    const userChallenges = await SystemUserChallenge.find(userChallengesQuery)
+      .populate("challenge", "title levels")
       .sort({ updatedAt: 1 })
       .lean();
 
@@ -387,6 +408,7 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
       level: string;
       badge: string;
       isPB: boolean;
+      challengeName: string;
     }> = [];
 
     let personalBestValue: number | null = null;
@@ -395,6 +417,7 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
     userChallenges.forEach((uc, index) => {
       const submissions = uc.submissions as Record<string, any>;
       const completedDate = new Date(uc.updatedAt || uc.createdAt!);
+      const challenge = uc.challenge as any;
 
       let value: number = 0;
       let displayValue: string = "";
@@ -424,7 +447,7 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
 
       const { level, badge } = determineLevelAchieved(
         value,
-        challenge.levels,
+        challenge?.levels,
         isLowerBetter
       );
 
@@ -456,6 +479,7 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
         level,
         badge,
         isPB: false,
+        challengeName: challenge?.title || "",
       });
     });
 
@@ -470,15 +494,33 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
       level: dataPoints[personalBestIndex]?.level,
     } : null;
 
+    // Get pack and challenge details if provided
+    let pack = null;
+    let specificChallenge = null;
+
+    if (packId && mongoose.Types.ObjectId.isValid(packId as string)) {
+      pack = await SystemChallengeType.findById(packId).select("_id name").lean();
+    }
+
+    if (challengeId && mongoose.Types.ObjectId.isValid(challengeId as string)) {
+      specificChallenge = await SystemChallenge.findById(challengeId).select("_id title").lean();
+    }
+
     return {
       message: "Challenge graph data fetched successfully",
       data: {
-        challenge: {
-          _id: challenge._id,
-          title: challenge.title,
-          category: (challenge.category as any)?.name,
-          pack: (challenge.categoryType as any)?.name,
+        category: {
+          _id: category._id,
+          name: category.name,
         },
+        pack: pack ? {
+          _id: pack._id,
+          name: pack.name,
+        } : null,
+        challenge: specificChallenge ? {
+          _id: specificChallenge._id,
+          title: specificChallenge.title,
+        } : null,
         timeFilter,
         personalBest,
         totalAttempts: dataPoints.length,

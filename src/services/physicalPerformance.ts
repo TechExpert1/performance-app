@@ -264,27 +264,31 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       throw new Error("User is not authenticated.");
     }
 
-    const { exerciseId, timeFilter = "30D" } = req.query;
+    const {
+      type = "categories", // kept for backwards compatibility, has no effect
+      categoryId,
+      exerciseId,
+      timeFilter = "30D",
+    } = req.query;
 
-    if (!exerciseId) {
-      throw new Error("exerciseId is required");
+    if (!categoryId) {
+      throw new Error("categoryId is required");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(exerciseId as string)) {
-      throw new Error("Invalid exercise ID");
+    if (!mongoose.Types.ObjectId.isValid(categoryId as string)) {
+      throw new Error("Invalid category ID");
     }
 
-    // Get the exercise details
-    const exercise = await ChallengeCategoryExercise.findById(exerciseId)
-      .populate("challengeCategory", "name")
-      .populate("subCategory", "name")
+    // Get category details
+    const category = await ChallengeCategory.findById(categoryId)
+      .select("_id name")
       .lean();
 
-    if (!exercise) {
-      throw new Error("Exercise not found");
+    if (!category) {
+      throw new Error("Category not found");
     }
 
-    const categoryName = (exercise.challengeCategory as any)?.name || "";
+    const categoryName = category.name;
 
     // Calculate date range based on time filter
     const now = new Date();
@@ -306,7 +310,7 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
         break;
     }
 
-    // Get all performance sets for this user and exercise
+    // Get all performance sets for this user and category
     const performanceQuery: any = { user: req.user.id };
     if (startDate) {
       performanceQuery.date = { $gte: startDate };
@@ -319,14 +323,30 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
 
     const performanceIds = performances.map((p) => p._id);
 
-    const performanceSets = await PerformanceSet.find({
+    // Build query for performance sets
+    const setsQuery: any = {
       performance: { $in: performanceIds },
-      exercise: exerciseId,
-    })
+      category: categoryId,
+    };
+
+    // If exerciseId provided, filter by specific exercise
+    if (exerciseId && mongoose.Types.ObjectId.isValid(exerciseId as string)) {
+      setsQuery.exercise = exerciseId;
+    }
+
+    const performanceSets = await PerformanceSet.find(setsQuery)
       .populate("category", "name")
       .populate("subCategory", "name")
       .populate("exercise", "name entityType")
       .lean();
+
+    // Get exercise details if exerciseId provided
+    let exercise = null;
+    if (exerciseId && mongoose.Types.ObjectId.isValid(exerciseId as string)) {
+      exercise = await ChallengeCategoryExercise.findById(exerciseId)
+        .select("_id name")
+        .lean();
+    }
 
     // Build graph data based on category
     const { dataPoints, totals, personalBest } = buildGraphData(
@@ -339,12 +359,14 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
     return {
       message: "Performance graph data fetched successfully",
       data: {
-        exercise: {
+        category: {
+          _id: category._id,
+          name: category.name,
+        },
+        exercise: exercise ? {
           _id: exercise._id,
           name: exercise.name,
-          category: (exercise.challengeCategory as any)?.name,
-          subCategory: (exercise.subCategory as any)?.name,
-        },
+        } : null,
         timeFilter,
         personalBest,
         totals,
