@@ -1107,74 +1107,128 @@ async function getMonthlyData(
 
 /**
  * Get all IDs needed for Performance Graph
- * Returns all categories and exercises with their IDs
+ * Returns hierarchy: Types (Strength, Power, Speed, Endurance) → Categories → Exercises
  */
 export const getPerformanceGraphIds = async () => {
   try {
-    const categoryColors: { [key: string]: string } = {
+    const typeColors: { [key: string]: string } = {
       Strength: "#FF0000",
       Power: "#FFA500",
       Speed: "#0000FF",
       Endurance: "#00FF00",
     };
 
-    // Get all 4 categories
-    const categories = await ChallengeCategory.find({
+    // Get all 4 types (previously called categories)
+    const types = await ChallengeCategory.find({
       name: { $in: ["Strength", "Power", "Speed", "Endurance"] },
     })
       .select("_id name image")
       .lean();
 
-    const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
-    const sortedCategories = orderedCategories
+    const orderedTypes = ["Strength", "Power", "Speed", "Endurance"];
+    const sortedTypes = orderedTypes
       .map((name) => {
-        const cat = categories.find((c) => c.name === name);
-        if (cat) {
+        const type = types.find((t) => t.name === name);
+        if (type) {
           return {
-            _id: cat._id,
-            name: cat.name,
-            image: cat.image,
-            color: categoryColors[cat.name] || "#808080",
+            _id: type._id,
+            name: type.name,
+            image: type.image,
+            color: typeColors[type.name] || "#808080",
           };
         }
         return null;
       })
       .filter(Boolean);
 
-    // Get all exercises for each category
-    const exercises = await ChallengeCategoryExercise.find({
-      challengeCategory: { $in: sortedCategories.map((c) => c!._id) },
+    // Get all sub-categories (these are the categories under each type)
+    const { ChallengeSubCategory } = await import("../models/Challenge_Sub_Category.js");
+    const subCategories = await ChallengeSubCategory.find({
+      challengeCategory: { $in: sortedTypes.map((t) => t!._id) },
     })
       .select("_id name challengeCategory")
-      .populate("challengeCategory", "name")
       .lean();
 
-    // Structure the response
-    const categoriesWithExercises = sortedCategories.map((category) => {
-      const categoryExercises = exercises
+    // Get all exercises
+    const exercises = await ChallengeCategoryExercise.find({
+      challengeCategory: { $in: sortedTypes.map((t) => t!._id) },
+    })
+      .select("_id name challengeCategory subCategory")
+      .lean();
+
+    // Structure the response: Types → Categories → Exercises
+    let totalCategories = 0;
+    let totalExercises = 0;
+
+    const typesWithCategoriesAndExercises = sortedTypes.map((type) => {
+      // Get categories (sub-categories) for this type
+      const typeCategories = subCategories
+        .filter(
+          (sc: any) =>
+            sc.challengeCategory &&
+            sc.challengeCategory.toString() === type!._id.toString()
+        )
+        .map((category: any) => {
+          // Get exercises for this category
+          const categoryExercises = exercises
+            .filter(
+              (e: any) =>
+                e.subCategory &&
+                e.subCategory.toString() === category._id.toString()
+            )
+            .map((exercise: any) => ({
+              _id: exercise._id,
+              name: exercise.name,
+            }));
+
+          totalExercises += categoryExercises.length;
+
+          return {
+            _id: category._id,
+            name: category.name,
+            exercises: categoryExercises,
+          };
+        });
+
+      // Get exercises that belong directly to the type (no sub-category)
+      const uncategorizedExercises = exercises
         .filter(
           (e: any) =>
             e.challengeCategory &&
-            e.challengeCategory._id.toString() === category!._id.toString()
+            e.challengeCategory.toString() === type!._id.toString() &&
+            !e.subCategory
         )
         .map((exercise: any) => ({
           _id: exercise._id,
           name: exercise.name,
         }));
 
+      // If there are uncategorized exercises, add them under an "Other" category
+      if (uncategorizedExercises.length > 0) {
+        typeCategories.push({
+          _id: null,
+          name: "Other",
+          exercises: uncategorizedExercises,
+        });
+        totalExercises += uncategorizedExercises.length;
+      }
+
+      totalCategories += typeCategories.length;
+
       return {
-        ...category,
-        exercises: categoryExercises,
+        ...type,
+        categories: typeCategories,
       };
     });
 
     return {
       message: "All Performance Graph IDs fetched successfully",
       data: {
-        categories: categoriesWithExercises,
+        types: typesWithCategoriesAndExercises,
         summary: {
-          totalCategories: sortedCategories.length,
-          totalExercises: exercises.length,
+          totalTypes: sortedTypes.length,
+          totalCategories: totalCategories,
+          totalExercises: totalExercises,
         },
       },
     };
