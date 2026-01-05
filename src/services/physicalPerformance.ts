@@ -264,259 +264,97 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       throw new Error("User is not authenticated.");
     }
 
-    const {
-      type = "categories",
-      categoryId,
-      exerciseId,
-      timeFilter = "30D",
-    } = req.query;
+    const { exerciseId, timeFilter = "30D" } = req.query;
 
-    switch (type) {
-      // ========================================
-      // GET CATEGORIES
-      // ========================================
-      case "categories": {
-        const categories = await ChallengeCategory.find({
-          name: { $in: ["Strength", "Power", "Speed", "Endurance"] },
-        })
-          .select("_id name image")
-          .lean();
-
-        const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
-        const sortedCategories = orderedCategories
-          .map((name) => {
-            const cat = categories.find((c) => c.name === name);
-            if (cat) {
-              return {
-                ...cat,
-                color: PERF_CATEGORY_COLORS[name] || "#000000",
-                direction: PERF_CATEGORY_DIRECTIONS[name] || "up",
-                graphMetric: getGraphMetricForCategory(name),
-                totalsIcons: getTotalsIconsForCategory(name),
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
-
-        return {
-          message: "Performance categories fetched successfully",
-          type: "categories",
-          data: sortedCategories,
-        };
-      }
-
-      // ========================================
-      // GET EXERCISES FOR A CATEGORY
-      // ========================================
-      case "exercises": {
-        if (!categoryId) {
-          throw new Error("categoryId is required when type=exercises");
-        }
-
-        if (!mongoose.Types.ObjectId.isValid(categoryId as string)) {
-          throw new Error("Invalid category ID");
-        }
-
-        const exercises = await ChallengeCategoryExercise.find({
-          challengeCategory: categoryId,
-        })
-          .select("_id name description entityType challengeCategory subCategory")
-          .populate("challengeCategory", "name")
-          .populate("subCategory", "name")
-          .lean();
-
-        return {
-          message: "Exercises fetched successfully",
-          type: "exercises",
-          categoryId,
-          data: exercises,
-        };
-      }
-
-      // ========================================
-      // GET GRAPH DATA FOR AN EXERCISE
-      // ========================================
-      case "data": {
-        if (!exerciseId) {
-          throw new Error("exerciseId is required when type=data");
-        }
-
-        if (!mongoose.Types.ObjectId.isValid(exerciseId as string)) {
-          throw new Error("Invalid exercise ID");
-        }
-
-        // Get the exercise details
-        const exercise = await ChallengeCategoryExercise.findById(exerciseId)
-          .populate("challengeCategory", "name")
-          .populate("subCategory", "name")
-          .lean();
-
-        if (!exercise) {
-          throw new Error("Exercise not found");
-        }
-
-        const categoryName = (exercise.challengeCategory as any)?.name || "";
-
-        // Calculate date range based on time filter
-        const now = new Date();
-        let startDate: Date | null = null;
-
-        switch (timeFilter) {
-          case "7D":
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case "30D":
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            break;
-          case "90D":
-            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-            break;
-          case "all":
-          default:
-            startDate = null;
-            break;
-        }
-
-        // Get all performance sets for this user and exercise
-        const performanceQuery: any = { user: req.user.id };
-        if (startDate) {
-          performanceQuery.date = { $gte: startDate };
-        }
-
-        const performances = await PhysicalPerformance.find(performanceQuery)
-          .select("_id date")
-          .sort({ date: 1 })
-          .lean();
-
-        const performanceIds = performances.map((p) => p._id);
-
-        const performanceSets = await PerformanceSet.find({
-          performance: { $in: performanceIds },
-          exercise: exerciseId,
-        })
-          .populate("category", "name")
-          .populate("subCategory", "name")
-          .populate("exercise", "name entityType")
-          .lean();
-
-        // Build graph data based on category
-        const { dataPoints, totals, personalBest } = buildGraphData(
-          performances,
-          performanceSets,
-          categoryName,
-          exercise
-        );
-
-        // Determine graph configuration
-        const graphConfig = getGraphConfig(categoryName, exercise);
-
-        return {
-          message: "Performance graph data fetched successfully",
-          type: "data",
-          data: {
-            exercise: {
-              _id: exercise._id,
-              name: exercise.name,
-              description: exercise.description,
-              entityType: exercise.entityType,
-              category: exercise.challengeCategory,
-              subCategory: exercise.subCategory,
-            },
-            graphConfig,
-            timeFilter,
-            dataPoints,
-            totals,
-            personalBest,
-          },
-        };
-      }
-
-      default:
-        throw new Error("Invalid type. Must be one of: categories, exercises, data");
+    if (!exerciseId) {
+      throw new Error("exerciseId is required");
     }
+
+    if (!mongoose.Types.ObjectId.isValid(exerciseId as string)) {
+      throw new Error("Invalid exercise ID");
+    }
+
+    // Get the exercise details
+    const exercise = await ChallengeCategoryExercise.findById(exerciseId)
+      .populate("challengeCategory", "name")
+      .populate("subCategory", "name")
+      .lean();
+
+    if (!exercise) {
+      throw new Error("Exercise not found");
+    }
+
+    const categoryName = (exercise.challengeCategory as any)?.name || "";
+
+    // Calculate date range based on time filter
+    const now = new Date();
+    let startDate: Date | null = null;
+
+    switch (timeFilter) {
+      case "7D":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "30D":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case "90D":
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case "all":
+      default:
+        startDate = null;
+        break;
+    }
+
+    // Get all performance sets for this user and exercise
+    const performanceQuery: any = { user: req.user.id };
+    if (startDate) {
+      performanceQuery.date = { $gte: startDate };
+    }
+
+    const performances = await PhysicalPerformance.find(performanceQuery)
+      .select("_id date")
+      .sort({ date: 1 })
+      .lean();
+
+    const performanceIds = performances.map((p) => p._id);
+
+    const performanceSets = await PerformanceSet.find({
+      performance: { $in: performanceIds },
+      exercise: exerciseId,
+    })
+      .populate("category", "name")
+      .populate("subCategory", "name")
+      .populate("exercise", "name entityType")
+      .lean();
+
+    // Build graph data based on category
+    const { dataPoints, totals, personalBest } = buildGraphData(
+      performances,
+      performanceSets,
+      categoryName,
+      exercise
+    );
+
+    return {
+      message: "Performance graph data fetched successfully",
+      data: {
+        exercise: {
+          _id: exercise._id,
+          name: exercise.name,
+          category: (exercise.challengeCategory as any)?.name,
+          subCategory: (exercise.subCategory as any)?.name,
+        },
+        timeFilter,
+        personalBest,
+        totals,
+        dataPoints,
+      },
+    };
   } catch (error) {
     throw error;
   }
 };
-
-/**
- * Helper to get graph metric description for a category
- */
-function getGraphMetricForCategory(categoryName: string): string {
-  switch (categoryName) {
-    case "Strength":
-    case "Power":
-      return "Top Set Load (kg)";
-    case "Speed":
-      return "Fastest Time (s)";
-    case "Endurance":
-      return "Time / Distance";
-    default:
-      return "Performance";
-  }
-}
-
-/**
- * Helper to get totals icons for a category
- */
-function getTotalsIconsForCategory(categoryName: string): string[] {
-  switch (categoryName) {
-    case "Strength":
-    case "Power":
-      return ["Total Sets", "Total Reps", "Total Weight"];
-    case "Speed":
-      return ["Total Sets", "Total Distance", "Total Time"];
-    case "Endurance":
-      return ["Total Sets", "Total Distance", "Total Time", "Total Calories"];
-    default:
-      return ["Total Sets"];
-  }
-}
-
-/**
- * Helper to get graph configuration based on category
- */
-function getGraphConfig(categoryName: string, exercise: any) {
-  const isEnduranceTimeBased = categoryName === "Endurance";
-  const isSpeedCategory = categoryName === "Speed";
-  const isStrengthOrPower = categoryName === "Strength" || categoryName === "Power";
-
-  let yAxisLabel = "Performance";
-  let unit = "";
-  let direction = "up";
-
-  if (isStrengthOrPower) {
-    yAxisLabel = "Load";
-    unit = "kg";
-    direction = "up";
-  } else if (isSpeedCategory) {
-    yAxisLabel = "Time";
-    unit = "s";
-    direction = "down";
-  } else if (isEnduranceTimeBased) {
-    // Check if it's fixed time -> distance (like Assault Bike)
-    const exerciseName = exercise?.name?.toLowerCase() || "";
-    if (exerciseName.includes("assault") || exerciseName.includes("bike")) {
-      yAxisLabel = "Distance";
-      unit = "km";
-      direction = "up";
-    } else {
-      yAxisLabel = "Time";
-      unit = "s";
-      direction = "down";
-    }
-  }
-
-  return {
-    categoryName,
-    categoryColor: PERF_CATEGORY_COLORS[categoryName] || "#000000",
-    direction,
-    xAxisLabel: "Date",
-    yAxisLabel,
-    unit,
-  };
-}
 
 /**
  * Build graph data from performance sets
