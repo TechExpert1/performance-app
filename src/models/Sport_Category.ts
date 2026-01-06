@@ -6,6 +6,7 @@ export type SportCategoryDocument = ISportCategory & Document;
 const sportCategorySchema = new Schema<SportCategoryDocument>(
   {
     name: { type: String, required: true, trim: true },
+    type: { type: String, enum: ["gi", "no-gi"], default: null },
     sport: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Sport",

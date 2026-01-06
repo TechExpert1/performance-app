@@ -226,6 +226,83 @@ export const getAllStats = async (req: AuthenticatedRequest) => {
   }
 };
 
+/**
+ * Get Total Challenge Attempts by Category
+ * Returns the count of all challenge attempts (active + completed) per category
+ * Categories: Strength, Power, Speed, Endurance
+ */
+export const getTotalChallengeAttempts = async (req: AuthenticatedRequest) => {
+  try {
+    if (!req.user) {
+      throw new Error("User is not authenticated.");
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+
+    // Get all category names (excluding "Attendance Based")
+    const categories = await ChallengeCategory.find(
+      { name: { $ne: "Attendance Based" } },
+      "name"
+    ).lean();
+    const categoryNames = categories.map((c) => c.name);
+
+    // Aggregate ALL challenge attempts by category (both active and completed)
+    const result = await SystemUserChallenge.aggregate([
+      {
+        $match: {
+          user: userId,
+        },
+      },
+      {
+        $lookup: {
+          from: "system_challenges",
+          localField: "challenge",
+          foreignField: "_id",
+          as: "challengeDetails",
+        },
+      },
+      { $unwind: "$challengeDetails" },
+      {
+        $lookup: {
+          from: "challenge_categories",
+          localField: "challengeDetails.category",
+          foreignField: "_id",
+          as: "categoryDetails",
+        },
+      },
+      { $unwind: "$categoryDetails" },
+      {
+        $group: {
+          _id: "$categoryDetails.name",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Merge results with all categories
+    const counts: Record<string, number> = {};
+    categoryNames.forEach((name) => {
+      const found = result.find((r) => r._id === name);
+      counts[name] = found ? found.count : 0;
+    });
+
+    // Enforce order (Strength → Power → Speed → Endurance)
+    const orderedCategories = ["Strength", "Power", "Speed", "Endurance"];
+    const orderedData = orderedCategories.map((cat) => ({
+      category: cat,
+      attempts: counts[cat] || 0,
+    }));
+
+    return {
+      message: "Total challenge attempts fetched successfully",
+      data: orderedData,
+      total: orderedData.reduce((sum, item) => sum + item.attempts, 0),
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 // ========================================
 // PERFORMANCE CHALLENGE GRAPH API
 // ========================================

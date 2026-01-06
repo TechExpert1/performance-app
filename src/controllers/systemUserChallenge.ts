@@ -4,6 +4,7 @@ import {
   updateSystemUserChallenge,
   getAllSystemUserChallenges,
   getAllStats,
+  getTotalChallengeAttempts,
   getPerformanceChallengeGraph,
   getPerformanceChallengeGraphIds,
 } from "../services/systemUserChallenge.js";
@@ -38,6 +39,15 @@ export const SystemUserChallengeController = {
   stats: async (req: Request, res: Response) => {
     try {
       const result = await getAllStats(req);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(422).json({ error: (err as Error).message });
+    }
+  },
+
+  totalAttempts: async (req: Request, res: Response) => {
+    try {
+      const result = await getTotalChallengeAttempts(req);
       res.status(200).json(result);
     } catch (err) {
       res.status(422).json({ error: (err as Error).message });

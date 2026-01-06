@@ -37,5 +37,6 @@ router.patch(
 // router.get("/:id", userChallengeController.getById);
 router.get("/", userAuth, SystemUserChallengeController.getAll);
 router.get("/stats", userAuth, SystemUserChallengeController.stats);
+router.get("/total-attempts", userAuth, SystemUserChallengeController.totalAttempts);
 
 export default router;
