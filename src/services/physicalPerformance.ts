@@ -264,8 +264,10 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       throw new Error("User is not authenticated.");
     }
 
+    const { ChallengeSubCategory } = await import("../models/Challenge_Sub_Category.js");
+
     const {
-      type = "categories", // kept for backwards compatibility, has no effect
+      type, // kept for backwards compatibility, has no effect
       categoryId,
       exerciseId,
       timeFilter = "30D",
@@ -279,16 +281,18 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       throw new Error("Invalid category ID");
     }
 
-    // Get category details
-    const category = await ChallengeCategory.findById(categoryId)
-      .select("_id name")
+    // Get sub-category details (categoryId field accepts sub-category ID)
+    const subCategory = await ChallengeSubCategory.findById(categoryId)
+      .select("_id name challengeCategory")
+      .populate("challengeCategory", "name")
       .lean();
 
-    if (!category) {
+    if (!subCategory) {
       throw new Error("Category not found");
     }
 
-    const categoryName = category.name;
+    const parentCategory = subCategory.challengeCategory as any;
+    const categoryName = parentCategory?.name || "";
 
     // Calculate date range based on time filter
     const now = new Date();
@@ -310,7 +314,7 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
         break;
     }
 
-    // Get all performance sets for this user and category
+    // Get all performance sets for this user and sub-category
     const performanceQuery: any = { user: req.user.id };
     if (startDate) {
       performanceQuery.date = { $gte: startDate };
@@ -323,10 +327,10 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
 
     const performanceIds = performances.map((p) => p._id);
 
-    // Build query for performance sets
+    // Build query for performance sets using subCategory field
     const setsQuery: any = {
       performance: { $in: performanceIds },
-      category: categoryId,
+      subCategory: categoryId,
     };
 
     // If exerciseId provided, filter by specific exercise
@@ -348,7 +352,7 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
         .lean();
     }
 
-    // Build graph data based on category
+    // Build graph data based on parent category name
     const { dataPoints, totals, personalBest } = buildGraphData(
       performances,
       performanceSets,
@@ -360,8 +364,12 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       message: "Performance graph data fetched successfully",
       data: {
         category: {
-          _id: category._id,
-          name: category.name,
+          _id: subCategory._id,
+          name: subCategory.name,
+          parentCategory: parentCategory ? {
+            _id: parentCategory._id,
+            name: parentCategory.name,
+          } : null,
         },
         exercise: exercise ? {
           _id: exercise._id,
