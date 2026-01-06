@@ -324,6 +324,93 @@ const CATEGORY_DIRECTIONS: Record<string, string> = {
 };
 
 /**
+ * Generate mock challenge data for testing
+ */
+function getMockChallengeData(categoryId: string, packId?: string, challengeId?: string, timeFilter?: string) {
+  const mockChallenges: Record<string, any> = {
+    strength: {
+      name: "Strength",
+      pack: "Compound Lifts",
+      challenge: "Deadlift Max",
+      dataPoints: [
+        { date: "2025-12-10T08:00:00.000Z", dateFormatted: "10 Dec", value: 160, displayValue: "160 kg", unit: "kg", level: "Silver", badge: "Silver", isPB: false, challengeName: "Deadlift Max" },
+        { date: "2025-12-17T08:15:00.000Z", dateFormatted: "17 Dec", value: 170, displayValue: "170 kg", unit: "kg", level: "Gold", badge: "Gold", isPB: false, challengeName: "Deadlift Max" },
+        { date: "2025-12-24T09:30:00.000Z", dateFormatted: "24 Dec", value: 175, displayValue: "175 kg", unit: "kg", level: "Gold", badge: "Gold", isPB: false, challengeName: "Deadlift Max" },
+        { date: "2025-12-31T08:45:00.000Z", dateFormatted: "31 Dec", value: 172, displayValue: "172 kg", unit: "kg", level: "Gold", badge: "Gold", isPB: false, challengeName: "Deadlift Max" },
+        { date: "2026-01-05T07:30:00.000Z", dateFormatted: "05 Jan", value: 180, displayValue: "180 kg", unit: "kg", level: "Platinum", badge: "Platinum", isPB: true, challengeName: "Deadlift Max" },
+        { date: "2026-01-06T08:00:00.000Z", dateFormatted: "06 Jan", value: 178, displayValue: "178 kg", unit: "kg", level: "Gold", badge: "Gold", isPB: false, challengeName: "Deadlift Max" }
+      ],
+      personalBest: { value: 180, displayValue: "180 kg", date: "05 Jan 2026", level: "Platinum" }
+    },
+    power: {
+      name: "Power",
+      pack: "Olympic Lifts",
+      challenge: "Clean & Jerk",
+      dataPoints: [
+        { date: "2025-12-12T09:00:00.000Z", dateFormatted: "12 Dec", value: 95, displayValue: "95 kg", unit: "kg", level: "Bronze", badge: "Bronze", isPB: false, challengeName: "Clean & Jerk" },
+        { date: "2025-12-19T09:30:00.000Z", dateFormatted: "19 Dec", value: 100, displayValue: "100 kg", unit: "kg", level: "Silver", badge: "Silver", isPB: false, challengeName: "Clean & Jerk" },
+        { date: "2025-12-26T10:00:00.000Z", dateFormatted: "26 Dec", value: 105, displayValue: "105 kg", unit: "kg", level: "Gold", badge: "Gold", isPB: true, challengeName: "Clean & Jerk" },
+        { date: "2026-01-02T09:15:00.000Z", dateFormatted: "02 Jan", value: 103, displayValue: "103 kg", unit: "kg", level: "Silver", badge: "Silver", isPB: false, challengeName: "Clean & Jerk" }
+      ],
+      personalBest: { value: 105, displayValue: "105 kg", date: "26 Dec 2025", level: "Gold" }
+    },
+    speed: {
+      name: "Speed",
+      pack: "Sprint Training",
+      challenge: "Sprint 100m",
+      dataPoints: [
+        { date: "2026-01-02T16:30:00.000Z", dateFormatted: "02 Jan", value: 12.5, displayValue: "12.5 s", unit: "time", level: "Silver", badge: "Silver", isPB: false, challengeName: "Sprint 100m" },
+        { date: "2026-01-03T17:00:00.000Z", dateFormatted: "03 Jan", value: 12.1, displayValue: "12.1 s", unit: "time", level: "Silver", badge: "Silver", isPB: false, challengeName: "Sprint 100m" },
+        { date: "2026-01-04T16:45:00.000Z", dateFormatted: "04 Jan", value: 11.8, displayValue: "11.8 s", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "Sprint 100m" },
+        { date: "2026-01-05T17:15:00.000Z", dateFormatted: "05 Jan", value: 11.5, displayValue: "11.5 s", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "Sprint 100m" },
+        { date: "2026-01-06T16:30:00.000Z", dateFormatted: "06 Jan", value: 11.2, displayValue: "11.2 s", unit: "time", level: "Platinum", badge: "Platinum", isPB: true, challengeName: "Sprint 100m" }
+      ],
+      personalBest: { value: 11.2, displayValue: "11.2 s", date: "06 Jan 2026", level: "Platinum" }
+    },
+    endurance: {
+      name: "Endurance",
+      pack: "Running",
+      challenge: "5km Run",
+      dataPoints: [
+        { date: "2025-12-10T06:30:00.000Z", dateFormatted: "10 Dec", value: 1620, displayValue: "27:00", unit: "time", level: "Bronze", badge: "Bronze", isPB: false, challengeName: "5km Run" },
+        { date: "2025-12-15T06:45:00.000Z", dateFormatted: "15 Dec", value: 1560, displayValue: "26:00", unit: "time", level: "Silver", badge: "Silver", isPB: false, challengeName: "5km Run" },
+        { date: "2025-12-20T07:00:00.000Z", dateFormatted: "20 Dec", value: 1530, displayValue: "25:30", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "5km Run" },
+        { date: "2025-12-25T06:30:00.000Z", dateFormatted: "25 Dec", value: 1500, displayValue: "25:00", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "5km Run" },
+        { date: "2025-12-30T06:45:00.000Z", dateFormatted: "30 Dec", value: 1495, displayValue: "24:55", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "5km Run" },
+        { date: "2026-01-05T07:00:00.000Z", dateFormatted: "05 Jan", value: 1485, displayValue: "24:45", unit: "time", level: "Platinum", badge: "Platinum", isPB: true, challengeName: "5km Run" },
+        { date: "2026-01-06T06:30:00.000Z", dateFormatted: "06 Jan", value: 1490, displayValue: "24:50", unit: "time", level: "Gold", badge: "Gold", isPB: false, challengeName: "5km Run" }
+      ],
+      personalBest: { value: 1485, displayValue: "24:45", date: "05 Jan 2026", level: "Platinum" }
+    }
+  };
+
+  // Default to strength if no match
+  const mockData = mockChallenges.strength;
+
+  return {
+    message: "Challenge graph data fetched successfully (MOCK DATA)",
+    data: {
+      category: {
+        _id: categoryId || "689c5a83bafbbca89c86b91b",
+        name: mockData.name
+      },
+      pack: packId ? {
+        _id: packId,
+        name: mockData.pack
+      } : null,
+      challenge: challengeId ? {
+        _id: challengeId,
+        title: mockData.challenge
+      } : null,
+      timeFilter: timeFilter || "30D",
+      personalBest: mockData.personalBest,
+      totalAttempts: mockData.dataPoints.length,
+      dataPoints: mockData.dataPoints
+    }
+  };
+}
+
+/**
  * Helper function to determine the level achieved based on the result
  */
 const determineLevelAchieved = (
@@ -400,7 +487,13 @@ export const getPerformanceChallengeGraph = async (req: AuthenticatedRequest) =>
       packId, 
       challengeId, 
       timeFilter = "30D",
+      mock,
     } = req.query;
+
+    // Return mock data if requested
+    if (mock === "true") {
+      return getMockChallengeData(categoryId as string, packId as string, challengeId as string, timeFilter as string);
+    }
 
     if (!categoryId) {
       throw new Error("categoryId is required");

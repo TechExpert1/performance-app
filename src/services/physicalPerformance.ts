@@ -210,6 +210,108 @@ const PERF_CATEGORY_COLORS: Record<string, string> = {
   Endurance: "#00FF00", // Green
 };
 
+/**
+ * Generate mock performance data for testing
+ */
+function getMockPerformanceData(categoryId: string, exerciseId?: string, timeFilter?: string) {
+  const mockCategories: Record<string, any> = {
+    strength: {
+      name: "Strength",
+      exercise: "Back Squat",
+      unit: "kg",
+      dataPoints: [
+        { date: "2026-01-02T08:30:00.000Z", dateFormatted: "02 Jan", value: 110, displayValue: "110 kg", unit: "kg", isPB: false },
+        { date: "2026-01-03T09:15:00.000Z", dateFormatted: "03 Jan", value: 115, displayValue: "115 kg", unit: "kg", isPB: false },
+        { date: "2026-01-04T10:00:00.000Z", dateFormatted: "04 Jan", value: 120, displayValue: "120 kg", unit: "kg", isPB: false },
+        { date: "2026-01-05T08:45:00.000Z", dateFormatted: "05 Jan", value: 118, displayValue: "118 kg", unit: "kg", isPB: false },
+        { date: "2026-01-06T07:30:00.000Z", dateFormatted: "06 Jan", value: 125, displayValue: "125 kg", unit: "kg", isPB: true }
+      ],
+      personalBest: { value: 125, displayValue: "125 kg", date: "06 Jan 2026" },
+      totals: {
+        totalSets: { value: 24, label: "Total Sets" },
+        totalReps: { value: 168, label: "Total Reps" },
+        totalWeight: { value: 18900, label: "Total Weight", unit: "kg" }
+      }
+    },
+    power: {
+      name: "Power",
+      exercise: "Snatch",
+      unit: "kg",
+      dataPoints: [
+        { date: "2026-01-02T09:00:00.000Z", dateFormatted: "02 Jan", value: 85, displayValue: "85 kg", unit: "kg", isPB: false },
+        { date: "2026-01-03T10:00:00.000Z", dateFormatted: "03 Jan", value: 88, displayValue: "88 kg", unit: "kg", isPB: false },
+        { date: "2026-01-04T09:30:00.000Z", dateFormatted: "04 Jan", value: 90, displayValue: "90 kg", unit: "kg", isPB: false },
+        { date: "2026-01-05T10:15:00.000Z", dateFormatted: "05 Jan", value: 92, displayValue: "92 kg", unit: "kg", isPB: false },
+        { date: "2026-01-06T09:00:00.000Z", dateFormatted: "06 Jan", value: 95, displayValue: "95 kg", unit: "kg", isPB: true }
+      ],
+      personalBest: { value: 95, displayValue: "95 kg", date: "06 Jan 2026" },
+      totals: {
+        totalSets: { value: 20, label: "Total Sets" },
+        totalReps: { value: 120, label: "Total Reps" },
+        totalWeight: { value: 10800, label: "Total Weight", unit: "kg" }
+      }
+    },
+    speed: {
+      name: "Speed",
+      exercise: "Sprint 20m",
+      unit: "s",
+      dataPoints: [
+        { date: "2026-01-02T16:30:00.000Z", dateFormatted: "02 Jan", value: 3.5, displayValue: "3.50 s", unit: "s", isPB: false },
+        { date: "2026-01-03T17:00:00.000Z", dateFormatted: "03 Jan", value: 3.4, displayValue: "3.40 s", unit: "s", isPB: false },
+        { date: "2026-01-04T16:45:00.000Z", dateFormatted: "04 Jan", value: 3.3, displayValue: "3.30 s", unit: "s", isPB: false },
+        { date: "2026-01-05T17:15:00.000Z", dateFormatted: "05 Jan", value: 3.2, displayValue: "3.20 s", unit: "s", isPB: false },
+        { date: "2026-01-06T16:30:00.000Z", dateFormatted: "06 Jan", value: 3.1, displayValue: "3.10 s", unit: "s", isPB: true }
+      ],
+      personalBest: { value: 3.1, displayValue: "3.10 s", date: "06 Jan 2026" },
+      totals: {
+        totalSets: { value: 15, label: "Total Sets" },
+        totalDistance: { value: "0.30", label: "Total Distance", unit: "km" },
+        totalTime: { value: "3:25", label: "Total Time" }
+      }
+    },
+    endurance: {
+      name: "Endurance",
+      exercise: "1km Run",
+      unit: "time",
+      dataPoints: [
+        { date: "2026-01-02T06:30:00.000Z", dateFormatted: "02 Jan", value: 300, displayValue: "5:00", unit: "time", isPB: false },
+        { date: "2026-01-03T06:45:00.000Z", dateFormatted: "03 Jan", value: 290, displayValue: "4:50", unit: "time", isPB: false },
+        { date: "2026-01-04T07:00:00.000Z", dateFormatted: "04 Jan", value: 285, displayValue: "4:45", unit: "time", isPB: false },
+        { date: "2026-01-05T06:30:00.000Z", dateFormatted: "05 Jan", value: 280, displayValue: "4:40", unit: "time", isPB: false },
+        { date: "2026-01-06T06:45:00.000Z", dateFormatted: "06 Jan", value: 275, displayValue: "4:35", unit: "time", isPB: true }
+      ],
+      personalBest: { value: 275, displayValue: "4:35", date: "06 Jan 2026" },
+      totals: {
+        totalSets: { value: 5, label: "Total Sets" },
+        totalDistance: { value: "5.00", label: "Total Distance", unit: "km" },
+        totalTime: { value: "23:50", label: "Total Time" },
+        totalCalories: { value: 450, label: "Total Calories", unit: "cal" }
+      }
+    }
+  };
+
+  // Default to strength if no match
+  const mockData = mockCategories.strength;
+
+  return {
+    message: "Performance graph data fetched successfully (MOCK DATA)",
+    data: {
+      category: {
+        _id: categoryId || "689c5a83bafbbca89c86b91b",
+        name: mockData.name
+      },
+      exercise: exerciseId ? {
+        _id: exerciseId,
+        name: mockData.exercise
+      } : null,
+      timeFilter: timeFilter || "7D",
+      personalBest: mockData.personalBest,
+      totals: mockData.totals,
+      dataPoints: mockData.dataPoints
+    }
+  };
+}
+
 // Category graph directions
 const PERF_CATEGORY_DIRECTIONS: Record<string, string> = {
   Strength: "up", // Higher weight is better
@@ -271,7 +373,13 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
       categoryId,
       exerciseId,
       timeFilter = "30D",
+      mock,
     } = req.query;
+
+    // Return mock data if requested
+    if (mock === "true") {
+      return getMockPerformanceData(categoryId as string, exerciseId as string, timeFilter as string);
+    }
 
     if (!categoryId) {
       throw new Error("categoryId is required");
