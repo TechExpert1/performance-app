@@ -21,7 +21,7 @@ const ChallengeSubCategorySchema = new Schema<IChallengeSubCategory>(
 
     challengeCategory: {
       type: Schema.Types.ObjectId,
-      ref: "ChallengeCategory",
+      ref: "Challenge_Category",
       required: true,
     },
   },
