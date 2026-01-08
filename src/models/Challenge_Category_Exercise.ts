@@ -10,6 +10,7 @@ const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
     description: { type: String },
     coachTip: { type: String },
     distance: { type: String }, // e.g., "20m", "100m", "5km" - for exercises with distance measurements
+    time: { type: String }, // e.g., "1 Minute", "10 Minutes", "20 Minutes" - for time-based exercises
     challengeCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",

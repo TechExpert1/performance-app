@@ -829,7 +829,7 @@ export const getAthletePhysicalPerformance = async (req: AuthenticatedRequest) =
     }
 
     const performanceSets = await PerformanceSet.find(setQuery)
-      .populate("exercise", "name")
+      .populate("exercise", "name distance time")
       .populate("category", "name")
       .populate("subCategory", "name")
       .lean();

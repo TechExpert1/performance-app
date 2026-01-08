@@ -449,7 +449,7 @@ export const getPerformanceGraph = async (req: AuthenticatedRequest) => {
     const performanceSets = await PerformanceSet.find(setsQuery)
       .populate("category", "name")
       .populate("subCategory", "name")
-      .populate("exercise", "name entityType")
+      .populate("exercise", "name entityType distance time")
       .lean();
 
     // Get exercise details if exerciseId provided

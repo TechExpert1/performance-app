@@ -11,14 +11,15 @@ const exerciseDistances: Record<string, string> = {
   "Sprint 40m": "40m",
   "Sprint 60m": "60m",
   "Curve Sprint": "20m", // typical curve sprint distance
+  "Sled Sprint": "20m", // typical sled sprint distance
   
   // === SPEED - Change of Direction & Agility Drills ===
   "5-10-5 Shuttle": "20m", // total distance covered
+  "5-10-5 Shuttle Run": "20m", // duplicate with different name
   "T Test Agility Drill": "40m", // approximate total distance
   "L Drill": "15m", // approximate total distance
   "Illinois Agility Test": "60m", // approximate total distance
   "Arrowhead Drill": "15m", // approximate total distance
-  "Box Drill": "40m", // total perimeter distance (5-10m sides)
 
   // === ENDURANCE - Running / Jogging ===
   "1km Run": "1km",
@@ -52,7 +53,6 @@ const exerciseDistances: Record<string, string> = {
   "500m Swim": "500m",
   "1000m Swim": "1000m",
   "1500m Swim": "1500m",
-  "1600m Swim": "1600m",
   "1900m Swim": "1900m",
   "3800m Swim": "3800m",
 

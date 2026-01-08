@@ -17,7 +17,9 @@
     "seed:bjj-gi": "npm run seed:bjj-gi-1 && npm run seed:bjj-gi-2 && npm run seed:bjj-gi-3",
     "seed:bjj-nogi": "npm run seed:bjj-nogi-1 && npm run seed:bjj-nogi-2 && npm run seed:bjj-nogi-3",
     "seed:bjj-all": "npm run seed:bjj-gi && npm run seed:bjj-nogi",
-    "seed:exercise-distances": "node --loader ts-node/esm src/seeds/exerciseDistances.ts"
+    "seed:exercise-distances": "node --loader ts-node/esm src/seeds/exerciseDistances.ts",
+    "seed:exercise-times": "node --loader ts-node/esm src/seeds/exerciseTimes.ts",
+    "list:exercises": "node --loader ts-node/esm src/seeds/listAllExercises.ts"
   },
   "keywords": [],
   "author": "",
