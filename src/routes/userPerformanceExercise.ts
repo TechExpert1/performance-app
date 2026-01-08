@@ -5,8 +5,8 @@ import { userAuth } from "../middlewares/user.js";
 const router = Router();
 
 router.post("/", userAuth, UserPerformanceExerciseController.create);
-router.put("/:id", UserPerformanceExerciseController.update);
-router.delete("/:id", UserPerformanceExerciseController.delete);
+router.put("/:id", userAuth, UserPerformanceExerciseController.update);
+router.delete("/:id", userAuth, UserPerformanceExerciseController.delete);
 router.get("/:id", UserPerformanceExerciseController.show);
 router.get("/", UserPerformanceExerciseController.index);
 
