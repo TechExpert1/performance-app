@@ -5,6 +5,7 @@ export interface IChallengeCategoryType {
   description: string;
   coachTip: string;
   entityType: string;
+  distance?: string; // e.g., "20m", "100m", "5km" - for exercises with distance measurements
   challengeCategory: Types.ObjectId;
   subCategory: Types.ObjectId;
   user: Types.ObjectId;

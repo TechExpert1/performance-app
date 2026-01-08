@@ -9,6 +9,7 @@ const challengeCategoryTypeSchema = new Schema<ChallengeCategoryTypeDocument>(
     entityType: { type: String },
     description: { type: String },
     coachTip: { type: String },
+    distance: { type: String }, // e.g., "20m", "100m", "5km" - for exercises with distance measurements
     challengeCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Challenge_Category",
