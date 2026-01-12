@@ -756,20 +756,6 @@ export const getUserMonthlyTrainingCount = async (req: AuthenticatedRequest) => 
     };
   }
 
-  const gymMember = await GymMember.findOne({
-    user: userId,
-    status: "active",
-  });
-
-  if (!gymMember) {
-    return {
-      message: "No active gym membership found for this user",
-      data: null,
-    };
-  }
-
-  const gymId = gymMember.gym;
-
   const startOfMonth = dayjs()
     .set("year", numericYear)
     .set("month", monthIndex)
@@ -782,24 +768,37 @@ export const getUserMonthlyTrainingCount = async (req: AuthenticatedRequest) => 
     .endOf("month")
     .toDate();
 
-  // Step 1: Get trainings for the gym in the given month
-  const trainings = await TrainingCalendar.find({
-    gym: gymId,
+  // Step 1: Get user's own trainings (self trainings) in the given month
+  const userOwnTrainings = await TrainingCalendar.find({
+    user: userId,
     date: { $gte: startOfMonth, $lte: endOfMonth },
   }).select("_id");
 
-  const trainingIds = trainings.map((t) => t._id);
+  const userOwnTrainingIds = userOwnTrainings.map((t) => t._id.toString());
 
-  // Step 2: Count how many trainings this user attended from training_members
-  const trainingCount = await Training_Member.countDocuments({
+  // Step 2: Get all trainings in the month where user is a member
+  const allTrainingsInMonth = await TrainingCalendar.find({
+    date: { $gte: startOfMonth, $lte: endOfMonth },
+  }).select("_id");
+
+  const allTrainingIds = allTrainingsInMonth.map((t) => t._id);
+
+  // Step 3: Find trainings where this user is a member (attended)
+  const attendedTrainings = await Training_Member.find({
     user: userId,
-    training: { $in: trainingIds },
-  });
+    training: { $in: allTrainingIds },
+  }).select("training");
+
+  const attendedTrainingIds = attendedTrainings.map((t) => t.training.toString());
+
+  // Step 4: Combine user's own trainings and attended trainings (unique)
+  const allUserTrainingIds = new Set([...userOwnTrainingIds, ...attendedTrainingIds]);
+  const totalCount = allUserTrainingIds.size;
 
   return {
     message: "Monthly training count fetched",
     data: {
-      count: trainingCount,
+      count: totalCount,
       month,
       year: numericYear,
     },
