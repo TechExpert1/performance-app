@@ -5,7 +5,7 @@ import { userAuth } from "../middlewares/user.js";
 const router = express.Router();
 
 // Sports Type Routes
-router.get("/monthly-counts", trainingCalendarController.getMonthlyCount);
+router.get("/monthly-counts", userAuth, trainingCalendarController.getMonthlyCount);
 router.get(
   "/update-status/:id",
   userAuth,
