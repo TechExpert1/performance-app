@@ -48,6 +48,20 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
       enum: ["active", "in-active", "inactive"],
       default: "in-active",
     },
+    numberOfWeeks: { type: Number, min: 1 }, // Number of weeks for weekly recurrence
+    numberOfMonths: { type: Number, min: 1 }, // Number of months for monthly recurrence
+    weeklySkills: [
+      {
+        period: { type: Number, required: true }, // Week number (1, 2, 3...)
+        skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category_Skill" }],
+      },
+    ],
+    monthlySkills: [
+      {
+        period: { type: Number, required: true }, // Month number (1, 2, 3...)
+        skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category_Skill" }],
+      },
+    ],
     classLimit: {
       type: Number,
       min: 1,

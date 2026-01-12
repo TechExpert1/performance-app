@@ -5,7 +5,9 @@ import {
   getReviewById,
   getAllReviews,
   removeReview,
+  getSkillTrainingGraph,
 } from "../services/review.js";
+import { AuthenticatedRequest } from "../middlewares/user.js";
 
 export const reviewController = {
   create: async (req: Request, res: Response) => {
@@ -60,6 +62,31 @@ export const reviewController = {
       res
         .status(422)
         .json({ error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  },
+
+  /**
+   * Get skill training graph data for pie chart visualization
+   * GET /reviews/skill-training-graph
+   * Query: { sportId, giNoGi, timeFilter, mock }
+   */
+  getSkillTrainingGraphData: async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const result = await getSkillTrainingGraph(req);
+      res.status(200).json(result);
+    } catch (err: any) {
+      if (err.message?.includes("required")) {
+        res.status(400).json({ status: false, message: err.message });
+        return;
+      }
+      if (err.message === "User not authenticated") {
+        res.status(401).json({ status: false, message: err.message });
+        return;
+      }
+      res.status(500).json({
+        status: false,
+        message: err instanceof Error ? err.message : "Failed to fetch skill training graph data",
+      });
     }
   },
 };

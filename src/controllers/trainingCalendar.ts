@@ -60,7 +60,7 @@ export const trainingCalendarController = {
     }
   },
 
-  getMonthlyCount: async (req: Request, res: Response) => {
+  getMonthlyCount: async (req: AuthenticatedRequest, res: Response) => {
     try {
       const result = await getUserMonthlyTrainingCount(req);
       res.status(200).json(result);

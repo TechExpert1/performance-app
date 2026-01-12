@@ -1,0 +1,195 @@
+{
+	"info": {
+		"_postman_id": "a8f3d9e2-4c7b-4d1e-9e6f-8d3a2b1c0f4e",
+		"name": "Performance Tracking Graphs API",
+		"description": "Collection for attendance tracking, feedback analysis, and skill training visualization endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Monthly Training Count",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{authToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/training-calander/monthly-counts?month=january&year=2026",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"training-calander",
+						"monthly-counts"
+					],
+					"query": [
+						{
+							"key": "month",
+							"value": "january",
+							"description": "Month name (january, february, etc.)"
+						},
+						{
+							"key": "year",
+							"value": "2026",
+							"description": "Year in numeric format"
+						}
+					]
+				},
+				"description": "Returns the actual number of training sessions attended by the authenticated user in a specific month at their gym. User is automatically identified from the auth token.\n\n**Response:**\n```json\n{\n  \"message\": \"Monthly training count fetched\",\n  \"data\": {\n    \"count\": 8,\n    \"month\": \"january\",\n    \"year\": 2026\n  }\n}\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Feedback Graph Data",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{authToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/feedback-requests/graph?sportId={{sportId}}&sessionType=skill&timeFilter=7D&mock=false",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"feedback-requests",
+						"graph"
+					],
+					"query": [
+						{
+							"key": "sportId",
+							"value": "{{sportId}}",
+							"description": "Sport ID to filter by (required)"
+						},
+						{
+							"key": "sessionType",
+							"value": "skill",
+							"description": "Session type: 'skill' (Skill Practice) or 'match' (Match Type)"
+						},
+						{
+							"key": "timeFilter",
+							"value": "7D",
+							"description": "Time range: 7D, 30D, 90D, or all"
+						},
+						{
+							"key": "mock",
+							"value": "false",
+							"description": "Set to 'true' for mock data"
+						}
+					]
+				},
+				"description": "Returns feedback data for graphing personal feedback vs peer feedback over time.\n\n**Response:**\n```json\n{\n  \"message\": \"Feedback graph data fetched successfully\",\n  \"data\": {\n    \"sportId\": \"64abc123...\",\n    \"sessionType\": \"Skill Practice\",\n    \"timeFilter\": \"7D\",\n    \"summary\": {\n      \"totalSessions\": 7,\n      \"personalFeedback\": { \"count\": 7, \"average\": 6.5, \"best\": 10 },\n      \"peerFeedback\": { \"count\": 5, \"average\": 7.0, \"best\": 10 }\n    },\n    \"dataPoints\": [\n      {\n        \"date\": \"2026-01-01T...\",\n        \"dateFormatted\": \"Wed, 1 Nov\",\n        \"personalFeedback\": 2,\n        \"peerFeedback\": 0,\n        \"peerFeedbackCount\": 0,\n        \"details\": {\n          \"matchType\": \"Competition\",\n          \"matchResult\": \"Win\",\n          \"duration\": \"3:15\",\n          \"notes\": \"Great session\",\n          \"hasMedia\": true\n        }\n      }\n    ]\n  }\n}\n```"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Skill Training Graph",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{authToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/reviews/skill-training-graph?sportId={{sportId}}&giNoGi=all&timeFilter=all&mock=false",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"reviews",
+						"skill-training-graph"
+					],
+					"query": [
+						{
+							"key": "sportId",
+							"value": "{{sportId}}",
+							"description": "Sport ID to filter by (required)"
+						},
+						{
+							"key": "giNoGi",
+							"value": "all",
+							"description": "Filter by gi/no-gi: 'gi', 'no-gi', or 'all' (BJJ specific)"
+						},
+						{
+							"key": "timeFilter",
+							"value": "all",
+							"description": "Time range: 7D, 30D, 90D, or all"
+						},
+						{
+							"key": "mock",
+							"value": "false",
+							"description": "Set to 'true' for mock data"
+						}
+					]
+				},
+				"description": "Returns skill training breakdown by category for pie chart visualization.\n\n**Response:**\n```json\n{\n  \"message\": \"Skill training graph data fetched successfully\",\n  \"data\": {\n    \"sportId\": \"64abc123...\",\n    \"giNoGi\": \"All\",\n    \"timeFilter\": \"all\",\n    \"summary\": {\n      \"totalSessions\": 100,\n      \"classCount\": 12,\n      \"manualLogCount\": 10,\n      \"categoryCount\": 7\n    },\n    \"categories\": [\n      {\n        \"_id\": \"cat1\",\n        \"name\": \"Takedowns\",\n        \"count\": 20,\n        \"percentage\": 20,\n        \"skills\": [\n          { \"_id\": \"skill1\", \"name\": \"Single Leg Takedown\", \"count\": 8 },\n          { \"_id\": \"skill2\", \"name\": \"Double Leg Takedown\", \"count\": 6 }\n        ]\n      }\n    ]\n  }\n}\n```"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "your-auth-token-here",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "64abc123456789...",
+			"type": "string"
+		},
+		{
+			"key": "sportId",
+			"value": "64def456789012...",
+			"type": "string"
+		}
+	]
+}

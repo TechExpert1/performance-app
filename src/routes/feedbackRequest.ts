@@ -5,10 +5,19 @@ import {
   getSentFeedbackRequests,
   getFeedbackRequestDetails,
   submitFeedbackForRequest,
+  getFeedbackGraphData,
 } from "../controllers/feedbackRequest.js";
 import { userAuth } from "../middlewares/user.js";
 
 const router = express.Router();
+
+/**
+ * @route   GET /feedback-requests/graph
+ * @desc    Get feedback graph data for visualizing personal vs peer feedback over time
+ * @access  Private (User)
+ * @query   { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all" }
+ */
+router.get("/graph", userAuth, getFeedbackGraphData);
 
 /**
  * @route   POST /feedback-requests

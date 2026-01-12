@@ -6,6 +6,7 @@ import {
   getSentRequests,
   getRequestDetails,
   submitFeedback,
+  getFeedbackGraph,
 } from "../services/feedbackRequest.js";
 
 /**
@@ -181,6 +182,44 @@ export const submitFeedbackForRequest = async (
     res.status(500).json({
       status: false,
       message: error.message || "Failed to submit feedback",
+    });
+  }
+};
+
+/**
+ * Get feedback graph data for visualizing personal vs peer feedback over time
+ * GET /feedback-requests/graph
+ * Query: { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all" }
+ */
+export const getFeedbackGraphData = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const result = await getFeedbackGraph(req);
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error("Error fetching feedback graph data:", error);
+    
+    if (error.message.includes("required")) {
+      res.status(400).json({
+        status: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error.message === "User not authenticated") {
+      res.status(401).json({
+        status: false,
+        message: error.message,
+      });
+      return;
+    }
+    
+    res.status(500).json({
+      status: false,
+      message: error.message || "Failed to fetch feedback graph data",
     });
   }
 };

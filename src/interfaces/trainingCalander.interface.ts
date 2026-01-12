@@ -1,5 +1,11 @@
 import { Types } from "mongoose";
 
+// Skill assignment for each week/month in recurring training
+export interface IRecurrenceSkillSchedule {
+  period: number; // Week number (1, 2, 3...) or Month number (1, 2, 3...)
+  skills: Types.ObjectId[]; // Skills assigned for this period
+}
+
 export interface ITrainingCalendar {
   _id: Types.ObjectId;
   user?: Types.ObjectId;
@@ -18,6 +24,10 @@ export interface ITrainingCalendar {
   recurrence?: string;
   recurrenceEndDate?: Date;
   recurrenceStatus?: string;
+  numberOfWeeks?: number; // Number of weeks for weekly recurrence
+  numberOfMonths?: number; // Number of months for monthly recurrence
+  weeklySkills?: IRecurrenceSkillSchedule[]; // Skills per week for weekly recurrence
+  monthlySkills?: IRecurrenceSkillSchedule[]; // Skills per month for monthly recurrence
   classLimit?: Number; // Maximum number of attendees (optional, null = unlimited)
   note?: string;
   parentTrainingId?: Types.ObjectId; // Reference to original training for recurring instances

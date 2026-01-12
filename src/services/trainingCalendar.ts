@@ -108,9 +108,13 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
   if (data.recurrence && data.date) {
     const baseDate = dayjs(data.date);
     if (data.recurrence === "weekly") {
-      data.recurrenceEndDate = baseDate.add(7, "day").toDate();
+      // Use numberOfWeeks if provided, otherwise default to 1 week
+      const weeks = data.numberOfWeeks || 1;
+      data.recurrenceEndDate = baseDate.add(weeks * 7, "day").toDate();
     } else if (data.recurrence === "monthly") {
-      data.recurrenceEndDate = baseDate.add(1, "month").toDate();
+      // Use numberOfMonths if provided, otherwise default to 1 month
+      const months = data.numberOfMonths || 1;
+      data.recurrenceEndDate = baseDate.add(months, "month").toDate();
     }
     // Set recurrence status to active when recurrence is specified
     if (!data.recurrenceStatus || data.recurrenceStatus === "in-active") {
@@ -184,6 +188,8 @@ export const createTrainingCalendar = async (req: AuthenticatedRequest) => {
     "skill",
     "skills",
     "gym",
+    { path: "weeklySkills.skills", model: "Sport_Category_Skill" },
+    { path: "monthlySkills.skills", model: "Sport_Category_Skill" },
   ]);
 
   const trainingAttendees = await Training_Member.find({
@@ -226,9 +232,13 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
     if (dateToUse) {
       const baseDate = dayjs(dateToUse);
       if (updateData.recurrence === "weekly") {
-        updateData.recurrenceEndDate = baseDate.add(7, "day").toDate();
+        // Use numberOfWeeks if provided, otherwise use existing or default to 1 week
+        const weeks = updateData.numberOfWeeks || existingTraining.numberOfWeeks || 1;
+        updateData.recurrenceEndDate = baseDate.add(weeks * 7, "day").toDate();
       } else if (updateData.recurrence === "monthly") {
-        updateData.recurrenceEndDate = baseDate.add(1, "month").toDate();
+        // Use numberOfMonths if provided, otherwise use existing or default to 1 month
+        const months = updateData.numberOfMonths || existingTraining.numberOfMonths || 1;
+        updateData.recurrenceEndDate = baseDate.add(months, "month").toDate();
       }
       // Set recurrence status to active when recurrence is specified
       if (!updateData.recurrenceStatus || updateData.recurrenceStatus === "in-active") {
@@ -297,6 +307,8 @@ export const updateTrainingCalendar = async (req: AuthenticatedRequest) => {
     "skill",
     "skills",
     "gym",
+    { path: "weeklySkills.skills", model: "Sport_Category_Skill" },
+    { path: "monthlySkills.skills", model: "Sport_Category_Skill" },
   ]);
 
   const trainingAttendees = await Training_Member.find({
@@ -335,6 +347,8 @@ export const getTrainingCalendarById = async (req: Request) => {
         "skill",
         "skills",
         "gym",
+        { path: "weeklySkills.skills", model: "Sport_Category_Skill" },
+        { path: "monthlySkills.skills", model: "Sport_Category_Skill" },
       ]);
 
       if (!parentTraining) {
@@ -372,6 +386,8 @@ export const getTrainingCalendarById = async (req: Request) => {
     "skill",
     "skills",
     "gym",
+    { path: "weeklySkills.skills", model: "Sport_Category_Skill" },
+    { path: "monthlySkills.skills", model: "Sport_Category_Skill" },
   ]);
 
   if (!entry) {
@@ -481,7 +497,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
     const allTrainings = await TrainingCalendar.find({
       _id: { $in: attendedTrainingIds },
     })
-      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
+      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym", { path: "weeklySkills.skills", model: "Sport_Category_Skill" }, { path: "monthlySkills.skills", model: "Sport_Category_Skill" }])
       .sort(sortOption);    // Step 6: Group by current month
     const currentMonth: Record<string, any[]> = {};
     const daysInMonth = now.daysInMonth();
@@ -643,7 +659,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   }
 
   const dataQuery = TrainingCalendar.find(query)
-    .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"])
+    .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym", { path: "weeklySkills.skills", model: "Sport_Category_Skill" }, { path: "monthlySkills.skills", model: "Sport_Category_Skill" }])
     .sort(sortOption);
 
   if (page && limit) {
@@ -694,7 +710,7 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
     }
 
     const recurringTrainings = await TrainingCalendar.find(recurringQuery)
-      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym"]);
+      .populate(["user", "coach", "sport", "category", "categories", "skill", "skills", "gym", { path: "weeklySkills.skills", model: "Sport_Category_Skill" }, { path: "monthlySkills.skills", model: "Sport_Category_Skill" }]);
 
     const allRecurringInstances: any[] = [];
 
@@ -722,15 +738,13 @@ export const getAllTrainingCalendars = async (req: AuthenticatedRequest) => {
   };
 };
 
-export const getUserMonthlyTrainingCount = async (req: Request) => {
-  const { userId, month, year } = req.query as Record<string, string>;
-
-  if (!userId) {
-    return {
-      message: "Missing 'userId' in query",
-      data: null,
-    };
+export const getUserMonthlyTrainingCount = async (req: AuthenticatedRequest) => {
+  if (!req.user) {
+    throw new Error("User not authenticated");
   }
+
+  const { month, year } = req.query as Record<string, string>;
+  const userId = req.user.id;
 
   const monthIndex = monthMap[month?.toLowerCase() || ""]; // e.g., "july" => 6
   const numericYear = parseInt(year || "");

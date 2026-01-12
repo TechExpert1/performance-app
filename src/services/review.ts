@@ -724,3 +724,274 @@ export const getAllReviews = async (req: Request) => {
     data,
   };
 };
+
+/**
+ * Skill Training Graph API
+ * 
+ * Returns skill training breakdown by category for pie chart visualization
+ * 
+ * Query Parameters:
+ * - sportId: Required - Filter by sport
+ * - giNoGi: "gi" | "no-gi" | "all" - Filter by Gi/No-Gi (BJJ specific, default: "all")
+ * - timeFilter: "7D" | "30D" | "90D" | "all" (default: "all")
+ * - mock: "true" - Return mock data for testing
+ */
+export const getSkillTrainingGraph = async (req: AuthenticatedRequest) => {
+  if (!req.user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { sportId, giNoGi = "all", timeFilter = "all", mock } = req.query;
+
+  if (!sportId) {
+    throw new Error("sportId is required");
+  }
+
+  // Return mock data if requested
+  if (mock === "true") {
+    return getMockSkillTrainingData(sportId as string, giNoGi as string, timeFilter as string);
+  }
+
+  // Calculate date range based on time filter
+  const now = new Date();
+  let startDate: Date | null = null;
+
+  switch (timeFilter) {
+    case "7D":
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "30D":
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case "90D":
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      break;
+    case "all":
+    default:
+      startDate = null;
+      break;
+  }
+
+  // Build query for skill practice reviews
+  const query: any = {
+    user: req.user.id,
+    sport: sportId,
+    sessionType: "Skill Practice",
+  };
+
+  // Filter by Gi/No-Gi if specified
+  if (giNoGi && giNoGi !== "all") {
+    query.giNoGi = giNoGi === "gi" ? "Gi" : "No-Gi";
+  }
+
+  if (startDate) {
+    query.createdAt = { $gte: startDate };
+  }
+
+  // Fetch reviews with categories and skills
+  const reviews = await Review.find(query)
+    .populate({
+      path: "category",
+      select: "_id name type",
+    })
+    .populate({
+      path: "skill",
+      select: "_id name category",
+    })
+    .select("_id category skill trainingCalendar createdAt")
+    .lean();
+
+  // Count how many came from training calendar (classes) vs manual logs
+  const classCount = reviews.filter((r: any) => r.trainingCalendar).length;
+  const manualLogCount = reviews.filter((r: any) => !r.trainingCalendar).length;
+
+  // Build category breakdown
+  const categoryMap: Record<string, {
+    _id: string;
+    name: string;
+    count: number;
+    skills: Record<string, { _id: string; name: string; count: number }>;
+  }> = {};
+
+  reviews.forEach((review: any) => {
+    // Handle multiple categories
+    const categories = Array.isArray(review.category) ? review.category : [review.category];
+    const skills = Array.isArray(review.skill) ? review.skill : [review.skill];
+
+    categories.forEach((cat: any) => {
+      if (!cat) return;
+      
+      const catId = cat._id.toString();
+      if (!categoryMap[catId]) {
+        categoryMap[catId] = {
+          _id: catId,
+          name: cat.name,
+          count: 0,
+          skills: {},
+        };
+      }
+      categoryMap[catId].count++;
+    });
+
+    // Map skills to their categories
+    skills.forEach((skill: any) => {
+      if (!skill) return;
+      
+      const skillCatId = skill.category?.toString();
+      if (skillCatId && categoryMap[skillCatId]) {
+        const skillId = skill._id.toString();
+        if (!categoryMap[skillCatId].skills[skillId]) {
+          categoryMap[skillCatId].skills[skillId] = {
+            _id: skillId,
+            name: skill.name,
+            count: 0,
+          };
+        }
+        categoryMap[skillCatId].skills[skillId].count++;
+      }
+    });
+  });
+
+  // Convert to array and calculate percentages
+  const totalCount = Object.values(categoryMap).reduce((sum, cat) => sum + cat.count, 0);
+  
+  const categoryBreakdown = Object.values(categoryMap)
+    .map((cat) => ({
+      _id: cat._id,
+      name: cat.name,
+      count: cat.count,
+      percentage: totalCount > 0 ? Math.round((cat.count / totalCount) * 100) : 0,
+      skills: Object.values(cat.skills)
+        .sort((a, b) => b.count - a.count)
+        .map((skill) => ({
+          _id: skill._id,
+          name: skill.name,
+          count: skill.count,
+        })),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    message: "Skill training graph data fetched successfully",
+    data: {
+      sportId,
+      giNoGi: giNoGi === "all" ? "All" : (giNoGi === "gi" ? "Gi" : "No-Gi"),
+      timeFilter,
+      summary: {
+        totalSessions: totalCount,
+        classCount,
+        manualLogCount,
+        categoryCount: categoryBreakdown.length,
+      },
+      categories: categoryBreakdown,
+    },
+  };
+};
+
+/**
+ * Mock data for skill training graph
+ */
+const getMockSkillTrainingData = (sportId: string, giNoGi: string, timeFilter: string) => {
+  const mockCategories = [
+    {
+      _id: "cat1",
+      name: "Takedowns",
+      count: 20,
+      percentage: 20,
+      skills: [
+        { _id: "skill1", name: "Single Leg Takedown", count: 8 },
+        { _id: "skill2", name: "Double Leg Takedown", count: 6 },
+        { _id: "skill3", name: "Ankle Pick", count: 4 },
+        { _id: "skill4", name: "Arm Drag to Takedown", count: 2 },
+      ],
+    },
+    {
+      _id: "cat2",
+      name: "Guard Passes",
+      count: 13,
+      percentage: 13,
+      skills: [
+        { _id: "skill5", name: "Knee Cut Pass", count: 5 },
+        { _id: "skill6", name: "Torreando Pass", count: 4 },
+        { _id: "skill7", name: "Over-Under Pass", count: 3 },
+        { _id: "skill8", name: "Leg Drag", count: 1 },
+      ],
+    },
+    {
+      _id: "cat3",
+      name: "Sweeps",
+      count: 15,
+      percentage: 15,
+      skills: [
+        { _id: "skill9", name: "Scissor Sweep", count: 6 },
+        { _id: "skill10", name: "Flower Sweep", count: 5 },
+        { _id: "skill11", name: "Butterfly Sweep", count: 4 },
+        { _id: "skill12", name: "Hip Bump Sweep", count: 3 },
+        { _id: "skill13", name: "X-Guard Sweep", count: 2 },
+      ],
+    },
+    {
+      _id: "cat4",
+      name: "Guard Passing",
+      count: 22,
+      percentage: 22,
+      skills: [
+        { _id: "skill14", name: "Pressure Passing", count: 10 },
+        { _id: "skill15", name: "Speed Passing", count: 7 },
+        { _id: "skill16", name: "Standing Guard Pass", count: 5 },
+      ],
+    },
+    {
+      _id: "cat5",
+      name: "Submissions (Chokes)",
+      count: 12,
+      percentage: 12,
+      skills: [
+        { _id: "skill17", name: "Rear Naked Choke", count: 5 },
+        { _id: "skill18", name: "Triangle Choke", count: 4 },
+        { _id: "skill19", name: "Guillotine", count: 2 },
+        { _id: "skill20", name: "Arm Triangle", count: 1 },
+      ],
+    },
+    {
+      _id: "cat6",
+      name: "Submissions (Joint Locks)",
+      count: 8,
+      percentage: 8,
+      skills: [
+        { _id: "skill21", name: "Armbar", count: 4 },
+        { _id: "skill22", name: "Kimura", count: 2 },
+        { _id: "skill23", name: "Americana", count: 1 },
+        { _id: "skill24", name: "Straight Ankle Lock", count: 1 },
+      ],
+    },
+    {
+      _id: "cat7",
+      name: "Guards & Positions",
+      count: 10,
+      percentage: 10,
+      skills: [
+        { _id: "skill25", name: "Closed Guard", count: 3 },
+        { _id: "skill26", name: "Half Guard", count: 3 },
+        { _id: "skill27", name: "De La Riva", count: 2 },
+        { _id: "skill28", name: "Spider Guard", count: 2 },
+      ],
+    },
+  ];
+
+  return {
+    message: "Skill training graph data fetched successfully (MOCK DATA)",
+    data: {
+      sportId,
+      giNoGi: giNoGi === "all" ? "All" : (giNoGi === "gi" ? "Gi" : "No-Gi"),
+      timeFilter,
+      summary: {
+        totalSessions: 100,
+        classCount: 12,
+        manualLogCount: 10,
+        categoryCount: mockCategories.length,
+      },
+      categories: mockCategories,
+    },
+  };
+};
