@@ -446,32 +446,34 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
     }
   });
 
-  // Build data points for the graph
-  const dataPoints: Array<{
-    date: string;
-    dateFormatted: string;
-    personalFeedback: number | null;
-    peerFeedback: number | null;
-    peerFeedbackCount: number;
-    details: {
-      matchType?: string;
-      matchResult?: string;
-      duration?: string;
-      notes?: string;
-      hasMedia: boolean;
-    };
-  }> = [];
+  // Build data points for the graph - group by day
+  const dailyDataMap: Record<string, {
+    date: Date;
+    personalRatings: number[];
+    peerRatings: number[];
+    peerCounts: number[];
+    reviews: any[];
+  }> = {};
 
   reviews.forEach((review: any) => {
     const reviewDate = new Date(review.createdAt);
-    const dateFormatted = reviewDate.toLocaleDateString("en-GB", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
+    // Create a date key for grouping by day (YYYY-MM-DD)
+    const dayKey = reviewDate.toISOString().split('T')[0];
+
+    if (!dailyDataMap[dayKey]) {
+      dailyDataMap[dayKey] = {
+        date: reviewDate,
+        personalRatings: [],
+        peerRatings: [],
+        peerCounts: [],
+        reviews: [],
+      };
+    }
 
     // Personal feedback is the rating field on the review
-    const personalRating = review.rating || null;
+    if (review.rating) {
+      dailyDataMap[dayKey].personalRatings.push(review.rating);
+    }
 
     // Peer feedback - calculate average from all peer feedback requests
     const reviewId = review._id.toString();
@@ -489,6 +491,11 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
       peerCount = 1;
     }
 
+    if (peerRating !== null) {
+      dailyDataMap[dayKey].peerRatings.push(peerRating);
+      dailyDataMap[dayKey].peerCounts.push(peerCount);
+    }
+
     // Duration - check match or roll duration
     let duration: string | undefined;
     if (review.matchDuration) {
@@ -497,20 +504,79 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
       duration = review.rollDuration === "Other" ? `${review.rollDurationCustom} min` : review.rollDuration;
     }
 
-    dataPoints.push({
-      date: reviewDate.toISOString(),
-      dateFormatted,
-      personalFeedback: personalRating,
-      peerFeedback: peerRating,
-      peerFeedbackCount: peerCount,
-      details: {
-        matchType: review.matchType,
-        matchResult: review.matchResult,
-        duration,
-        notes: review.notes,
-        hasMedia: !!(review.media?.length > 0 || review.videoUrl),
-      },
+    dailyDataMap[dayKey].reviews.push({
+      matchType: review.matchType,
+      matchResult: review.matchResult,
+      duration,
+      notes: review.notes,
+      hasMedia: !!(review.media?.length > 0 || review.videoUrl),
     });
+  });
+
+  // Convert daily data to graph format with averaging
+  const dataPoints: Array<{
+    value: number;
+    date: string;
+    label?: string;
+    labelTextStyle?: { color: string; width: number };
+    personalFeedback: number | null;
+    peerFeedback: number | null;
+    peerFeedbackCount: number;
+    details: {
+      matchType?: string;
+      matchResult?: string;
+      duration?: string;
+      notes?: string;
+      hasMedia: boolean;
+    };
+  }> = [];
+
+  const sortedDays = Object.keys(dailyDataMap).sort();
+  sortedDays.forEach((dayKey, index) => {
+    const dayData = dailyDataMap[dayKey];
+    
+    // Calculate averages for the day
+    const personalAvg = dayData.personalRatings.length > 0
+      ? Math.round((dayData.personalRatings.reduce((a, b) => a + b, 0) / dayData.personalRatings.length) * 10) / 10
+      : null;
+    
+    const peerAvg = dayData.peerRatings.length > 0
+      ? Math.round((dayData.peerRatings.reduce((a, b) => a + b, 0) / dayData.peerRatings.length) * 10) / 10
+      : null;
+
+    const totalPeerCount = dayData.peerCounts.reduce((a, b) => a + b, 0);
+
+    // Use personal feedback as main value, or peer feedback if personal not available
+    const value = personalAvg !== null ? personalAvg : (peerAvg !== null ? peerAvg : 0);
+
+    const dateFormatted = dayData.date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    // Add label every 10th day (0-indexed, so 9, 19, 29...)
+    const shouldAddLabel = (index + 1) % 10 === 0;
+    const labelDate = dayData.date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+    });
+
+    const dataPoint: any = {
+      value,
+      date: dateFormatted,
+      personalFeedback: personalAvg,
+      peerFeedback: peerAvg,
+      peerFeedbackCount: totalPeerCount,
+      details: dayData.reviews[0], // Use first review's details for simplicity
+    };
+
+    if (shouldAddLabel) {
+      dataPoint.label = labelDate;
+      dataPoint.labelTextStyle = { color: 'lightgray', width: 60 };
+    }
+
+    dataPoints.push(dataPoint);
   });
 
   // Calculate summary statistics
@@ -557,109 +623,51 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
 const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilter: string) => {
   const sessionTypeFilter = sessionType === "match" ? "Match Type" : "Skill Practice";
   
-  const mockDataPoints = [
-    {
-      date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 1",
-      personalFeedback: 2,
-      peerFeedback: null,
-      peerFeedbackCount: 0,
+  // Generate 30 days of mock data similar to the example
+  const mockDataPoints = [];
+  const startDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+  
+  for (let i = 0; i < 30; i++) {
+    const currentDate = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const dateFormatted = currentDate.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    
+    // Generate random values between 140 and 390
+    const personalRating = Math.round((Math.random() * 250 + 140) * 10) / 10;
+    const peerRating = Math.round((personalRating + (Math.random() * 40 - 20)) * 10) / 10;
+    
+    const dataPoint: any = {
+      value: personalRating,
+      date: dateFormatted,
+      personalFeedback: personalRating,
+      peerFeedback: peerRating,
+      peerFeedbackCount: Math.floor(Math.random() * 3) + 1,
       details: {
-        matchType: "No-Gi Competition",
-        matchResult: null,
-        duration: undefined,
-        notes: undefined,
-        hasMedia: false,
+        matchType: i % 3 === 0 ? "No-Gi Competition" : "Skill Practice",
+        matchResult: i % 4 === 0 ? "Win" : null,
+        duration: i % 2 === 0 ? "1 hour" : "1.5 hours",
+        notes: i % 5 === 0 ? "Good technique work today" : undefined,
+        hasMedia: i % 3 === 0,
       },
-    },
-    {
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 2",
-      personalFeedback: 2,
-      peerFeedback: 1,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: null,
-        duration: undefined,
-        notes: undefined,
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 3",
-      personalFeedback: 6,
-      peerFeedback: 6,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1 hour",
-        notes: "Good technique work today",
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 4",
-      personalFeedback: 6,
-      peerFeedback: 6,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1 hour",
-        notes: "Focused on guard transitions",
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 5",
-      personalFeedback: 7.4,
-      peerFeedback: 7,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1.5 hours",
-        notes: "Better escapes today",
-        hasMedia: true,
-      },
-    },
-    {
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 6",
-      personalFeedback: 8.4,
-      peerFeedback: 8.2,
-      peerFeedbackCount: 3,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: "Win - Arm Triangle (Submission)",
-        duration: "3:15",
-        notes: "Felt sharper on knee-cut today.",
-        hasMedia: true,
-      },
-    },
-    {
-      date: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 7",
-      personalFeedback: 10,
-      peerFeedback: 8.4,
-      peerFeedbackCount: 2,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: "Win",
-        duration: "5:00",
-        notes: "Excellent performance overall",
-        hasMedia: true,
-      },
-    },
-  ];
-
-  const personalScores = mockDataPoints.filter((d) => d.personalFeedback !== null).map((d) => d.personalFeedback as number);
-  const peerScores = mockDataPoints.filter((d) => d.peerFeedback !== null).map((d) => d.peerFeedback as number);
+    };
+    
+    // Add label every 10th day
+    if ((i + 1) % 10 === 0) {
+      dataPoint.label = currentDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+      });
+      dataPoint.labelTextStyle = { color: 'lightgray', width: 60 };
+    }
+    
+    mockDataPoints.push(dataPoint);
+  }
+  
+  const personalScores = mockDataPoints.filter((d: any) => d.personalFeedback !== null).map((d: any) => d.personalFeedback as number);
+  const peerScores = mockDataPoints.filter((d: any) => d.peerFeedback !== null).map((d: any) => d.peerFeedback as number);
 
   const personalAvg = personalScores.length > 0 
     ? Math.round((personalScores.reduce((a, b) => a + b, 0) / personalScores.length) * 10) / 10 
