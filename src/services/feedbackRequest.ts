@@ -446,72 +446,182 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
     }
   });
 
-  // Build data points for the graph
+  // Build data points grouped by date
+  const dateGroups: Record<string, {
+    date: Date;
+    personalRatings: number[];
+    peerRatings: number[];
+    peerCounts: number;
+    reviews: any[];
+  }> = {};
+
+  reviews.forEach((review: any) => {
+    const reviewDate = new Date(review.createdAt);
+    // Get date only (without time) for grouping
+    const dateKey = reviewDate.toISOString().split('T')[0];
+
+    if (!dateGroups[dateKey]) {
+      dateGroups[dateKey] = {
+        date: reviewDate,
+        personalRatings: [],
+        peerRatings: [],
+        peerCounts: 0,
+        reviews: [],
+      };
+    }
+
+    // Personal feedback is the rating field on the review
+    if (review.rating) {
+      dateGroups[dateKey].personalRatings.push(review.rating);
+    }
+
+    // Peer feedback - calculate average from all peer feedback requests
+    const reviewId = review._id.toString();
+    if (peerFeedbackMap[reviewId] && peerFeedbackMap[reviewId].ratings.length > 0) {
+      const ratings = peerFeedbackMap[reviewId].ratings;
+      const avgRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+      dateGroups[dateKey].peerRatings.push(avgRating);
+      dateGroups[dateKey].peerCounts += peerFeedbackMap[reviewId].count;
+    } else if (review.peerFeedback?.rating) {
+      // Fallback to inline peer feedback if exists
+      dateGroups[dateKey].peerRatings.push(review.peerFeedback.rating);
+      dateGroups[dateKey].peerCounts += 1;
+    }
+
+    dateGroups[dateKey].reviews.push(review);
+  });
+
+  // Convert grouped data to data points with averages
   const dataPoints: Array<{
     date: string;
     dateFormatted: string;
     personalFeedback: number | null;
     peerFeedback: number | null;
     peerFeedbackCount: number;
+    sessionCount: number;
     details: {
       matchType?: string;
       matchResult?: string;
       duration?: string;
       notes?: string;
       hasMedia: boolean;
-    };
+    } | null;
   }> = [];
 
-  reviews.forEach((review: any) => {
-    const reviewDate = new Date(review.createdAt);
-    const dateFormatted = reviewDate.toLocaleDateString("en-GB", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
+  // For 7D, 30D, 90D: Generate all dates in the period and fill with data or null
+  if (startDate && timeFilter !== "all") {
+    const currentDate = new Date(startDate);
+    const endDate = new Date(now);
+    endDate.setHours(23, 59, 59, 999);
 
-    // Personal feedback is the rating field on the review
-    const personalRating = review.rating || null;
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const dateFormatted = currentDate.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
 
-    // Peer feedback - calculate average from all peer feedback requests
-    const reviewId = review._id.toString();
-    let peerRating: number | null = null;
-    let peerCount = 0;
+      if (dateGroups[dateKey]) {
+        // We have data for this date
+        const group = dateGroups[dateKey];
 
-    if (peerFeedbackMap[reviewId] && peerFeedbackMap[reviewId].ratings.length > 0) {
-      const ratings = peerFeedbackMap[reviewId].ratings;
-      peerRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
-      peerRating = Math.round(peerRating * 10) / 10; // Round to 1 decimal
-      peerCount = peerFeedbackMap[reviewId].count;
-    } else if (review.peerFeedback?.rating) {
-      // Fallback to inline peer feedback if exists
-      peerRating = review.peerFeedback.rating;
-      peerCount = 1;
+        // Calculate average personal rating for this date
+        const personalAvgForDate = group.personalRatings.length > 0
+          ? Math.round((group.personalRatings.reduce((sum, r) => sum + r, 0) / group.personalRatings.length) * 10) / 10
+          : null;
+
+        // Calculate average peer rating for this date
+        const peerAvgForDate = group.peerRatings.length > 0
+          ? Math.round((group.peerRatings.reduce((sum, r) => sum + r, 0) / group.peerRatings.length) * 10) / 10
+          : null;
+
+        // Use first review's details as representative
+        const firstReview = group.reviews[0];
+        let duration: string | undefined;
+        if (firstReview.matchDuration) {
+          duration = firstReview.matchDuration === "Other" ? `${firstReview.matchDurationCustom} min` : firstReview.matchDuration;
+        } else if (firstReview.rollDuration) {
+          duration = firstReview.rollDuration === "Other" ? `${firstReview.rollDurationCustom} min` : firstReview.rollDuration;
+        }
+
+        dataPoints.push({
+          date: new Date(dateKey).toISOString(),
+          dateFormatted,
+          personalFeedback: personalAvgForDate,
+          peerFeedback: peerAvgForDate,
+          peerFeedbackCount: group.peerCounts,
+          sessionCount: group.reviews.length,
+          details: {
+            matchType: firstReview.matchType,
+            matchResult: firstReview.matchResult,
+            duration,
+            notes: firstReview.notes,
+            hasMedia: group.reviews.some((r: any) => !!(r.media?.length > 0 || r.videoUrl)),
+          },
+        });
+      } else {
+        // No data for this date - return null values
+        dataPoints.push({
+          date: new Date(dateKey).toISOString(),
+          dateFormatted,
+          personalFeedback: null,
+          peerFeedback: null,
+          peerFeedbackCount: 0,
+          sessionCount: 0,
+          details: null,
+        });
+      }
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
+  } else {
+    // For "all" time filter: only return dates that have data
+    Object.keys(dateGroups).sort().forEach((dateKey) => {
+      const group = dateGroups[dateKey];
+      const dateFormatted = group.date.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
 
-    // Duration - check match or roll duration
-    let duration: string | undefined;
-    if (review.matchDuration) {
-      duration = review.matchDuration === "Other" ? `${review.matchDurationCustom} min` : review.matchDuration;
-    } else if (review.rollDuration) {
-      duration = review.rollDuration === "Other" ? `${review.rollDurationCustom} min` : review.rollDuration;
-    }
+      // Calculate average personal rating for this date
+      const personalAvgForDate = group.personalRatings.length > 0
+        ? Math.round((group.personalRatings.reduce((sum, r) => sum + r, 0) / group.personalRatings.length) * 10) / 10
+        : null;
 
-    dataPoints.push({
-      date: reviewDate.toISOString(),
-      dateFormatted,
-      personalFeedback: personalRating,
-      peerFeedback: peerRating,
-      peerFeedbackCount: peerCount,
-      details: {
-        matchType: review.matchType,
-        matchResult: review.matchResult,
-        duration,
-        notes: review.notes,
-        hasMedia: !!(review.media?.length > 0 || review.videoUrl),
-      },
+      // Calculate average peer rating for this date
+      const peerAvgForDate = group.peerRatings.length > 0
+        ? Math.round((group.peerRatings.reduce((sum, r) => sum + r, 0) / group.peerRatings.length) * 10) / 10
+        : null;
+
+      // Use first review's details as representative
+      const firstReview = group.reviews[0];
+      let duration: string | undefined;
+      if (firstReview.matchDuration) {
+        duration = firstReview.matchDuration === "Other" ? `${firstReview.matchDurationCustom} min` : firstReview.matchDuration;
+      } else if (firstReview.rollDuration) {
+        duration = firstReview.rollDuration === "Other" ? `${firstReview.rollDurationCustom} min` : firstReview.rollDuration;
+      }
+
+      dataPoints.push({
+        date: group.date.toISOString(),
+        dateFormatted,
+        personalFeedback: personalAvgForDate,
+        peerFeedback: peerAvgForDate,
+        peerFeedbackCount: group.peerCounts,
+        sessionCount: group.reviews.length,
+        details: {
+          matchType: firstReview.matchType,
+          matchResult: firstReview.matchResult,
+          duration,
+          notes: firstReview.notes,
+          hasMedia: group.reviews.some((r: any) => !!(r.media?.length > 0 || r.videoUrl)),
+        },
+      });
     });
-  });
+  }
 
   // Calculate summary statistics
   const personalScores = dataPoints.filter((d) => d.personalFeedback !== null).map((d) => d.personalFeedback as number);
@@ -557,106 +667,74 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
 const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilter: string) => {
   const sessionTypeFilter = sessionType === "match" ? "Match Type" : "Skill Practice";
   
-  const mockDataPoints = [
-    {
-      date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 1",
-      personalFeedback: 2,
-      peerFeedback: null,
-      peerFeedbackCount: 0,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: null,
-        duration: undefined,
-        notes: undefined,
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 2",
-      personalFeedback: 2,
-      peerFeedback: 1,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: null,
-        duration: undefined,
-        notes: undefined,
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 3",
-      personalFeedback: 6,
-      peerFeedback: 6,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1 hour",
-        notes: "Good technique work today",
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 4",
-      personalFeedback: 6,
-      peerFeedback: 6,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1 hour",
-        notes: "Focused on guard transitions",
-        hasMedia: false,
-      },
-    },
-    {
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 5",
-      personalFeedback: 7.4,
-      peerFeedback: 7,
-      peerFeedbackCount: 1,
-      details: {
-        matchType: "Skill Practice",
-        matchResult: null,
-        duration: "1.5 hours",
-        notes: "Better escapes today",
-        hasMedia: true,
-      },
-    },
-    {
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 6",
-      personalFeedback: 8.4,
-      peerFeedback: 8.2,
-      peerFeedbackCount: 3,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: "Win - Arm Triangle (Submission)",
-        duration: "3:15",
-        notes: "Felt sharper on knee-cut today.",
-        hasMedia: true,
-      },
-    },
-    {
-      date: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000).toISOString(),
-      dateFormatted: "Nov 7",
-      personalFeedback: 10,
-      peerFeedback: 8.4,
-      peerFeedbackCount: 2,
-      details: {
-        matchType: "No-Gi Competition",
-        matchResult: "Win",
-        duration: "5:00",
-        notes: "Excellent performance overall",
-        hasMedia: true,
-      },
-    },
-  ];
+  // Sample data - only some days have data
+  const sampleData: Record<number, { personal: number | null; peer: number | null; peerCount: number; sessionCount: number; details: any }> = {
+    0: { personal: 10, peer: 8.4, peerCount: 2, sessionCount: 1, details: { matchType: "No-Gi Competition", matchResult: "Win", duration: "5:00", notes: "Excellent performance overall", hasMedia: true } },
+    1: { personal: 8.4, peer: 8.2, peerCount: 3, sessionCount: 2, details: { matchType: "No-Gi Competition", matchResult: "Win - Arm Triangle (Submission)", duration: "3:15", notes: "Felt sharper on knee-cut today.", hasMedia: true } },
+    2: { personal: 7.4, peer: 7, peerCount: 1, sessionCount: 1, details: { matchType: "Skill Practice", matchResult: null, duration: "1.5 hours", notes: "Better escapes today", hasMedia: true } },
+    4: { personal: 6, peer: 6, peerCount: 1, sessionCount: 1, details: { matchType: "Skill Practice", matchResult: null, duration: "1 hour", notes: "Good technique work today", hasMedia: false } },
+    6: { personal: 2, peer: null, peerCount: 0, sessionCount: 1, details: { matchType: "No-Gi Competition", matchResult: null, duration: undefined, notes: undefined, hasMedia: false } },
+  };
+
+  // Determine number of days based on time filter
+  let numDays: number;
+  switch (timeFilter) {
+    case "7D":
+      numDays = 7;
+      break;
+    case "30D":
+      numDays = 30;
+      break;
+    case "90D":
+      numDays = 90;
+      break;
+    default:
+      numDays = 7;
+  }
+
+  // Generate data points for all days
+  const mockDataPoints: Array<{
+    date: string;
+    dateFormatted: string;
+    personalFeedback: number | null;
+    peerFeedback: number | null;
+    peerFeedbackCount: number;
+    sessionCount: number;
+    details: any;
+  }> = [];
+
+  for (let i = numDays - 1; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const dateFormatted = date.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+
+    if (sampleData[i]) {
+      // We have mock data for this day
+      mockDataPoints.push({
+        date: date.toISOString(),
+        dateFormatted,
+        personalFeedback: sampleData[i].personal,
+        peerFeedback: sampleData[i].peer,
+        peerFeedbackCount: sampleData[i].peerCount,
+        sessionCount: sampleData[i].sessionCount,
+        details: sampleData[i].details,
+      });
+    } else {
+      // No data for this day
+      mockDataPoints.push({
+        date: date.toISOString(),
+        dateFormatted,
+        personalFeedback: null,
+        peerFeedback: null,
+        peerFeedbackCount: 0,
+        sessionCount: 0,
+        details: null,
+      });
+    }
+  }
 
   const personalScores = mockDataPoints.filter((d) => d.personalFeedback !== null).map((d) => d.personalFeedback as number);
   const peerScores = mockDataPoints.filter((d) => d.peerFeedback !== null).map((d) => d.peerFeedback as number);
@@ -671,6 +749,9 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
   const personalBest = personalScores.length > 0 ? Math.max(...personalScores) : null;
   const peerBest = peerScores.length > 0 ? Math.max(...peerScores) : null;
 
+  // Count actual sessions (days with data)
+  const totalSessions = mockDataPoints.filter(d => d.sessionCount > 0).reduce((sum, d) => sum + d.sessionCount, 0);
+
   return {
     message: "Feedback graph data fetched successfully (MOCK DATA)",
     data: {
@@ -678,7 +759,7 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
       sessionType: sessionTypeFilter,
       timeFilter,
       summary: {
-        totalSessions: mockDataPoints.length,
+        totalSessions,
         personalFeedback: {
           count: personalScores.length,
           average: personalAvg,
