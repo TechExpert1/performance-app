@@ -15,7 +15,7 @@ const router = express.Router();
  * @route   GET /feedback-requests/graph
  * @desc    Get feedback graph data for visualizing personal vs peer feedback over time
  * @access  Private (User)
- * @query   { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all" }
+ * @query   { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all", previous: number }
  */
 router.get("/graph", userAuth, getFeedbackGraphData);
 

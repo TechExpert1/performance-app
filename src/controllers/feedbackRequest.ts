@@ -189,7 +189,7 @@ export const submitFeedbackForRequest = async (
 /**
  * Get feedback graph data for visualizing personal vs peer feedback over time
  * GET /feedback-requests/graph
- * Query: { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all" }
+ * Query: { sportId: string, sessionType: "skill" | "match", timeFilter: "7D" | "30D" | "90D" | "all", previous: number }
  */
 export const getFeedbackGraphData = async (
   req: AuthenticatedRequest,

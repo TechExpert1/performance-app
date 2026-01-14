@@ -365,6 +365,7 @@ export const submitFeedback = async (req: AuthenticatedRequest) => {
  * - sportId: Required - Filter by sport
  * - sessionType: "skill" | "match" - Filter by session type (Skill Practice or Match Type)
  * - timeFilter: "7D" | "30D" | "90D" | "all" (default: "7D")
+ * - previous: number - Navigate to previous periods (0 = current, 1 = previous period, 2 = 2 periods ago, etc.)
  * - mock: "true" - Return mock data for testing
  */
 export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
@@ -372,34 +373,44 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
     throw new Error("User not authenticated");
   }
 
-  const { sportId, sessionType = "skill", timeFilter = "7D", mock } = req.query;
+  const { sportId, sessionType = "skill", timeFilter = "7D", previous = "0", mock } = req.query;
 
   if (!sportId) {
     throw new Error("sportId is required");
   }
 
+  const previousPeriod = parseInt(previous as string) || 0;
+
   // Return mock data if requested
   if (mock === "true") {
-    return getMockFeedbackGraphData(sportId as string, sessionType as string, timeFilter as string);
+    return getMockFeedbackGraphData(sportId as string, sessionType as string, timeFilter as string, previousPeriod);
   }
 
-  // Calculate date range based on time filter
+  // Calculate date range based on time filter and previous parameter
   const now = new Date();
   let startDate: Date | null = null;
+  let endDate: Date = new Date(now);
 
   switch (timeFilter) {
     case "7D":
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // Each period is 7 days
+      endDate = new Date(now.getTime() - (previousPeriod * 7 * 24 * 60 * 60 * 1000));
+      startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
     case "30D":
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      // Each period is 30 days
+      endDate = new Date(now.getTime() - (previousPeriod * 30 * 24 * 60 * 60 * 1000));
+      startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
       break;
     case "90D":
-      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      // Each period is 90 days
+      endDate = new Date(now.getTime() - (previousPeriod * 90 * 24 * 60 * 60 * 1000));
+      startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
       break;
     case "all":
     default:
       startDate = null;
+      endDate = now;
       break;
   }
 
@@ -414,7 +425,10 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
   };
 
   if (startDate) {
-    query.createdAt = { $gte: startDate };
+    query.createdAt = { 
+      $gte: startDate,
+      $lte: endDate
+    };
   }
 
   // Fetch reviews with personal feedback (rating field)
@@ -513,10 +527,10 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
     if (timeFilter === "7D") {
       // 7D: Daily data points
       const currentDate = new Date(startDate);
-      const endDate = new Date(now);
-      endDate.setHours(23, 59, 59, 999);
+      const finalEndDate = new Date(endDate);
+      finalEndDate.setHours(23, 59, 59, 999);
 
-      while (currentDate <= endDate) {
+      while (currentDate <= finalEndDate) {
         const dateKey = currentDate.toISOString().split('T')[0];
         const dateFormatted = currentDate.toLocaleDateString("en-GB", {
           weekday: "short",
@@ -592,14 +606,14 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
 
       // Create week buckets
       let weekStart = new Date(startDate);
-      while (weekStart < now) {
+      while (weekStart < endDate) {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
         weekEnd.setHours(23, 59, 59, 999);
 
         weeks.push({
           startDate: new Date(weekStart),
-          endDate: weekEnd > now ? new Date(now) : weekEnd,
+          endDate: weekEnd > endDate ? new Date(endDate) : weekEnd,
           personalRatings: [],
           peerRatings: [],
           peerCounts: 0,
@@ -682,10 +696,10 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
       currentMonth.setDate(1);
       currentMonth.setHours(0, 0, 0, 0);
 
-      while (currentMonth <= now) {
+      while (currentMonth <= endDate) {
         const monthStart = new Date(currentMonth);
         const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
-        const finalEnd = monthEnd > now ? new Date(now) : monthEnd;
+        const finalEnd = monthEnd > endDate ? new Date(endDate) : monthEnd;
 
         months.push({
           startDate: monthStart,
@@ -842,7 +856,7 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
 /**
  * Mock data for feedback graph
  */
-const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilter: string) => {
+const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilter: string, previousPeriod: number = 0) => {
   const sessionTypeFilter = sessionType === "match" ? "Match Type" : "Skill Practice";
   
   // Sample data - only some days have data
@@ -870,10 +884,21 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
     details: any;
   }> = [];
 
+  // Calculate offset based on previous period
+  let periodOffset = 0;
+  if (timeFilter === "7D") {
+    periodOffset = previousPeriod * 7;
+  } else if (timeFilter === "30D") {
+    periodOffset = previousPeriod * 30;
+  } else if (timeFilter === "90D") {
+    periodOffset = previousPeriod * 90;
+  }
+
   if (timeFilter === "7D") {
     // 7D: Daily data points
     for (let i = 6; i >= 0; i--) {
-      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const daysAgo = periodOffset + i;
+      const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
       const dateFormatted = date.toLocaleDateString("en-GB", {
         weekday: "short",
         day: "numeric",
@@ -906,14 +931,16 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
     // 30D: Weekly aggregation (4-5 weeks)
     const numWeeks = 5;
     for (let weekIndex = numWeeks - 1; weekIndex >= 0; weekIndex--) {
-      const weekStart = new Date(Date.now() - (weekIndex * 7 + 6) * 24 * 60 * 60 * 1000);
-      const weekEnd = new Date(Date.now() - weekIndex * 7 * 24 * 60 * 60 * 1000);
+      const daysAgoEnd = periodOffset + (weekIndex * 7);
+      const daysAgoStart = daysAgoEnd + 6;
+      const weekStart = new Date(Date.now() - daysAgoStart * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(Date.now() - daysAgoEnd * 24 * 60 * 60 * 1000);
       
       const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} - ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
       // Aggregate data for this week
       const weekData: number[] = [];
-      const weekStartDay = (numWeeks - 1 - weekIndex) * 7;
+      const weekStartDay = periodOffset + (numWeeks - 1 - weekIndex) * 7;
       let personalRatings: number[] = [];
       let peerRatings: number[] = [];
       let peerCounts = 0;
@@ -958,11 +985,12 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
     const numMonths = 3;
     for (let monthIndex = numMonths - 1; monthIndex >= 0; monthIndex--) {
       const now = new Date();
-      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthIndex, 1);
+      const monthsAgo = previousPeriod * 3 + monthIndex;
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
       const monthLabel = monthDate.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
       // Aggregate data for this month (simplified - using day ranges)
-      const monthStartDay = (numMonths - 1 - monthIndex) * 30;
+      const monthStartDay = periodOffset + (numMonths - 1 - monthIndex) * 30;
       let personalRatings: number[] = [];
       let peerRatings: number[] = [];
       let peerCounts = 0;
