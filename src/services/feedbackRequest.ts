@@ -515,7 +515,6 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
 
   // Convert daily data to graph format with averaging
   const dataPoints: Array<{
-    value: number;
     date: string;
     label?: string;
     labelTextStyle?: { color: string; width: number };
@@ -535,19 +534,16 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
   sortedDays.forEach((dayKey, index) => {
     const dayData = dailyDataMap[dayKey];
     
-    // Calculate averages for the day
+    // Calculate averages for the day - round to whole numbers (ratings are 1-10)
     const personalAvg = dayData.personalRatings.length > 0
-      ? Math.round((dayData.personalRatings.reduce((a, b) => a + b, 0) / dayData.personalRatings.length) * 10) / 10
+      ? Math.round(dayData.personalRatings.reduce((a, b) => a + b, 0) / dayData.personalRatings.length)
       : null;
     
     const peerAvg = dayData.peerRatings.length > 0
-      ? Math.round((dayData.peerRatings.reduce((a, b) => a + b, 0) / dayData.peerRatings.length) * 10) / 10
+      ? Math.round(dayData.peerRatings.reduce((a, b) => a + b, 0) / dayData.peerRatings.length)
       : null;
 
     const totalPeerCount = dayData.peerCounts.reduce((a, b) => a + b, 0);
-
-    // Use personal feedback as main value, or peer feedback if personal not available
-    const value = personalAvg !== null ? personalAvg : (peerAvg !== null ? peerAvg : 0);
 
     const dateFormatted = dayData.date.toLocaleDateString("en-GB", {
       day: "numeric",
@@ -563,7 +559,6 @@ export const getFeedbackGraph = async (req: AuthenticatedRequest) => {
     });
 
     const dataPoint: any = {
-      value,
       date: dateFormatted,
       personalFeedback: personalAvg,
       peerFeedback: peerAvg,
@@ -635,12 +630,11 @@ const getMockFeedbackGraphData = (sportId: string, sessionType: string, timeFilt
       year: "numeric",
     });
     
-    // Generate random values between 140 and 390
-    const personalRating = Math.round((Math.random() * 250 + 140) * 10) / 10;
-    const peerRating = Math.round((personalRating + (Math.random() * 40 - 20)) * 10) / 10;
+    // Generate random ratings between 1 and 10 (whole numbers only)
+    const personalRating = Math.floor(Math.random() * 10) + 1; // 1-10
+    const peerRating = Math.max(1, Math.min(10, personalRating + Math.floor(Math.random() * 3) - 1)); // 1-10, close to personal
     
     const dataPoint: any = {
-      value: personalRating,
       date: dateFormatted,
       personalFeedback: personalRating,
       peerFeedback: peerRating,
