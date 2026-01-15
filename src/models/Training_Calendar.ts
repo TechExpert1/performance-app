@@ -48,17 +48,26 @@ const trainingCalendarSchema = new Schema<TrainingCalendarDocument>(
       enum: ["active", "in-active", "inactive"],
       default: "in-active",
     },
-    numberOfWeeks: { type: Number, min: 1 }, // Number of weeks for weekly recurrence
-    numberOfMonths: { type: Number, min: 1 }, // Number of months for monthly recurrence
+    numberOfOccurences: { type: Number, min: 1 }, // Number of occurrences for recurring trainings
+    occurrencePeriod: { type: Number, min: 1 }, // Which occurrence this is (1, 2, 3...) in a recurring series
+    numberOfWeeks: { type: Number, min: 1 }, // Deprecated: use numberOfOccurences
+    numberOfMonths: { type: Number, min: 1 }, // Deprecated: use numberOfOccurences
+    trainings: [
+      {
+        period: { type: Number, required: true }, // Occurrence number (1, 2, 3...)
+        categories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category" }],
+        skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category_Skill" }],
+      },
+    ],
     weeklySkills: [
       {
-        period: { type: Number, required: true }, // Week number (1, 2, 3...)
+        period: { type: Number, required: true }, // Deprecated: use trainings
         skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category_Skill" }],
       },
     ],
     monthlySkills: [
       {
-        period: { type: Number, required: true }, // Month number (1, 2, 3...)
+        period: { type: Number, required: true }, // Deprecated: use trainings
         skills: [{ type: mongoose.Schema.Types.ObjectId, ref: "Sport_Category_Skill" }],
       },
     ],
